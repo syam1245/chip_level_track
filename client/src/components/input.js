@@ -2,8 +2,8 @@
 import React, { useState } from "react";
 import TextField from "@mui/material/TextField";
 import Button from "@mui/material/Button";
-import { useNavigate } from 'react-router-dom';
-
+import { useNavigate } from "react-router-dom";
+import API_BASE_URL from "../api";
 
 const Input = () => {
   const navigate = useNavigate();
@@ -13,63 +13,82 @@ const Input = () => {
     brand: "",
   });
 
+  // handle field updates
   const handleChange = (e) => {
-    setForm({
-      ...form,
-      [e.target.name]: e.target.value,
-    });
+    const { name, value } = e.target;
+    setForm((prev) => ({ ...prev, [name]: value }));
   };
 
-  const handleSubmit = async () => {
+  // handle submit
+  const handleSubmit = async (e) => {
+    e.preventDefault();
+
     try {
-      const response = await fetch("http://localhost:5000/api/items", {
+      const res = await fetch(`${API_BASE_URL}/api/items`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(form),
       });
 
-      if (!response.ok) {
-        throw new Error("Failed to create item");
+      const data = await res.json();
+
+      if (res.ok) {
+        console.log("✅ Saved:", data);
+        alert("Data saved successfully!");
+        setForm({ jobNumber: "", customerName: "", brand: "" });
+        navigate("/"); // optional redirect
+      } else {
+        console.error("❌ Error saving:", data);
+        alert("Failed to save data.");
       }
-
-      const data = await response.json();
-      console.log("Created:", data);
-
-      // reset form
-      setForm({ jobNumber: "", customerName: "", brand: "" });
     } catch (err) {
-      console.error(err.message);
+      console.error("⚠️ Network error:", err);
+      alert("Error connecting to server.");
     }
   };
 
   return (
-    <div style={{ display: "flex", flexDirection: "column", gap: "1rem" }}>
+    <form
+      onSubmit={handleSubmit}
+      style={{
+        display: "flex",
+        flexDirection: "column",
+        gap: "1rem",
+        width: "300px",
+        margin: "2rem auto",
+      }}
+    >
       <TextField
         name="jobNumber"
         label="Job Number"
-        variant="outlined"
         value={form.jobNumber}
         onChange={handleChange}
+        required
       />
       <TextField
         name="customerName"
         label="Customer Name"
-        variant="outlined"
         value={form.customerName}
         onChange={handleChange}
+        required
       />
       <TextField
         name="brand"
         label="Brand"
-        variant="outlined"
         value={form.brand}
         onChange={handleChange}
+        required
       />
-      <Button variant="contained" onClick={handleSubmit}>
-        CREATE
-      </Button>
-      <Button variant="outlined" onClick={() => navigate('/items')}>VIEW</Button>
-    </div>
+
+      <div style={{ display: "flex", gap: "1rem", justifyContent: "center" }}>
+        <Button type="submit" variant="contained" color="primary">
+          Save
+        </Button>
+        <Button variant="outlined" onClick={() => navigate("/items")}>
+          VIEW
+        </Button>
+      </div>
+    </form>
   );
 };
 

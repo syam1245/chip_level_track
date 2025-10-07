@@ -2,11 +2,16 @@
 
 import React, { useEffect, useState } from 'react';
 
+import API_BASE_URL from "../api";
+
+
+
+
 const ItemsList = () => {
   const [items, setItems] = useState([]);
 
   useEffect(() => {
-    fetch('http://localhost:5000/api/items')
+    fetch(`${API_BASE_URL}/api/items`)
       .then(res => res.json())
       .then(data => setItems(data))
       .catch(err => console.error(err));
