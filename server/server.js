@@ -69,19 +69,20 @@ app.use(express.json());
 ======================= */
 app.use("/api/items", itemsRouter);
 
-// Health check (API only)
 app.get("/api/health", (req, res) => {
-  res.json({ status: "OK", service: "Chip Level Track API" });
+  res.json({ status: "OK" });
 });
 
 /* =======================
    Serve React (Production)
 ======================= */
 const clientBuildPath = path.join(__dirname, "../client/build");
+
+// Serve static assets
 app.use(express.static(clientBuildPath));
 
-// React SPA fallback
-app.get("*", (req, res) => {
+// SPA fallback — Express 5 SAFE
+app.get(/.*/, (req, res) => {
   res.sendFile(path.join(clientBuildPath, "index.html"));
 });
 
@@ -90,9 +91,9 @@ app.get("*", (req, res) => {
 ======================= */
 connectDB()
   .then(() => {
-    app.listen(PORT, () =>
-      console.log(`🚀 Server running on port ${PORT}`)
-    );
+    app.listen(PORT, () => {
+      console.log(`🚀 Server running on port ${PORT}`);
+    });
   })
   .catch((err) => {
     console.error("❌ DB connection failed:", err);
