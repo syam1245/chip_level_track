@@ -6,6 +6,25 @@ import Item from "../models/item.js";
 
 const router = express.Router();
 
+// @route   GET /api/items/backup
+// @desc    Download full database backup
+router.get("/backup", async (req, res) => {
+  try {
+    const items = await Item.find().sort({ createdAt: -1 });
+
+    // Create timestamp string like "2026-02-06-1205"
+    const timestamp = new Date().toISOString().replace(/[:.]/g, "-");
+    const filename = `backup-${timestamp}.json`;
+
+    res.setHeader("Content-Disposition", `attachment; filename=${filename}`);
+    res.setHeader("Content-Type", "application/json");
+
+    res.send(JSON.stringify(items, null, 2));
+  } catch (err) {
+    res.status(500).json({ error: "Server error", details: err.message });
+  }
+});
+
 // @route   POST /api/items
 // @desc    Create new item
 router.post("/", async (req, res) => {

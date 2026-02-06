@@ -38,9 +38,30 @@ const ItemsList = () => {
     }
   };
 
+  const downloadBackup = () => {
+    window.open(`${API_BASE_URL}/api/items/backup`, "_blank");
+  };
+
   return (
     <div style={{ padding: '1rem' }}>
-      <h2>Items</h2>
+      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1rem' }}>
+        <h2>Items</h2>
+        <button
+          onClick={downloadBackup}
+          style={{
+            backgroundColor: "#4CAF50", // Green color
+            color: "white",
+            border: "none",
+            padding: "10px 15px",
+            fontSize: "14px",
+            cursor: "pointer",
+            borderRadius: "4px",
+            fontWeight: "bold"
+          }}
+        >
+          ⬇ Download Backup
+        </button>
+      </div>
       <table style={{ width: '100%', borderCollapse: 'collapse' }}>
         <thead>
           <tr>
