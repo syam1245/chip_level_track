@@ -80,11 +80,12 @@ const Input = () => {
 
       if (res.ok) {
         console.log("✅ Saved:", data);
-        alert("Data saved successfully!");
+        alert("✅ Writing to database successful!");
         setForm({ jobNumber: "", customerName: "", brand: "", phoneNumber: "" });
         navigate("/");
       } else {
         console.error("❌ Error saving:", data);
+        alert("❌ Writing to database failed. Please try again.");
         setError(data.error || "Failed to save data.");
       }
     } catch (err) {

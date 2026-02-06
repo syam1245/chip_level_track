@@ -39,7 +39,8 @@ const ItemsList = () => {
   };
 
   const deleteItem = async (id) => {
-    if (!window.confirm("Are you sure you want to delete this item?")) return;
+    const confirmDelete = window.confirm("Are you sure you want to delete this item?\n\nClick OK to confirm deletion or Cancel to abort.");
+    if (!confirmDelete) return;
 
     try {
       const res = await fetch(`${API_BASE_URL}/api/items/${id}`, {
@@ -47,11 +48,14 @@ const ItemsList = () => {
       });
       if (res.ok) {
         setItems(items.filter((item) => item._id !== id));
+        alert("✅ Deleted from database successfully!");
       } else {
         console.error("Failed to delete item");
+        alert("❌ Failed to delete from database. Please try again.");
       }
     } catch (err) {
       console.error(err);
+      alert("❌ Error deleting from database. Please check your connection.");
     }
   };
 
@@ -113,6 +117,46 @@ const ItemsList = () => {
             }
           `}</style>
           Loading items...
+        </div>
+      ) : items.length === 0 ? (
+        // Empty Database State
+        <div style={{
+          textAlign: 'center',
+          padding: '3rem',
+          backgroundColor: '#fff',
+          borderRadius: '8px',
+          boxShadow: '0 2px 8px rgba(0,0,0,0.1)',
+          border: '1px solid #eee'
+        }}>
+          <div style={{
+            fontSize: '48px',
+            marginBottom: '1rem'
+          }}>📭</div>
+          <h3 style={{
+            color: '#333',
+            marginBottom: '0.5rem',
+            fontSize: '20px'
+          }}>Database is Empty</h3>
+          <p style={{
+            color: '#666',
+            fontSize: '14px',
+            marginBottom: '1.5rem'
+          }}>No records found. Start by adding a new entry.</p>
+          <a
+            href="/"
+            style={{
+              display: 'inline-block',
+              backgroundColor: '#3498db',
+              color: 'white',
+              padding: '10px 20px',
+              borderRadius: '6px',
+              textDecoration: 'none',
+              fontWeight: '500',
+              fontSize: '14px'
+            }}
+          >
+            + Add New Entry
+          </a>
         </div>
       ) : isMobile ? (
         // Mobile Card Layout
