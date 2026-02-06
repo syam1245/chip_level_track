@@ -9,16 +9,24 @@ import API_BASE_URL from "../api";
 
 const ItemsList = () => {
   const [items, setItems] = useState([]);
+  const [loading, setLoading] = useState(true);
 
   useEffect(() => {
     fetchItems();
   }, []);
 
   const fetchItems = () => {
+    setLoading(true);
     fetch(`${API_BASE_URL}/api/items`)
       .then(res => res.json())
-      .then(data => setItems(data))
-      .catch(err => console.error(err));
+      .then(data => {
+        setItems(data);
+        setLoading(false);
+      })
+      .catch(err => {
+        console.error(err);
+        setLoading(false);
+      });
   };
 
   const deleteItem = async (id) => {
@@ -73,45 +81,71 @@ const ItemsList = () => {
         </button>
       </div>
 
-      <div style={{ overflowX: 'auto', boxShadow: '0 0 10px rgba(0,0,0,0.1)', borderRadius: '8px' }}>
-        <table style={{ width: '100%', borderCollapse: 'collapse', minWidth: '600px', backgroundColor: '#fff' }}>
-          <thead style={{ backgroundColor: '#f5f5f5' }}>
-            <tr>
-              <th style={{ borderBottom: '2px solid #ddd', padding: '12px', textAlign: 'left', whiteSpace: 'nowrap' }}>Job Number</th>
-              <th style={{ borderBottom: '2px solid #ddd', padding: '12px', textAlign: 'left', whiteSpace: 'nowrap' }}>Customer Name</th>
-              <th style={{ borderBottom: '2px solid #ddd', padding: '12px', textAlign: 'left', whiteSpace: 'nowrap' }}>Brand</th>
-              <th style={{ borderBottom: '2px solid #ddd', padding: '12px', textAlign: 'left', whiteSpace: 'nowrap' }}>Phone Number</th>
-              <th style={{ borderBottom: '2px solid #ddd', padding: '12px', textAlign: 'center', whiteSpace: 'nowrap' }}>Action</th>
-            </tr>
-          </thead>
-          <tbody>
-            {items.map((item) => (
-              <tr key={item._id} style={{ '&:hover': { backgroundColor: '#f9f9f9' } }}>
-                <td style={{ borderBottom: '1px solid #eee', padding: '12px' }}>{item.jobNumber}</td>
-                <td style={{ borderBottom: '1px solid #eee', padding: '12px' }}>{item.customerName}</td>
-                <td style={{ borderBottom: '1px solid #eee', padding: '12px' }}>{item.brand}</td>
-                <td style={{ borderBottom: '1px solid #eee', padding: '12px' }}>{item.phoneNumber}</td>
-                <td style={{ borderBottom: '1px solid #eee', padding: '12px', textAlign: 'center' }}>
-                  <button
-                    onClick={() => deleteItem(item._id)}
-                    style={{
-                      backgroundColor: "#ff4d4d",
-                      color: "white",
-                      border: "none",
-                      padding: "6px 12px",
-                      cursor: "pointer",
-                      borderRadius: "4px",
-                      fontSize: '13px'
-                    }}
-                  >
-                    Delete
-                  </button>
-                </td>
+      {loading ? (
+        <div style={{
+          textAlign: 'center',
+          padding: '3rem',
+          fontSize: '16px',
+          color: '#666'
+        }}>
+          <div style={{
+            border: '4px solid #f3f3f3',
+            borderTop: '4px solid #3498db',
+            borderRadius: '50%',
+            width: '40px',
+            height: '40px',
+            animation: 'spin 1s linear infinite',
+            margin: '0 auto 1rem'
+          }}></div>
+          <style>{`
+            @keyframes spin {
+              0% { transform: rotate(0deg); }
+              100% { transform: rotate(360deg); }
+            }
+          `}</style>
+          Loading items...
+        </div>
+      ) : (
+        <div style={{ overflowX: 'auto', boxShadow: '0 0 10px rgba(0,0,0,0.1)', borderRadius: '8px' }}>
+          <table style={{ width: '100%', borderCollapse: 'collapse', minWidth: '600px', backgroundColor: '#fff' }}>
+            <thead style={{ backgroundColor: '#f5f5f5' }}>
+              <tr>
+                <th style={{ borderBottom: '2px solid #ddd', padding: '12px', textAlign: 'left', whiteSpace: 'nowrap' }}>Job Number</th>
+                <th style={{ borderBottom: '2px solid #ddd', padding: '12px', textAlign: 'left', whiteSpace: 'nowrap' }}>Customer Name</th>
+                <th style={{ borderBottom: '2px solid #ddd', padding: '12px', textAlign: 'left', whiteSpace: 'nowrap' }}>Brand</th>
+                <th style={{ borderBottom: '2px solid #ddd', padding: '12px', textAlign: 'left', whiteSpace: 'nowrap' }}>Phone Number</th>
+                <th style={{ borderBottom: '2px solid #ddd', padding: '12px', textAlign: 'center', whiteSpace: 'nowrap' }}>Action</th>
               </tr>
-            ))}
-          </tbody>
-        </table>
-      </div>
+            </thead>
+            <tbody>
+              {items.map((item) => (
+                <tr key={item._id} style={{ '&:hover': { backgroundColor: '#f9f9f9' } }}>
+                  <td style={{ borderBottom: '1px solid #eee', padding: '12px' }}>{item.jobNumber}</td>
+                  <td style={{ borderBottom: '1px solid #eee', padding: '12px' }}>{item.customerName}</td>
+                  <td style={{ borderBottom: '1px solid #eee', padding: '12px' }}>{item.brand}</td>
+                  <td style={{ borderBottom: '1px solid #eee', padding: '12px' }}>{item.phoneNumber}</td>
+                  <td style={{ borderBottom: '1px solid #eee', padding: '12px', textAlign: 'center' }}>
+                    <button
+                      onClick={() => deleteItem(item._id)}
+                      style={{
+                        backgroundColor: "#ff4d4d",
+                        color: "white",
+                        border: "none",
+                        padding: "6px 12px",
+                        cursor: "pointer",
+                        borderRadius: "4px",
+                        fontSize: '13px'
+                      }}
+                    >
+                      Delete
+                    </button>
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+      )}
     </div>
   );
 };
