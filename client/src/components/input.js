@@ -100,10 +100,15 @@ const Input = () => {
         display: "flex",
         flexDirection: "column",
         gap: "1rem",
-        width: "300px",
+        width: "100%",       // Changed from 300px
+        maxWidth: "400px",   // Slightly wider for better UX
         margin: "2rem auto",
+        padding: "0 1rem",   // Add padding for mobile edges
+        boxSizing: 'border-box'
       }}
     >
+      <h2 style={{ textAlign: "center", marginBottom: "0.5rem" }}>New Entry</h2>
+
       <TextField
         name="jobNumber"
         label="Job Number"
@@ -111,6 +116,7 @@ const Input = () => {
         onChange={handleChange}
         required
         error={!!error}
+        fullWidth
       />
       <TextField
         name="customerName"
@@ -118,6 +124,7 @@ const Input = () => {
         value={form.customerName}
         onChange={handleChange}
         required
+        fullWidth
       />
       <Autocomplete
         freeSolo
@@ -133,7 +140,8 @@ const Input = () => {
             label="Brand"
             name="brand"
             required
-            onChange={handleChange} // Ensures required validation works slightly better with standard forms
+            onChange={handleChange}
+            fullWidth
           />
         )}
       />
@@ -144,7 +152,8 @@ const Input = () => {
         value={form.phoneNumber}
         onChange={handleChange}
         required
-        inputProps={{ maxLength: 10 }} // Hint to limit length
+        inputProps={{ maxLength: 10 }}
+        fullWidth
       />
 
       {error && (
@@ -153,11 +162,11 @@ const Input = () => {
         </Typography>
       )}
 
-      <div style={{ display: "flex", gap: "1rem", justifyContent: "center" }}>
-        <Button type="submit" variant="contained" color="primary">
+      <div style={{ display: "flex", gap: "1rem", justifyContent: "center", marginTop: "1rem" }}>
+        <Button type="submit" variant="contained" color="primary" style={{ flex: 1, padding: "10px" }}>
           Save
         </Button>
-        <Button variant="outlined" onClick={() => navigate("/items")}>
+        <Button variant="outlined" onClick={() => navigate("/items")} style={{ flex: 1, padding: "10px" }}>
           VIEW
         </Button>
       </div>
