@@ -10,9 +10,18 @@ import API_BASE_URL from "../api";
 const ItemsList = () => {
   const [items, setItems] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [isMobile, setIsMobile] = useState(window.innerWidth < 768);
 
   useEffect(() => {
     fetchItems();
+
+    // Track window resize for responsive layout
+    const handleResize = () => {
+      setIsMobile(window.innerWidth < 768);
+    };
+
+    window.addEventListener('resize', handleResize);
+    return () => window.removeEventListener('resize', handleResize);
   }, []);
 
   const fetchItems = () => {
@@ -105,7 +114,61 @@ const ItemsList = () => {
           `}</style>
           Loading items...
         </div>
+      ) : isMobile ? (
+        // Mobile Card Layout
+        <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
+          {items.map((item) => (
+            <div
+              key={item._id}
+              style={{
+                backgroundColor: '#fff',
+                borderRadius: '8px',
+                padding: '1rem',
+                boxShadow: '0 2px 8px rgba(0,0,0,0.1)',
+                border: '1px solid #eee'
+              }}
+            >
+              <div style={{ marginBottom: '0.75rem' }}>
+                <div style={{ fontSize: '12px', color: '#666', marginBottom: '2px' }}>Job Number</div>
+                <div style={{ fontSize: '16px', fontWeight: 'bold', color: '#333' }}>{item.jobNumber}</div>
+              </div>
+
+              <div style={{ marginBottom: '0.75rem' }}>
+                <div style={{ fontSize: '12px', color: '#666', marginBottom: '2px' }}>Customer Name</div>
+                <div style={{ fontSize: '15px', color: '#333' }}>{item.customerName}</div>
+              </div>
+
+              <div style={{ marginBottom: '0.75rem' }}>
+                <div style={{ fontSize: '12px', color: '#666', marginBottom: '2px' }}>Brand</div>
+                <div style={{ fontSize: '15px', color: '#333' }}>{item.brand}</div>
+              </div>
+
+              <div style={{ marginBottom: '1rem' }}>
+                <div style={{ fontSize: '12px', color: '#666', marginBottom: '2px' }}>Phone Number</div>
+                <div style={{ fontSize: '15px', color: '#333' }}>{item.phoneNumber}</div>
+              </div>
+
+              <button
+                onClick={() => deleteItem(item._id)}
+                style={{
+                  backgroundColor: "#ff4d4d",
+                  color: "white",
+                  border: "none",
+                  padding: "10px 16px",
+                  cursor: "pointer",
+                  borderRadius: "6px",
+                  fontSize: '14px',
+                  fontWeight: '500',
+                  width: '100%'
+                }}
+              >
+                Delete
+              </button>
+            </div>
+          ))}
+        </div>
       ) : (
+        // Desktop Table Layout
         <div style={{ overflowX: 'auto', boxShadow: '0 0 10px rgba(0,0,0,0.1)', borderRadius: '8px' }}>
           <table style={{ width: '100%', borderCollapse: 'collapse', minWidth: '600px', backgroundColor: '#fff' }}>
             <thead style={{ backgroundColor: '#f5f5f5' }}>
