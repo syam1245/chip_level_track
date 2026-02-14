@@ -14,6 +14,7 @@ const itemSchema = new mongoose.Schema(
       default: "Received",
       enum: ["Received", "In Progress", "Waiting for Parts", "Ready", "Delivered"],
     },
+    repairNotes: { type: String }, // Optional technical notes
     isDeleted: { type: Boolean, default: false },
   },
   { timestamps: true }
