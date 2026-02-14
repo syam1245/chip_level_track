@@ -1,7 +1,7 @@
 
 
 const API_BASE_URL =
-  process.env.NODE_ENV === "production"
+  import.meta.env.MODE === "production"
     ? "" // same origin on Render
     : "http://localhost:5000"; // local dev
 

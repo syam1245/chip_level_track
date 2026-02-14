@@ -15,8 +15,8 @@ import { Brightness4, Brightness7 } from "@mui/icons-material";
 import { lightTheme, darkTheme } from "./theme";
 
 // Lazy load components for better performance
-const Input = lazy(() => import("./components/input.js"));
-const ItemsList = lazy(() => import("./components/ItemsList.js"));
+const Input = lazy(() => import("./components/input.jsx"));
+const ItemsList = lazy(() => import("./components/ItemsList.jsx"));
 
 // Loading Component
 const LoadingFallback = () => (
