@@ -7,7 +7,9 @@ import dotenv from "dotenv";
 import cors from "cors";
 import path from "path";
 import { fileURLToPath } from "url";
-
+import helmet from "helmet";
+import compression from "compression";
+import rateLimit from "express-rate-limit";
 import connectDB from "./config/db.js";
 import itemsRouter from "./routes/items.js";
 
@@ -22,9 +24,45 @@ const __dirname = path.dirname(__filename);
 
 /* =======================
    Middleware
-======================= */
+   ======================= */
+// Security Headers
+app.use(helmet({
+  contentSecurityPolicy: false,
+}));
+
+// Compression
+app.use(compression());
+
 app.use(cors());
-app.use(express.json());
+app.use(express.json({ limit: '10kb' }));
+
+// Rate Limiting
+const limiter = rateLimit({
+  windowMs: 15 * 60 * 1000,
+  max: 200,
+  standardHeaders: true,
+  legacyHeaders: false,
+});
+app.use(limiter);
+
+// Data Sanitization (Custom Middleware for Express 5 Compatibility)
+app.use((req, res, next) => {
+  const sanitize = (obj) => {
+    if (!obj || typeof obj !== 'object') return;
+    for (const key in obj) {
+      if (key.startsWith('$') || key.includes('.')) {
+        delete obj[key];
+      } else {
+        sanitize(obj[key]);
+      }
+    }
+  };
+
+  if (req.body) sanitize(req.body);
+  if (req.query) sanitize(req.query);
+  if (req.params) sanitize(req.params);
+  next();
+});
 
 /* =======================
    API Routes

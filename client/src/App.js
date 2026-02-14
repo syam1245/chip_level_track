@@ -1,15 +1,38 @@
+import React, { Suspense, lazy } from "react";
 import "./App.css";
-import Input from "./components/input.js";
 import { BrowserRouter, Routes, Route } from "react-router-dom";
-import ItemsList from "./components/ItemsList.js";
+import { CircularProgress, Box, Typography } from "@mui/material";
+
+// Lazy load components for better performance
+const Input = lazy(() => import("./components/input.js"));
+const ItemsList = lazy(() => import("./components/ItemsList.js"));
+
+// Loading Component
+const LoadingFallback = () => (
+  <Box
+    sx={{
+      display: "flex",
+      flexDirection: "column",
+      justifyContent: "center",
+      alignItems: "center",
+      height: "100vh",
+      background: "var(--bg-gradient)"
+    }}
+  >
+    <CircularProgress size={60} thickness={4} sx={{ color: "var(--color-primary)" }} />
+    <Typography variant="h6" sx={{ mt: 2, color: "text.secondary" }}>Loading Application...</Typography>
+  </Box>
+);
 
 function App() {
   return (
     <BrowserRouter>
-      <Routes>
-        <Route path="/" element={<Input />} />
-        <Route path="/items" element={<ItemsList />} />
-      </Routes>
+      <Suspense fallback={<LoadingFallback />}>
+        <Routes>
+          <Route path="/" element={<Input />} />
+          <Route path="/items" element={<ItemsList />} />
+        </Routes>
+      </Suspense>
     </BrowserRouter>
   );
 }

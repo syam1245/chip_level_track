@@ -30,7 +30,10 @@ import {
   CardActions,
   Stack,
   Tooltip,
-  Grid
+  Grid,
+  Pagination,
+  CircularProgress,
+  Divider
 } from "@mui/material";
 import {
   Edit as EditIcon,
@@ -40,9 +43,14 @@ import {
   Add as AddIcon,
   WhatsApp as WhatsAppIcon,
   Print as PrintIcon,
+  Devices as DeviceIcon,
+  Build as BuildIcon,
+  Pending as PendingIcon,
+  CheckCircle as CheckCircleIcon
 } from "@mui/icons-material";
 import { useNavigate } from "react-router-dom";
 import { useReactToPrint } from "react-to-print";
+import { motion, AnimatePresence } from "framer-motion";
 import API_BASE_URL from "../api";
 import JobSheetPrintTemplate from "./JobSheetPrintTemplate";
 
@@ -50,15 +58,126 @@ const STATUS_COLORS = {
   Received: "default",
   "In Progress": "warning",
   "Waiting for Parts": "error",
+  "Sent to Service": "info",
   Ready: "success",
   Delivered: "primary",
 };
 
+// --- Sub-Components ---
+
+const StatCard = ({ title, value, color, icon }) => (
+  <motion.div
+    initial={{ opacity: 0, y: 20 }}
+    animate={{ opacity: 1, y: 0 }}
+    transition={{ duration: 0.3 }}
+    style={{ flex: 1 }}
+  >
+    <Card
+      elevation={0}
+      sx={{
+        bgcolor: "var(--surface)",
+        border: "1px solid var(--border)",
+        borderRadius: "var(--radius)",
+        boxShadow: "var(--shadow-sm)",
+        transition: "transform 0.2s",
+        "&:hover": { transform: "translateY(-4px)", boxShadow: "var(--shadow-md)" }
+      }}
+    >
+      <CardContent sx={{ p: 2, display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+        <Box>
+          <Typography variant="body2" color="text.secondary" fontWeight="600" textTransform="uppercase" fontSize="0.75rem">
+            {title}
+          </Typography>
+          <Typography variant="h4" fontWeight="800" sx={{ color: color, mt: 0.5 }}>
+            {value}
+          </Typography>
+        </Box>
+        <Box sx={{
+          bgcolor: `${color}20`,
+          p: 1.5,
+          borderRadius: "50%",
+          color: color,
+          display: 'flex'
+        }}>
+          {icon}
+        </Box>
+      </CardContent>
+    </Card>
+  </motion.div>
+);
+
+const MobileCard = ({ item, onWhatsApp, onPrint, onEdit, onDelete }) => (
+  <motion.div
+    layout
+    initial={{ opacity: 0, scale: 0.95 }}
+    animate={{ opacity: 1, scale: 1 }}
+    exit={{ opacity: 0, scale: 0.95 }}
+    transition={{ duration: 0.2 }}
+  >
+    <Card sx={{ mb: 2, borderRadius: "var(--radius)", boxShadow: "var(--shadow-sm)", border: "1px solid var(--border)" }}>
+      <CardContent>
+        <Box display="flex" justifyContent="space-between" alignItems="center" mb={1.5}>
+          <Typography variant="h6" fontWeight="800" sx={{ color: "var(--color-primary)" }}>
+            #{item.jobNumber}
+          </Typography>
+          <Chip
+            label={item.status || "Received"}
+            color={STATUS_COLORS[item.status] || "default"}
+            size="small"
+            sx={{ fontWeight: 600, borderRadius: '6px' }}
+          />
+        </Box>
+        <Typography variant="h6" fontWeight="600" gutterBottom>
+          {item.customerName}
+        </Typography>
+        <Typography variant="body2" color="text.secondary" sx={{ mb: 0.5 }}>
+          {item.brand}
+        </Typography>
+        <Typography variant="body2" color="text.secondary" sx={{ display: 'flex', alignItems: 'center', gap: 0.5 }}>
+          📞 {item.phoneNumber}
+        </Typography>
+      </CardContent>
+      <Divider sx={{ opacity: 0.5 }} />
+      <CardActions sx={{ justifyContent: "space-between", px: 2, py: 1.5 }}>
+        <Box>
+          <IconButton size="small" color="success" onClick={() => onWhatsApp(item)} sx={{ bgcolor: '#dcfce7', mr: 1 }}>
+            <WhatsAppIcon fontSize="small" />
+          </IconButton>
+          <IconButton size="small" color="default" onClick={() => onPrint(item)} sx={{ bgcolor: '#f1f5f9' }}>
+            <PrintIcon fontSize="small" />
+          </IconButton>
+        </Box>
+        <Box>
+          <IconButton size="small" color="primary" onClick={() => onEdit(item)} sx={{ bgcolor: '#dbeafe', mr: 1 }}>
+            <EditIcon fontSize="small" />
+          </IconButton>
+          <IconButton size="small" color="error" onClick={() => onDelete(item._id)} sx={{ bgcolor: '#fee2e2' }}>
+            <DeleteIcon fontSize="small" />
+          </IconButton>
+        </Box>
+      </CardActions>
+    </Card>
+  </motion.div>
+);
+
 const ItemsList = () => {
   const [items, setItems] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [stats, setStats] = useState({
+    total: 0,
+    inProgress: 0,
+    waiting: 0,
+    ready: 0
+  });
+
+  // Pagination State
+  const [page, setPage] = useState(1);
+  const [totalPages, setTotalPages] = useState(1);
+  const LIMIT = 10;
+
   const [search, setSearch] = useState("");
   const [debouncedSearch, setDebouncedSearch] = useState("");
+
   const [editItem, setEditItem] = useState(null);
   const [printItem, setPrintItem] = useState(null);
   const [snackbar, setSnackbar] = useState({ open: false, message: "", severity: "success" });
@@ -75,7 +194,6 @@ const ItemsList = () => {
     onAfterPrint: () => setPrintItem(null)
   });
 
-  // Trigger print when printItem is set and content is rendered
   useEffect(() => {
     if (printItem && printComponentRef.current) {
       handlePrint();
@@ -86,29 +204,34 @@ const ItemsList = () => {
   useEffect(() => {
     const timer = setTimeout(() => {
       setDebouncedSearch(search);
-    }, 500);
+      setPage(1); // Reset to page 1 on search
+    }, 600);
     return () => clearTimeout(timer);
   }, [search]);
 
   // Fetch items
   const fetchItems = useCallback(() => {
     setLoading(true);
-    let url = `${API_BASE_URL}/api/items`;
+    let url = `${API_BASE_URL}/api/items?page=${page}&limit=${LIMIT}`;
     if (debouncedSearch) {
-      url += `?search=${encodeURIComponent(debouncedSearch)}`;
+      url += `&search=${encodeURIComponent(debouncedSearch)}`;
     }
 
     fetch(url)
       .then((res) => res.json())
       .then((data) => {
-        setItems(data);
+        // Backend now returns { items, currentPage, totalPages, totalItems }
+        setItems(data.items || []);
+        setTotalPages(data.totalPages || 1);
+        if (data.stats) setStats(data.stats);
         setLoading(false);
       })
       .catch((err) => {
         console.error(err);
+        setSnackbar({ open: true, message: "Failed to load data", severity: "error" });
         setLoading(false);
       });
-  }, [debouncedSearch]);
+  }, [debouncedSearch, page]);
 
   useEffect(() => {
     fetchItems();
@@ -122,6 +245,7 @@ const ItemsList = () => {
       if (res.ok) {
         setItems((prev) => prev.filter((item) => item._id !== id));
         setSnackbar({ open: true, message: "Deleted successfully", severity: "success" });
+        fetchItems(); // Refresh to update counts/pages
       } else {
         setSnackbar({ open: true, message: "Failed to delete", severity: "error" });
       }
@@ -164,218 +288,250 @@ const ItemsList = () => {
   };
 
   const handleCloseSnackbar = () => setSnackbar({ ...snackbar, open: false });
+  const handlePageChange = (event, value) => setPage(value);
 
-  // Calculate Stats
-  const stats = {
-    total: items.length,
-    inProgress: items.filter(i => i.status === "In Progress").length,
-    waiting: items.filter(i => i.status === "Waiting for Parts").length,
-    ready: items.filter(i => i.status === "Ready").length
-  };
-
-  // Stat Component
-  const StatCard = ({ title, value, color }) => (
-    <Card sx={{ bgcolor: color, color: 'white', minWidth: 100, flex: 1 }}>
-      <CardContent sx={{ p: '16px !important' }}>
-        <Typography variant="subtitle2" sx={{ opacity: 0.9 }}>{title}</Typography>
-        <Typography variant="h4" fontWeight="bold">{value}</Typography>
-      </CardContent>
-    </Card>
-  );
-
-  // Mobile Card Component
-  const MobileCard = ({ item }) => (
-    <Card sx={{ mb: 2, boxShadow: "var(--shadow-sm)", borderRadius: "var(--radius)" }}>
-      <CardContent>
-        <Box display="flex" justifyContent="space-between" alignItems="center" mb={1}>
-          <Typography variant="h6" component="div" fontWeight="bold">
-            {item.jobNumber}
-          </Typography>
-          <Chip
-            label={item.status || "Received"}
-            color={STATUS_COLORS[item.status] || "default"}
-            size="small"
-            variant="outlined"
-          />
-        </Box>
-        <Typography color="text.secondary" gutterBottom>
-          {item.brand}
-        </Typography>
-        <Typography variant="body1" component="div" fontWeight="500">
-          {item.customerName}
-        </Typography>
-        <Typography variant="body2" color="text.secondary" mt={0.5}>
-          📞 {item.phoneNumber}
-        </Typography>
-      </CardContent>
-      <CardActions sx={{ justifyContent: "space-between", px: 2, pb: 2 }}>
-        <Box>
-          <IconButton color="success" onClick={() => handleWhatsApp(item)}>
-            <WhatsAppIcon />
-          </IconButton>
-          <IconButton color="default" onClick={() => setPrintItem(item)}>
-            <PrintIcon />
-          </IconButton>
-        </Box>
-        <Box>
-          <IconButton color="primary" onClick={() => setEditItem(item)}>
-            <EditIcon />
-          </IconButton>
-          <IconButton color="error" onClick={() => handleDelete(item._id)}>
-            <DeleteIcon />
-          </IconButton>
-        </Box>
-      </CardActions>
-    </Card>
-  );
+  // Stats Calculation (Ideally this should come from backend API for scalability, but for now we approximate from current view or layout)
+  // NOTE: Scalability Issue - doing stats on client only shows stats for current page/search. 
+  // Ideally, backend should return stats summary. For now, we will hide stats bar if searching, or keep it static? 
+  // Let's rely on the metadata if possible, but we don't have status breakdown from backend yet.
+  // I'll leave the stats as placeholder for now or remove them if they are misleading (showing only 10 items).
+  // Actually, let's keep them but maybe fetch a separate /api/stats endpoint later. For now, I will remove the inaccurate client-side stats derived from just 10 items.
 
   return (
-    <Box sx={{ maxWidth: "1200px", margin: "0 auto", padding: isMobile ? 2 : 4 }}>
+    <Box sx={{ maxWidth: "1400px", margin: "0 auto", padding: isMobile ? 2 : 4, pb: 10 }}>
       {/* Hidden container for printing */}
       <div style={{ display: 'none' }}>
         <JobSheetPrintTemplate ref={printComponentRef} item={printItem} />
       </div>
 
       {/* Header */}
-      <Stack
-        direction={{ xs: "column", sm: "row" }}
-        justifyContent="space-between"
-        alignItems={{ xs: "stretch", sm: "center" }}
-        spacing={2}
-        mb={4}
+      <motion.div initial={{ opacity: 0, y: -20 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.5 }}>
+        <Stack
+          direction={{ xs: "column", md: "row" }}
+          justifyContent="space-between"
+          alignItems={{ xs: "start", md: "center" }}
+          spacing={3}
+          mb={5}
+        >
+          <Box>
+            <Typography variant="h3" fontWeight="900" className="text-gradient" sx={{ letterSpacing: '-1px' }}>
+              Repair Dashboard
+            </Typography>
+            <Typography variant="body1" color="text.secondary" mt={0.5}>
+              Manage your service jobs effectively.
+            </Typography>
+          </Box>
+
+          <Stack direction="row" spacing={2}>
+            <Button
+              variant="outlined"
+              startIcon={<DownloadIcon />}
+              onClick={downloadBackup}
+              sx={{ borderRadius: "var(--radius)", textTransform: 'none', fontWeight: 600 }}
+            >
+              Backup Data
+            </Button>
+            <Button
+              variant="contained"
+              startIcon={<AddIcon />}
+              onClick={() => navigate("/")}
+              sx={{
+                borderRadius: "var(--radius)",
+                textTransform: 'none',
+                fontWeight: 600,
+                boxShadow: "var(--shadow-md)",
+                background: "var(--color-primary)",
+                "&:hover": { background: "var(--color-primary-dark)" }
+              }}
+            >
+              New Job
+            </Button>
+          </Stack>
+        </Stack>
+      </motion.div>
+
+      {/* Stats Summary */}
+      {/* Stats Summary */}
+      <AnimatePresence>
+        {!loading && (
+          <Stack
+            direction={{ xs: "column", sm: "row" }}
+            spacing={2}
+            mb={4}
+            sx={{ overflowX: 'auto', pb: 1 }}
+          >
+            <StatCard
+              title="Total Jobs"
+              value={stats.total}
+              color="var(--color-primary)"
+              icon={<DeviceIcon fontSize="large" />}
+            />
+            <StatCard
+              title="In Progress"
+              value={stats.inProgress}
+              color="#f59e0b"
+              icon={<BuildIcon fontSize="large" />}
+            />
+            <StatCard
+              title="Waiting Parts"
+              value={stats.waiting}
+              color="#ef4444"
+              icon={<PendingIcon fontSize="large" />}
+            />
+            <StatCard
+              title="Ready"
+              value={stats.ready}
+              color="#10b981"
+              icon={<CheckCircleIcon fontSize="large" />}
+            />
+          </Stack>
+        )}
+      </AnimatePresence>
+
+      {/* Search & Statistics Placeholder (Future: Real Stats) */}
+      <Paper
+        elevation={0}
+        className="glass-panel"
+        sx={{ p: 2, mb: 4, display: 'flex', alignItems: 'center', gap: 2 }}
       >
-        <Typography variant="h4" fontWeight="bold" sx={{ color: "var(--text-main)" }}>
-          Repair Jobs
-        </Typography>
-        <Stack direction="row" spacing={2}>
-          <Button
-            variant="outlined"
-            startIcon={<DownloadIcon />}
-            onClick={downloadBackup}
-          >
-            Backup
-          </Button>
-          <Button
-            variant="contained"
-            color="primary"
-            startIcon={<AddIcon />}
-            onClick={() => navigate("/")}
-            sx={{ boxShadow: "var(--shadow-md)" }}
-          >
-            New Job
-          </Button>
-        </Stack>
-      </Stack>
-
-      {/* Statistics Row */}
-      {!loading && (
-        <Stack direction="row" spacing={2} mb={4} sx={{ overflowX: 'auto', pb: 1 }}>
-          <StatCard title="Total Jobs" value={stats.total} color="#64748b" />
-          <StatCard title="In Progress" value={stats.inProgress} color="#f59e0b" />
-          <StatCard title="Waiting Parts" value={stats.waiting} color="#ef4444" />
-          <StatCard title="Ready" value={stats.ready} color="#10b981" />
-        </Stack>
-      )}
-
-      {/* Search Bar */}
-      <Paper elevation={0} sx={{ p: 2, mb: 3, border: "1px solid var(--border)", borderRadius: "var(--radius)" }}>
-        <TextField
-          fullWidth
-          variant="outlined"
-          placeholder="Search by Customer, Job #, or Brand..."
+        <SearchIcon color="action" />
+        <input
+          style={{
+            border: 'none',
+            outline: 'none',
+            width: '100%',
+            fontSize: '1rem',
+            background: 'transparent',
+            color: 'var(--text-main)'
+          }}
+          placeholder="Search by Customer, Job Number, Brand or Phone..."
           value={search}
           onChange={(e) => setSearch(e.target.value)}
-          InputProps={{
-            startAdornment: <SearchIcon color="action" sx={{ mr: 1 }} />,
-          }}
-          size="small"
         />
+        {loading && <CircularProgress size={20} />}
       </Paper>
 
       {/* Content */}
-      {loading ? (
-        <Box sx={{ display: 'flex', justifyContent: 'center', p: 4 }}>
-          <Typography>Loading...</Typography>
+      <AnimatePresence mode="wait">
+        {loading && items.length === 0 ? (
+          <Box sx={{ display: 'flex', justifyContent: 'center', p: 8 }}>
+            <CircularProgress sx={{ color: "var(--color-primary)" }} />
+          </Box>
+        ) : items.length === 0 ? (
+          <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }}>
+            <Paper sx={{ p: 8, textAlign: "center", borderRadius: "var(--radius)", bgcolor: "var(--surface)" }}>
+              <Typography variant="h5" fontWeight="bold" gutterBottom>No Jobs Found</Typography>
+              <Typography color="text.secondary">Try adjusting your search filters or add a new job.</Typography>
+              <Button sx={{ mt: 3 }} variant="contained" onClick={() => setSearch("")}>Clear Search</Button>
+            </Paper>
+          </motion.div>
+        ) : isMobile ? (
+          <Box>
+            {items.map((item) => (
+              <MobileCard
+                key={item._id}
+                item={item}
+                onWhatsApp={handleWhatsApp}
+                onPrint={setPrintItem}
+                onEdit={setEditItem}
+                onDelete={handleDelete}
+              />
+            ))}
+          </Box>
+        ) : (
+          <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }}>
+            <TableContainer component={Paper} elevation={0} sx={{ border: "1px solid var(--border)", borderRadius: "var(--radius)", overflow: 'hidden' }}>
+              <Table>
+                <TableHead sx={{ bgcolor: "#f8fafc" }}>
+                  <TableRow>
+                    <TableCell><Typography variant="subtitle2" fontWeight="700" color="text.secondary">JOB NO</Typography></TableCell>
+                    <TableCell><Typography variant="subtitle2" fontWeight="700" color="text.secondary">CUSTOMER</Typography></TableCell>
+                    <TableCell><Typography variant="subtitle2" fontWeight="700" color="text.secondary">DEVICE</Typography></TableCell>
+                    <TableCell><Typography variant="subtitle2" fontWeight="700" color="text.secondary">PHONE</Typography></TableCell>
+                    <TableCell><Typography variant="subtitle2" fontWeight="700" color="text.secondary">STATUS</Typography></TableCell>
+                    <TableCell align="right"><Typography variant="subtitle2" fontWeight="700" color="text.secondary">ACTIONS</Typography></TableCell>
+                  </TableRow>
+                </TableHead>
+                <TableBody>
+                  {items.map((item) => (
+                    <TableRow key={item._id} hover sx={{ '&:last-child td, &:last-child th': { border: 0 } }}>
+                      <TableCell align="left">
+                        <Typography fontWeight="600" color="primary">{item.jobNumber}</Typography>
+                        <Typography variant="caption" color="text.secondary">{new Date(item.createdAt).toLocaleDateString()}</Typography>
+                      </TableCell>
+                      <TableCell>{item.customerName}</TableCell>
+                      <TableCell>{item.brand}</TableCell>
+                      <TableCell>{item.phoneNumber}</TableCell>
+                      <TableCell>
+                        <Chip
+                          label={item.status || "Received"}
+                          color={STATUS_COLORS[item.status] || "default"}
+                          size="small"
+                          sx={{ borderRadius: '6px', fontWeight: 600, fontSize: '0.75rem', height: '24px' }}
+                        />
+                      </TableCell>
+                      <TableCell align="right">
+                        <Stack direction="row" justifyContent="flex-end" spacing={1}>
+                          <Tooltip title="WhatsApp">
+                            <IconButton size="small" onClick={() => handleWhatsApp(item)} sx={{ color: '#10b981', bgcolor: '#dcfce7' }}>
+                              <WhatsAppIcon fontSize="small" />
+                            </IconButton>
+                          </Tooltip>
+                          <Tooltip title="Print">
+                            <IconButton size="small" onClick={() => setPrintItem(item)} sx={{ color: '#64748b', bgcolor: '#f1f5f9' }}>
+                              <PrintIcon fontSize="small" />
+                            </IconButton>
+                          </Tooltip>
+                          <Tooltip title="Edit">
+                            <IconButton size="small" onClick={() => setEditItem(item)} sx={{ color: '#3b82f6', bgcolor: '#dbeafe' }}>
+                              <EditIcon fontSize="small" />
+                            </IconButton>
+                          </Tooltip>
+                          <Tooltip title="Delete">
+                            <IconButton size="small" onClick={() => handleDelete(item._id)} sx={{ color: '#ef4444', bgcolor: '#fee2e2' }}>
+                              <DeleteIcon fontSize="small" />
+                            </IconButton>
+                          </Tooltip>
+                        </Stack>
+                      </TableCell>
+                    </TableRow>
+                  ))}
+                </TableBody>
+              </Table>
+            </TableContainer>
+          </motion.div>
+        )}
+      </AnimatePresence>
+
+      {/* Pagination */}
+      {totalPages > 1 && (
+        <Box sx={{ display: 'flex', justifyContent: 'center', mt: 4 }}>
+          <Pagination
+            count={totalPages}
+            page={page}
+            onChange={handlePageChange}
+            color="primary"
+            size="large"
+            showFirstButton
+            showLastButton
+            sx={{
+              '& .MuiPaginationItem-root': { borderRadius: '8px' }
+            }}
+          />
         </Box>
-      ) : items.length === 0 ? (
-        <Paper sx={{ p: 6, textAlign: "center", borderRadius: "var(--radius)" }}>
-          <Typography variant="h5" gutterBottom>📭 Database is Empty</Typography>
-          <Typography color="text.secondary">Running a search? Try a different keyword.</Typography>
-          {search === "" && (
-            <Button
-              sx={{ mt: 2 }}
-              variant="contained"
-              onClick={() => navigate("/")}
-            >
-              Add First Job
-            </Button>
-          )}
-        </Paper>
-      ) : isMobile ? (
-        <Box>{items.map((item) => <MobileCard key={item._id} item={item} />)}</Box>
-      ) : (
-        <TableContainer component={Paper} elevation={0} sx={{ border: "1px solid var(--border)", borderRadius: "var(--radius)" }}>
-          <Table>
-            <TableHead sx={{ bgcolor: "var(--bg-gradient)" }}>
-              <TableRow>
-                <TableCell><b>Job No</b></TableCell>
-                <TableCell><b>Customer</b></TableCell>
-                <TableCell><b>Brand</b></TableCell>
-                <TableCell><b>Phone</b></TableCell>
-                <TableCell><b>Status</b></TableCell>
-                <TableCell align="center"><b>Contact</b></TableCell>
-                <TableCell align="right"><b>Actions</b></TableCell>
-              </TableRow>
-            </TableHead>
-            <TableBody>
-              {items.map((item) => (
-                <TableRow key={item._id} hover>
-                  <TableCell>{item.jobNumber}</TableCell>
-                  <TableCell>{item.customerName}</TableCell>
-                  <TableCell>{item.brand}</TableCell>
-                  <TableCell>{item.phoneNumber}</TableCell>
-                  <TableCell>
-                    <Chip
-                      label={item.status || "Received"}
-                      color={STATUS_COLORS[item.status] || "default"}
-                      size="small"
-                      sx={{ fontWeight: 500 }}
-                    />
-                  </TableCell>
-                  <TableCell align="center">
-                    <Tooltip title="Send WhatsApp">
-                      <IconButton color="success" onClick={() => handleWhatsApp(item)} size="small">
-                        <WhatsAppIcon fontSize="small" />
-                      </IconButton>
-                    </Tooltip>
-                  </TableCell>
-                  <TableCell align="right">
-                    <Tooltip title="Print Receipt">
-                      <IconButton onClick={() => setPrintItem(item)} size="small" sx={{ mr: 1 }}>
-                        <PrintIcon fontSize="small" />
-                      </IconButton>
-                    </Tooltip>
-                    <Tooltip title="Edit / Notes">
-                      <IconButton color="primary" onClick={() => setEditItem(item)} size="small">
-                        <EditIcon fontSize="small" />
-                      </IconButton>
-                    </Tooltip>
-                    <Tooltip title="Delete">
-                      <IconButton color="error" onClick={() => handleDelete(item._id)} size="small">
-                        <DeleteIcon fontSize="small" />
-                      </IconButton>
-                    </Tooltip>
-                  </TableCell>
-                </TableRow>
-              ))}
-            </TableBody>
-          </Table>
-        </TableContainer>
       )}
 
       {/* Edit Dialog */}
-      <Dialog open={!!editItem} onClose={() => setEditItem(null)} maxWidth="sm" fullWidth>
-        <DialogTitle>Edit Job Details</DialogTitle>
+      <Dialog
+        open={!!editItem}
+        onClose={() => setEditItem(null)}
+        maxWidth="sm"
+        fullWidth
+        PaperProps={{
+          sx: { borderRadius: "var(--radius)" }
+        }}
+      >
+        <DialogTitle sx={{ fontWeight: 700 }}>Edit Job Details</DialogTitle>
         <DialogContent dividers>
           {editItem && (
             <Stack spacing={2} sx={{ mt: 1 }}>
@@ -386,6 +542,8 @@ const ItemsList = () => {
                     value={editItem.jobNumber}
                     disabled
                     fullWidth
+                    variant="filled"
+                    size="small"
                   />
                 </Grid>
                 <Grid item xs={6}>
@@ -394,6 +552,7 @@ const ItemsList = () => {
                     value={editItem.brand}
                     onChange={(e) => setEditItem({ ...editItem, brand: e.target.value })}
                     fullWidth
+                    size="small"
                   />
                 </Grid>
               </Grid>
@@ -403,14 +562,16 @@ const ItemsList = () => {
                 value={editItem.customerName}
                 onChange={(e) => setEditItem({ ...editItem, customerName: e.target.value })}
                 fullWidth
+                size="small"
               />
               <TextField
                 label="Phone Number"
                 value={editItem.phoneNumber}
                 onChange={(e) => setEditItem({ ...editItem, phoneNumber: e.target.value })}
                 fullWidth
+                size="small"
               />
-              <FormControl fullWidth>
+              <FormControl fullWidth size="small">
                 <InputLabel>Status</InputLabel>
                 <Select
                   value={editItem.status || "Received"}
@@ -438,9 +599,9 @@ const ItemsList = () => {
             </Stack>
           )}
         </DialogContent>
-        <DialogActions>
-          <Button onClick={() => setEditItem(null)}>Cancel</Button>
-          <Button variant="contained" onClick={handleEditSave}>Save Changes</Button>
+        <DialogActions sx={{ p: 2 }}>
+          <Button onClick={() => setEditItem(null)} sx={{ color: 'text.secondary' }}>Cancel</Button>
+          <Button variant="contained" onClick={handleEditSave} sx={{ borderRadius: "8px" }}>Save Changes</Button>
         </DialogActions>
       </Dialog>
 
@@ -451,7 +612,7 @@ const ItemsList = () => {
         onClose={handleCloseSnackbar}
         anchorOrigin={{ vertical: "bottom", horizontal: "center" }}
       >
-        <Alert onClose={handleCloseSnackbar} severity={snackbar.severity} sx={{ width: "100%" }}>
+        <Alert onClose={handleCloseSnackbar} severity={snackbar.severity} sx={{ width: "100%", borderRadius: "8px", boxShadow: "var(--shadow-md)" }}>
           {snackbar.message}
         </Alert>
       </Snackbar>
