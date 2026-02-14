@@ -222,7 +222,7 @@ const ItemsList = () => {
     const timer = setTimeout(() => {
       setDebouncedSearch(search);
       setPage(1); // Reset to page 1 on search
-    }, 600);
+    }, 300);
     return () => clearTimeout(timer);
   }, [search]);
 
@@ -362,53 +362,52 @@ const ItemsList = () => {
 
 
       <AnimatePresence>
-        {!loading && (
-          <Box sx={{ position: 'relative', mb: 4 }}>
-            {/* Subtle Fade Edges for Scroll Indicator */}
-            <Box sx={{
-              position: 'absolute',
-              top: 0,
-              right: 0,
-              bottom: 0,
-              width: 40,
-              background: 'linear-gradient(to left, var(--background-default), transparent)',
-              zIndex: 2,
-              pointerEvents: 'none',
-              display: { md: 'none' }
-            }} />
-            <Box
-              sx={{
-                display: "flex",
-                gap: 2,
-                overflowX: { xs: "auto", md: "visible" },
-                pb: { xs: 1, md: 0 },
-                mx: { xs: -2, md: 0 },
-                px: { xs: 2, md: 0 },
-                scrollSnapType: { xs: "x mandatory", md: "none" },
-                scrollbarWidth: "none",
-                "&::-webkit-scrollbar": { display: "none" },
-              }}
-            >
-              {[
-                { title: "Total Jobs", value: stats.total, color: "var(--color-primary)", icon: <DeviceIcon /> },
-                { title: "In Progress", value: stats.inProgress, color: "#f59e0b", icon: <BuildIcon /> },
-                { title: "Waiting Parts", value: stats.waiting, color: "#ef4444", icon: <PendingIcon /> },
-                { title: "Ready", value: stats.ready, color: "#10b981", icon: <CheckCircleIcon /> }
-              ].map((stat, index) => (
-                <Box
-                  key={index}
-                  sx={{
-                    minWidth: { xs: "160px", sm: "200px", md: "auto" },
-                    flex: { xs: "0 0 auto", md: 1 },
-                    scrollSnapAlign: "start"
-                  }}
-                >
-                  <StatCard {...stat} isMobile={isMobile} />
-                </Box>
-              ))}
-            </Box>
+        {/* Stats Summary - Always visible to prevent layout shift */}
+        <Box sx={{ position: 'relative', mb: 4, opacity: loading ? 0.7 : 1, transition: 'opacity 0.2s' }}>
+          {/* Subtle Fade Edges for Scroll Indicator */}
+          <Box sx={{
+            position: 'absolute',
+            top: 0,
+            right: 0,
+            bottom: 0,
+            width: 40,
+            background: 'linear-gradient(to left, var(--background-default), transparent)',
+            zIndex: 2,
+            pointerEvents: 'none',
+            display: { md: 'none' }
+          }} />
+          <Box
+            sx={{
+              display: "flex",
+              gap: 2,
+              overflowX: { xs: "auto", md: "visible" },
+              pb: { xs: 1, md: 0 },
+              mx: { xs: -2, md: 0 },
+              px: { xs: 2, md: 0 },
+              scrollSnapType: { xs: "x mandatory", md: "none" },
+              scrollbarWidth: "none",
+              "&::-webkit-scrollbar": { display: "none" },
+            }}
+          >
+            {[
+              { title: "Total Jobs", value: stats.total, color: "var(--color-primary)", icon: <DeviceIcon /> },
+              { title: "In Progress", value: stats.inProgress, color: "#f59e0b", icon: <BuildIcon /> },
+              { title: "Waiting Parts", value: stats.waiting, color: "#ef4444", icon: <PendingIcon /> },
+              { title: "Ready", value: stats.ready, color: "#10b981", icon: <CheckCircleIcon /> }
+            ].map((stat, index) => (
+              <Box
+                key={index}
+                sx={{
+                  minWidth: { xs: "160px", sm: "200px", md: "auto" },
+                  flex: { xs: "0 0 auto", md: 1 },
+                  scrollSnapAlign: "start"
+                }}
+              >
+                <StatCard {...stat} isMobile={isMobile} />
+              </Box>
+            ))}
           </Box>
-        )}
+        </Box>
       </AnimatePresence>
 
       {/* Search & Statistics Placeholder (Future: Real Stats) */}
@@ -449,7 +448,7 @@ const ItemsList = () => {
             </Paper>
           </motion.div>
         ) : isMobile ? (
-          <Box>
+          <Box sx={{ opacity: loading ? 0.6 : 1, transition: 'opacity 0.2s' }}>
             {items.map((item) => (
               <MobileCard
                 key={item._id}
@@ -463,7 +462,7 @@ const ItemsList = () => {
           </Box>
         ) : (
           <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }}>
-            <TableContainer component={Paper} elevation={0} sx={{ border: "1px solid var(--border)", borderRadius: "var(--radius)", overflow: 'hidden' }}>
+            <TableContainer component={Paper} elevation={0} sx={{ border: "1px solid var(--border)", borderRadius: "var(--radius)", overflow: 'hidden', opacity: loading ? 0.6 : 1, transition: 'opacity 0.2s' }}>
               <Table>
                 <TableHead sx={{ bgcolor: "#f8fafc" }}>
                   <TableRow>
