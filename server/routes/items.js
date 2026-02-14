@@ -48,11 +48,52 @@ router.post("/", async (req, res) => {
   }
 });
 
+// @route   PUT /api/items/:id
+// @desc    Update an item
+router.put("/:id", async (req, res) => {
+  try {
+    const { customerName, brand, phoneNumber, status } = req.body;
+
+    // Validate phone number if provided
+    if (phoneNumber && !/^\d{10}$/.test(phoneNumber)) {
+      return res.status(400).json({ error: "Phone number must be exactly 10 digits" });
+    }
+
+    const item = await Item.findById(req.params.id);
+    if (!item) {
+      return res.status(404).json({ msg: "Item not found" });
+    }
+
+    item.customerName = customerName || item.customerName;
+    item.brand = brand || item.brand;
+    item.phoneNumber = phoneNumber || item.phoneNumber;
+    item.status = status || item.status;
+
+    const updatedItem = await item.save();
+    res.json(updatedItem);
+  } catch (err) {
+    res.status(500).json({ error: "Server error", details: err.message });
+  }
+});
+
 // @route   GET /api/items
 // @desc    Get all items
 router.get("/", async (req, res) => {
   try {
-    const items = await Item.find({ isDeleted: false }).sort({ createdAt: -1 });
+    const { search } = req.query;
+    let query = { isDeleted: false };
+
+    if (search) {
+      const searchRegex = new RegExp(search, "i"); // Case-insensitive
+      query.$or = [
+        { customerName: searchRegex },
+        { brand: searchRegex },
+        { jobNumber: searchRegex },
+        { phoneNumber: searchRegex }
+      ];
+    }
+
+    const items = await Item.find(query).sort({ createdAt: -1 });
     res.json(items);
   } catch (err) {
     res.status(500).json({ error: "Server error", details: err.message });

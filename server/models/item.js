@@ -9,6 +9,11 @@ const itemSchema = new mongoose.Schema(
     customerName: { type: String, required: true },
     brand: { type: String, required: true },
     phoneNumber: { type: String, required: true },
+    status: {
+      type: String,
+      default: "Received",
+      enum: ["Received", "In Progress", "Waiting for Parts", "Ready", "Delivered"],
+    },
     isDeleted: { type: Boolean, default: false },
   },
   { timestamps: true }

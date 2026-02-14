@@ -1,61 +1,134 @@
-
-
-import React, { useEffect, useState } from 'react';
-
+import React, { useEffect, useState, useCallback } from "react";
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableContainer,
+  TableHead,
+  TableRow,
+  Paper,
+  Button,
+  TextField,
+  Chip,
+  Dialog,
+  DialogTitle,
+  DialogContent,
+  DialogActions,
+  Snackbar,
+  Alert,
+  IconButton,
+  Typography,
+  Box,
+  MenuItem,
+  Select,
+  InputLabel,
+  FormControl,
+  useMediaQuery,
+  useTheme,
+  Card,
+  CardContent,
+  CardActions,
+  Stack,
+  Tooltip,
+} from "@mui/material";
+import {
+  Edit as EditIcon,
+  Delete as DeleteIcon,
+  Search as SearchIcon,
+  Download as DownloadIcon,
+  Add as AddIcon,
+} from "@mui/icons-material";
+import { useNavigate } from "react-router-dom";
 import API_BASE_URL from "../api";
 
-
-
+const STATUS_COLORS = {
+  Received: "default",
+  "In Progress": "warning",
+  "Waiting for Parts": "error",
+  Ready: "success",
+  Delivered: "primary",
+};
 
 const ItemsList = () => {
   const [items, setItems] = useState([]);
   const [loading, setLoading] = useState(true);
-  const [isMobile, setIsMobile] = useState(window.innerWidth < 768);
+  const [search, setSearch] = useState("");
+  const [debouncedSearch, setDebouncedSearch] = useState("");
+  const [editItem, setEditItem] = useState(null);
+  const [snackbar, setSnackbar] = useState({ open: false, message: "", severity: "success" });
 
+  const navigate = useNavigate();
+  const theme = useTheme();
+  const isMobile = useMediaQuery(theme.breakpoints.down("md"));
+
+  // Debounce search
   useEffect(() => {
-    fetchItems();
+    const timer = setTimeout(() => {
+      setDebouncedSearch(search);
+    }, 500);
+    return () => clearTimeout(timer);
+  }, [search]);
 
-    // Track window resize for responsive layout
-    const handleResize = () => {
-      setIsMobile(window.innerWidth < 768);
-    };
-
-    window.addEventListener('resize', handleResize);
-    return () => window.removeEventListener('resize', handleResize);
-  }, []);
-
-  const fetchItems = () => {
+  // Fetch items
+  const fetchItems = useCallback(() => {
     setLoading(true);
-    fetch(`${API_BASE_URL}/api/items`)
-      .then(res => res.json())
-      .then(data => {
+    let url = `${API_BASE_URL}/api/items`;
+    if (debouncedSearch) {
+      url += `?search=${encodeURIComponent(debouncedSearch)}`;
+    }
+
+    fetch(url)
+      .then((res) => res.json())
+      .then((data) => {
         setItems(data);
         setLoading(false);
       })
-      .catch(err => {
+      .catch((err) => {
         console.error(err);
         setLoading(false);
       });
-  };
+  }, [debouncedSearch]);
 
-  const deleteItem = async (id) => {
-    const confirmDelete = window.confirm("Are you sure you want to delete this item?\n\nClick OK to confirm deletion or Cancel to abort.");
-    if (!confirmDelete) return;
+  useEffect(() => {
+    fetchItems();
+  }, [fetchItems]);
+
+  const handleDelete = async (id) => {
+    if (!window.confirm("Are you sure you want to delete this item?")) return;
 
     try {
-      const res = await fetch(`${API_BASE_URL}/api/items/${id}`, {
-        method: "DELETE",
-      });
+      const res = await fetch(`${API_BASE_URL}/api/items/${id}`, { method: "DELETE" });
       if (res.ok) {
-        setItems(items.filter((item) => item._id !== id));
-        alert("✅ Deleted from database successfully!");
+        setItems((prev) => prev.filter((item) => item._id !== id));
+        setSnackbar({ open: true, message: "Deleted successfully", severity: "success" });
       } else {
-        console.error("Failed to delete item");
-        alert("❌ Failed to delete from database. Please try again.");
+        setSnackbar({ open: true, message: "Failed to delete", severity: "error" });
       }
     } catch (err) {
-      console.error(err);
-      alert("❌ Error deleting from database. Please check your connection.");
+      setSnackbar({ open: true, message: "Network error", severity: "error" });
+    }
+  };
+
+  const handleEditSave = async () => {
+    if (!editItem) return;
+
+    try {
+      const res = await fetch(`${API_BASE_URL}/api/items/${editItem._id}`, {
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(editItem),
+      });
+
+      if (res.ok) {
+        setSnackbar({ open: true, message: "Updated successfully", severity: "success" });
+        setEditItem(null);
+        fetchItems(); // Refresh current view
+      } else {
+        const data = await res.json();
+        setSnackbar({ open: true, message: data.error || "Update failed", severity: "error" });
+      }
+    } catch (err) {
+      setSnackbar({ open: true, message: "Network error", severity: "error" });
     }
   };
 
@@ -63,197 +136,225 @@ const ItemsList = () => {
     window.open(`${API_BASE_URL}/api/items/backup`, "_blank");
   };
 
+  const handleCloseSnackbar = () => setSnackbar({ ...snackbar, open: false });
+
+  // Mobile Card Component
+  const MobileCard = ({ item }) => (
+    <Card sx={{ mb: 2, boxShadow: "var(--shadow-sm)", borderRadius: "var(--radius)" }}>
+      <CardContent>
+        <Box display="flex" justifyContent="space-between" alignItems="center" mb={1}>
+          <Typography variant="h6" component="div" fontWeight="bold">
+            {item.jobNumber}
+          </Typography>
+          <Chip
+            label={item.status || "Received"}
+            color={STATUS_COLORS[item.status] || "default"}
+            size="small"
+            variant="outlined"
+          />
+        </Box>
+        <Typography color="text.secondary" gutterBottom>
+          {item.brand}
+        </Typography>
+        <Typography variant="body1" component="div">
+          {item.customerName}
+        </Typography>
+        <Typography variant="body2" color="text.secondary" mt={1}>
+          📞 {item.phoneNumber}
+        </Typography>
+      </CardContent>
+      <CardActions sx={{ justifyContent: "flex-end", px: 2, pb: 2 }}>
+        <IconButton color="primary" onClick={() => setEditItem(item)}>
+          <EditIcon />
+        </IconButton>
+        <IconButton color="error" onClick={() => handleDelete(item._id)}>
+          <DeleteIcon />
+        </IconButton>
+      </CardActions>
+    </Card>
+  );
+
   return (
-    <div style={{ padding: '1rem', maxWidth: '1200px', margin: '0 auto' }}>
-      <div style={{
-        display: 'flex',
-        justifyContent: 'space-between',
-        alignItems: 'center',
-        marginBottom: '1rem',
-        flexWrap: 'wrap',
-        gap: '10px'
-      }}>
-        <h2 style={{ margin: 0 }}>Items</h2>
-        <button
-          onClick={downloadBackup}
-          style={{
-            backgroundColor: "#4CAF50",
-            color: "white",
-            border: "none",
-            padding: "10px 15px",
-            fontSize: "14px",
-            cursor: "pointer",
-            borderRadius: "4px",
-            fontWeight: "bold",
-            display: 'flex',
-            alignItems: 'center',
-            gap: '5px'
-          }}
-        >
-          <span>⬇</span> Download Backup
-        </button>
-      </div>
-
-      {loading ? (
-        <div style={{
-          textAlign: 'center',
-          padding: '3rem',
-          fontSize: '16px',
-          color: '#666'
-        }}>
-          <div style={{
-            border: '4px solid #f3f3f3',
-            borderTop: '4px solid #3498db',
-            borderRadius: '50%',
-            width: '40px',
-            height: '40px',
-            animation: 'spin 1s linear infinite',
-            margin: '0 auto 1rem'
-          }}></div>
-          <style>{`
-            @keyframes spin {
-              0% { transform: rotate(0deg); }
-              100% { transform: rotate(360deg); }
-            }
-          `}</style>
-          Loading items...
-        </div>
-      ) : items.length === 0 ? (
-        // Empty Database State
-        <div style={{
-          textAlign: 'center',
-          padding: '3rem',
-          backgroundColor: '#fff',
-          borderRadius: '8px',
-          boxShadow: '0 2px 8px rgba(0,0,0,0.1)',
-          border: '1px solid #eee'
-        }}>
-          <div style={{
-            fontSize: '48px',
-            marginBottom: '1rem'
-          }}>📭</div>
-          <h3 style={{
-            color: '#333',
-            marginBottom: '0.5rem',
-            fontSize: '20px'
-          }}>Database is Empty</h3>
-          <p style={{
-            color: '#666',
-            fontSize: '14px',
-            marginBottom: '1.5rem'
-          }}>No records found. Start by adding a new entry.</p>
-          <a
-            href="/"
-            style={{
-              display: 'inline-block',
-              backgroundColor: '#3498db',
-              color: 'white',
-              padding: '10px 20px',
-              borderRadius: '6px',
-              textDecoration: 'none',
-              fontWeight: '500',
-              fontSize: '14px'
-            }}
+    <Box sx={{ maxWidth: "1200px", margin: "0 auto", padding: isMobile ? 2 : 4 }}>
+      {/* Header */}
+      <Stack
+        direction={{ xs: "column", sm: "row" }}
+        justifyContent="space-between"
+        alignItems={{ xs: "stretch", sm: "center" }}
+        spacing={2}
+        mb={4}
+      >
+        <Typography variant="h4" fontWeight="bold" sx={{ color: "var(--text-main)" }}>
+          Repair Jobs
+        </Typography>
+        <Stack direction="row" spacing={2}>
+          <Button
+            variant="outlined"
+            startIcon={<DownloadIcon />}
+            onClick={downloadBackup}
           >
-            + Add New Entry
-          </a>
-        </div>
-      ) : isMobile ? (
-        // Mobile Card Layout
-        <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
-          {items.map((item) => (
-            <div
-              key={item._id}
-              style={{
-                backgroundColor: '#fff',
-                borderRadius: '8px',
-                padding: '1rem',
-                boxShadow: '0 2px 8px rgba(0,0,0,0.1)',
-                border: '1px solid #eee'
-              }}
+            Backup
+          </Button>
+          <Button
+            variant="contained"
+            color="primary"
+            startIcon={<AddIcon />}
+            onClick={() => navigate("/")}
+            sx={{ boxShadow: "var(--shadow-md)" }}
+          >
+            New Job
+          </Button>
+        </Stack>
+      </Stack>
+
+      {/* Search Bar */}
+      <Paper elevation={0} sx={{ p: 2, mb: 3, border: "1px solid var(--border)", borderRadius: "var(--radius)" }}>
+        <TextField
+          fullWidth
+          variant="outlined"
+          placeholder="Search by Customer, Job #, or Brand..."
+          value={search}
+          onChange={(e) => setSearch(e.target.value)}
+          InputProps={{
+            startAdornment: <SearchIcon color="action" sx={{ mr: 1 }} />,
+          }}
+          size="small"
+        />
+      </Paper>
+
+      {/* Content */}
+      {loading ? (
+        <Box sx={{ display: 'flex', justifyContent: 'center', p: 4 }}>
+          <Typography>Loading...</Typography>
+        </Box>
+      ) : items.length === 0 ? (
+        <Paper sx={{ p: 6, textAlign: "center", borderRadius: "var(--radius)" }}>
+          <Typography variant="h5" gutterBottom>📭 Database is Empty</Typography>
+          <Typography color="text.secondary">Running a search? Try a different keyword.</Typography>
+          {search === "" && (
+            <Button
+              sx={{ mt: 2 }}
+              variant="contained"
+              onClick={() => navigate("/")}
             >
-              <div style={{ marginBottom: '0.75rem' }}>
-                <div style={{ fontSize: '12px', color: '#666', marginBottom: '2px' }}>Job Number</div>
-                <div style={{ fontSize: '16px', fontWeight: 'bold', color: '#333' }}>{item.jobNumber}</div>
-              </div>
-
-              <div style={{ marginBottom: '0.75rem' }}>
-                <div style={{ fontSize: '12px', color: '#666', marginBottom: '2px' }}>Customer Name</div>
-                <div style={{ fontSize: '15px', color: '#333' }}>{item.customerName}</div>
-              </div>
-
-              <div style={{ marginBottom: '0.75rem' }}>
-                <div style={{ fontSize: '12px', color: '#666', marginBottom: '2px' }}>Brand</div>
-                <div style={{ fontSize: '15px', color: '#333' }}>{item.brand}</div>
-              </div>
-
-              <div style={{ marginBottom: '1rem' }}>
-                <div style={{ fontSize: '12px', color: '#666', marginBottom: '2px' }}>Phone Number</div>
-                <div style={{ fontSize: '15px', color: '#333' }}>{item.phoneNumber}</div>
-              </div>
-
-              <button
-                onClick={() => deleteItem(item._id)}
-                style={{
-                  backgroundColor: "#ff4d4d",
-                  color: "white",
-                  border: "none",
-                  padding: "10px 16px",
-                  cursor: "pointer",
-                  borderRadius: "6px",
-                  fontSize: '14px',
-                  fontWeight: '500',
-                  width: '100%'
-                }}
-              >
-                Delete
-              </button>
-            </div>
-          ))}
-        </div>
+              Add First Job
+            </Button>
+          )}
+        </Paper>
+      ) : isMobile ? (
+        <Box>{items.map((item) => <MobileCard key={item._id} item={item} />)}</Box>
       ) : (
-        // Desktop Table Layout
-        <div style={{ overflowX: 'auto', boxShadow: '0 0 10px rgba(0,0,0,0.1)', borderRadius: '8px' }}>
-          <table style={{ width: '100%', borderCollapse: 'collapse', minWidth: '600px', backgroundColor: '#fff' }}>
-            <thead style={{ backgroundColor: '#f5f5f5' }}>
-              <tr>
-                <th style={{ borderBottom: '2px solid #ddd', padding: '12px', textAlign: 'left', whiteSpace: 'nowrap' }}>Job Number</th>
-                <th style={{ borderBottom: '2px solid #ddd', padding: '12px', textAlign: 'left', whiteSpace: 'nowrap' }}>Customer Name</th>
-                <th style={{ borderBottom: '2px solid #ddd', padding: '12px', textAlign: 'left', whiteSpace: 'nowrap' }}>Brand</th>
-                <th style={{ borderBottom: '2px solid #ddd', padding: '12px', textAlign: 'left', whiteSpace: 'nowrap' }}>Phone Number</th>
-                <th style={{ borderBottom: '2px solid #ddd', padding: '12px', textAlign: 'center', whiteSpace: 'nowrap' }}>Action</th>
-              </tr>
-            </thead>
-            <tbody>
+        <TableContainer component={Paper} elevation={0} sx={{ border: "1px solid var(--border)", borderRadius: "var(--radius)" }}>
+          <Table>
+            <TableHead sx={{ bgcolor: "var(--bg-gradient)" }}>
+              <TableRow>
+                <TableCell><b>Job Number</b></TableCell>
+                <TableCell><b>Customer</b></TableCell>
+                <TableCell><b>Brand</b></TableCell>
+                <TableCell><b>Phone</b></TableCell>
+                <TableCell><b>Status</b></TableCell>
+                <TableCell align="right"><b>Actions</b></TableCell>
+              </TableRow>
+            </TableHead>
+            <TableBody>
               {items.map((item) => (
-                <tr key={item._id} style={{ '&:hover': { backgroundColor: '#f9f9f9' } }}>
-                  <td style={{ borderBottom: '1px solid #eee', padding: '12px' }}>{item.jobNumber}</td>
-                  <td style={{ borderBottom: '1px solid #eee', padding: '12px' }}>{item.customerName}</td>
-                  <td style={{ borderBottom: '1px solid #eee', padding: '12px' }}>{item.brand}</td>
-                  <td style={{ borderBottom: '1px solid #eee', padding: '12px' }}>{item.phoneNumber}</td>
-                  <td style={{ borderBottom: '1px solid #eee', padding: '12px', textAlign: 'center' }}>
-                    <button
-                      onClick={() => deleteItem(item._id)}
-                      style={{
-                        backgroundColor: "#ff4d4d",
-                        color: "white",
-                        border: "none",
-                        padding: "6px 12px",
-                        cursor: "pointer",
-                        borderRadius: "4px",
-                        fontSize: '13px'
-                      }}
-                    >
-                      Delete
-                    </button>
-                  </td>
-                </tr>
+                <TableRow key={item._id} hover>
+                  <TableCell>{item.jobNumber}</TableCell>
+                  <TableCell>{item.customerName}</TableCell>
+                  <TableCell>{item.brand}</TableCell>
+                  <TableCell>{item.phoneNumber}</TableCell>
+                  <TableCell>
+                    <Chip
+                      label={item.status || "Received"}
+                      color={STATUS_COLORS[item.status] || "default"}
+                      size="small"
+                      sx={{ fontWeight: 500 }}
+                    />
+                  </TableCell>
+                  <TableCell align="right">
+                    <Tooltip title="Edit">
+                      <IconButton color="primary" onClick={() => setEditItem(item)} size="small">
+                        <EditIcon />
+                      </IconButton>
+                    </Tooltip>
+                    <Tooltip title="Delete">
+                      <IconButton color="error" onClick={() => handleDelete(item._id)} size="small">
+                        <DeleteIcon />
+                      </IconButton>
+                    </Tooltip>
+                  </TableCell>
+                </TableRow>
               ))}
-            </tbody>
-          </table>
-        </div>
+            </TableBody>
+          </Table>
+        </TableContainer>
       )}
-    </div>
+
+      {/* Edit Dialog */}
+      <Dialog open={!!editItem} onClose={() => setEditItem(null)} maxWidth="sm" fullWidth>
+        <DialogTitle>Edit Job Details</DialogTitle>
+        <DialogContent dividers>
+          {editItem && (
+            <Stack spacing={2} sx={{ mt: 1 }}>
+              <TextField
+                label="Job Number"
+                value={editItem.jobNumber}
+                disabled // Job Number usually shouldn't change
+                fullWidth
+              />
+              <TextField
+                label="Customer Name"
+                value={editItem.customerName}
+                onChange={(e) => setEditItem({ ...editItem, customerName: e.target.value })}
+                fullWidth
+              />
+              <TextField
+                label="Brand"
+                value={editItem.brand}
+                onChange={(e) => setEditItem({ ...editItem, brand: e.target.value })}
+                fullWidth
+              />
+              <TextField
+                label="Phone Number"
+                value={editItem.phoneNumber}
+                onChange={(e) => setEditItem({ ...editItem, phoneNumber: e.target.value })}
+                fullWidth
+              />
+              <FormControl fullWidth>
+                <InputLabel>Status</InputLabel>
+                <Select
+                  value={editItem.status || "Received"}
+                  label="Status"
+                  onChange={(e) => setEditItem({ ...editItem, status: e.target.value })}
+                >
+                  {Object.keys(STATUS_COLORS).map((status) => (
+                    <MenuItem key={status} value={status}>
+                      {status}
+                    </MenuItem>
+                  ))}
+                </Select>
+              </FormControl>
+            </Stack>
+          )}
+        </DialogContent>
+        <DialogActions>
+          <Button onClick={() => setEditItem(null)}>Cancel</Button>
+          <Button variant="contained" onClick={handleEditSave}>Save Changes</Button>
+        </DialogActions>
+      </Dialog>
+
+      {/* Snackbar Notifications */}
+      <Snackbar
+        open={snackbar.open}
+        autoHideDuration={4000}
+        onClose={handleCloseSnackbar}
+        anchorOrigin={{ vertical: "bottom", horizontal: "center" }}
+      >
+        <Alert onClose={handleCloseSnackbar} severity={snackbar.severity} sx={{ width: "100%" }}>
+          {snackbar.message}
+        </Alert>
+      </Snackbar>
+    </Box>
   );
 };
 

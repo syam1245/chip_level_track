@@ -1,25 +1,20 @@
-// client/src/components/Input.js
 import React, { useState } from "react";
-import TextField from "@mui/material/TextField";
-import Autocomplete from "@mui/material/Autocomplete";
-import Button from "@mui/material/Button";
-import Typography from "@mui/material/Typography";
+import {
+  TextField,
+  Autocomplete,
+  Button,
+  Typography,
+  Paper,
+  Snackbar,
+  Alert,
+  Stack,
+  Container
+} from "@mui/material";
 import { useNavigate } from "react-router-dom";
 import API_BASE_URL from "../api";
 
 const BRAND_OPTIONS = [
-  "HP",
-  "Lenovo",
-  "Dell",
-  "Apple",
-  "Samsung",
-  "Acer",
-  "Asus",
-  "Toshiba",
-  "Sony",
-  "MSI",
-  "Infinix",
-  "Life",
+  "HP", "Lenovo", "Dell", "Apple", "Samsung", "Acer", "Asus", "Toshiba", "Sony", "MSI", "Infinix", "Life"
 ];
 
 const Input = () => {
@@ -30,37 +25,28 @@ const Input = () => {
     brand: "",
     phoneNumber: "",
   });
-  const [error, setError] = useState(null);
+  const [snackbar, setSnackbar] = useState({ open: false, message: "", severity: "success" });
 
-  // handle field updates
   const handleChange = (e) => {
     const { name, value } = e.target;
-    // Allow only numbers for phone number
     if (name === "phoneNumber" && !/^\d*$/.test(value)) return;
-
     setForm((prev) => ({ ...prev, [name]: value }));
-    if (error) setError(null);
   };
 
-  // handle brand change (Autocomplete)
   const handleBrandChange = (event, newValue) => {
     setForm((prev) => ({ ...prev, brand: newValue }));
-    if (error) setError(null);
   };
 
-  // handle submit
   const handleSubmit = async (e) => {
     e.preventDefault();
-    setError(null);
 
-    // Frontend Validation
     if (!form.jobNumber || !form.customerName || !form.brand || !form.phoneNumber) {
-      setError("All fields are required.");
+      setSnackbar({ open: true, message: "All fields are required.", severity: "error" });
       return;
     }
 
     if (form.phoneNumber.length !== 10) {
-      setError("Phone number must be exactly 10 digits.");
+      setSnackbar({ open: true, message: "Phone number must be exactly 10 digits.", severity: "error" });
       return;
     }
 
@@ -74,99 +60,110 @@ const Input = () => {
       const data = await res.json();
 
       if (res.ok) {
-        console.log("✅ Saved:", data);
-        alert("✅ Writing to database successful!");
+        setSnackbar({ open: true, message: "✅ Job created successfully!", severity: "success" });
         setForm({ jobNumber: "", customerName: "", brand: "", phoneNumber: "" });
-        navigate("/");
       } else {
-        console.error("❌ Error saving:", data);
-        alert("❌ Writing to database failed. Please try again.");
-        setError(data.error || "Failed to save data.");
+        setSnackbar({ open: true, message: data.error || "Failed to save data.", severity: "error" });
       }
     } catch (err) {
-      console.error("⚠️ Network error:", err);
-      setError("Error connecting to server.");
+      setSnackbar({ open: true, message: "Error connecting to server.", severity: "error" });
     }
   };
 
+  const handleCloseSnackbar = () => setSnackbar({ ...snackbar, open: false });
+
   return (
-    <form
-      onSubmit={handleSubmit}
-      style={{
-        display: "flex",
-        flexDirection: "column",
-        gap: "1rem",
-        width: "100%",       // Changed from 300px
-        maxWidth: "400px",   // Slightly wider for better UX
-        margin: "2rem auto",
-        padding: "0 1rem",   // Add padding for mobile edges
-        boxSizing: 'border-box'
-      }}
-    >
-      <h2 style={{ textAlign: "center", marginBottom: "0.5rem" }}>New Entry</h2>
-
-      <TextField
-        name="jobNumber"
-        label="Job Number"
-        value={form.jobNumber}
-        onChange={handleChange}
-        required
-        error={!!error}
-        fullWidth
-      />
-      <TextField
-        name="customerName"
-        label="Customer Name"
-        value={form.customerName}
-        onChange={handleChange}
-        required
-        fullWidth
-      />
-      <Autocomplete
-        freeSolo
-        options={BRAND_OPTIONS}
-        value={form.brand}
-        onChange={handleBrandChange}
-        onInputChange={(event, newInputValue) => {
-          setForm((prev) => ({ ...prev, brand: newInputValue }));
-        }}
-        renderInput={(params) => (
-          <TextField
-            {...params}
-            label="Brand"
-            name="brand"
-            required
-            onChange={handleChange}
-            fullWidth
-          />
-        )}
-      />
-
-      <TextField
-        name="phoneNumber"
-        label="Phone Number"
-        value={form.phoneNumber}
-        onChange={handleChange}
-        required
-        inputProps={{ maxLength: 10 }}
-        fullWidth
-      />
-
-      {error && (
-        <Typography color="error" variant="body2" align="center">
-          {error}
+    <Container maxWidth="sm" sx={{ mt: 8, mb: 4 }}>
+      <Paper elevation={0} sx={{ p: 4, border: "1px solid var(--border)", borderRadius: "var(--radius)" }}>
+        <Typography variant="h5" align="center" gutterBottom fontWeight="bold">
+          New Repair Entry
         </Typography>
-      )}
+        <Typography variant="body2" align="center" color="text.secondary" mb={4}>
+          Enter the device details below.
+        </Typography>
 
-      <div style={{ display: "flex", gap: "1rem", justifyContent: "center", marginTop: "1rem" }}>
-        <Button type="submit" variant="contained" color="primary" style={{ flex: 1, padding: "10px" }}>
-          Save
-        </Button>
-        <Button variant="outlined" onClick={() => navigate("/items")} style={{ flex: 1, padding: "10px" }}>
-          VIEW
-        </Button>
-      </div>
-    </form>
+        <form onSubmit={handleSubmit}>
+          <Stack spacing={3}>
+            <TextField
+              name="jobNumber"
+              label="Job Number"
+              value={form.jobNumber}
+              onChange={handleChange}
+              required
+              fullWidth
+            />
+            <TextField
+              name="customerName"
+              label="Customer Name"
+              value={form.customerName}
+              onChange={handleChange}
+              required
+              fullWidth
+            />
+            <Autocomplete
+              freeSolo
+              options={BRAND_OPTIONS}
+              value={form.brand}
+              onChange={handleBrandChange}
+              onInputChange={(event, newInputValue) => {
+                setForm((prev) => ({ ...prev, brand: newInputValue }));
+              }}
+              renderInput={(params) => (
+                <TextField
+                  {...params}
+                  label="Brand"
+                  name="brand"
+                  required
+                  onChange={handleChange}
+                  fullWidth
+                />
+              )}
+            />
+            <TextField
+              name="phoneNumber"
+              label="Phone Number"
+              value={form.phoneNumber}
+              onChange={handleChange}
+              required
+              inputProps={{ maxLength: 10 }}
+              helperText={form.phoneNumber.length > 0 && form.phoneNumber.length < 10 ? "Must be 10 digits" : ""}
+              fullWidth
+            />
+
+            <Stack direction="row" spacing={2} pt={2}>
+              <Button
+                variant="outlined"
+                fullWidth
+                onClick={() => navigate("/items")}
+                size="large"
+              >
+                View All
+              </Button>
+              <Button
+                type="submit"
+                variant="contained"
+                fullWidth
+                size="large"
+                sx={{ boxShadow: "var(--shadow-md)" }}
+              >
+                Save Entry
+              </Button>
+            </Stack>
+          </Stack>
+        </form>
+      </Paper>
+
+      <Snackbar
+        open={snackbar.open}
+        autoHideDuration={4000}
+        onClose={handleCloseSnackbar}
+        anchorOrigin={{ vertical: "bottom", horizontal: "center" }}
+      >
+        <Alert onClose={handleCloseSnackbar} severity={snackbar.severity} sx={{ width: "100%" }}>
+          {snackbar.message}
+        </Alert>
+      </Snackbar>
+    </Container>
   );
 };
 
