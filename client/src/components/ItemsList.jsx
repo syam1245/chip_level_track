@@ -1,3 +1,4 @@
+// This usage is effectively a "reset" for this file to fix the broken state.
 import React, { useEffect, useState, useCallback, useRef } from "react";
 import {
   Table,
@@ -65,12 +66,12 @@ const STATUS_COLORS = {
 
 // --- Sub-Components ---
 
-const StatCard = ({ title, value, color, icon }) => (
+const StatCard = ({ title, value, color, icon, isMobile }) => (
   <motion.div
     initial={{ opacity: 0, y: 20 }}
     animate={{ opacity: 1, y: 0 }}
     transition={{ duration: 0.3 }}
-    style={{ flex: 1 }}
+    style={{ height: '100%' }}
   >
     <Card
       elevation={0}
@@ -79,25 +80,41 @@ const StatCard = ({ title, value, color, icon }) => (
         border: "1px solid var(--border)",
         borderRadius: "var(--radius)",
         boxShadow: "var(--shadow-sm)",
+        height: '100%',
         transition: "transform 0.2s",
         "&:hover": { transform: "translateY(-4px)", boxShadow: "var(--shadow-md)" }
       }}
     >
-      <CardContent sx={{ p: 2, display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+      <CardContent sx={{
+        p: { xs: 1, md: 2 },
+        display: 'flex',
+        alignItems: 'center',
+        justifyContent: 'space-between',
+        "&:last-child": { pb: { xs: 1, md: 2 } }
+      }}>
         <Box>
-          <Typography variant="body2" color="text.secondary" fontWeight="600" textTransform="uppercase" fontSize="0.75rem">
+          <Typography variant="caption" color="text.secondary" fontWeight="700" textTransform="uppercase" sx={{ fontSize: { xs: '0.6rem', md: '0.75rem' }, letterSpacing: '0.05em' }}>
             {title}
           </Typography>
-          <Typography variant="h4" fontWeight="800" sx={{ color: color, mt: 0.5 }}>
+          <Typography
+            variant={isMobile ? "h6" : "h5"}
+            fontWeight="800"
+            sx={{
+              color: color,
+              mt: { xs: 0, md: 0.5 },
+              lineHeight: 1.2
+            }}
+          >
             {value}
           </Typography>
         </Box>
         <Box sx={{
-          bgcolor: `${color}20`,
-          p: 1.5,
-          borderRadius: "50%",
+          bgcolor: `${color}15`,
+          p: { xs: 0.75, md: 1.5 },
+          borderRadius: "12px",
           color: color,
-          display: 'flex'
+          display: 'flex',
+          '& svg': { fontSize: { xs: '1.1rem', md: '1.75rem' } }
         }}>
           {icon}
         </Box>
@@ -290,13 +307,6 @@ const ItemsList = () => {
   const handleCloseSnackbar = () => setSnackbar({ ...snackbar, open: false });
   const handlePageChange = (event, value) => setPage(value);
 
-  // Stats Calculation (Ideally this should come from backend API for scalability, but for now we approximate from current view or layout)
-  // NOTE: Scalability Issue - doing stats on client only shows stats for current page/search. 
-  // Ideally, backend should return stats summary. For now, we will hide stats bar if searching, or keep it static? 
-  // Let's rely on the metadata if possible, but we don't have status breakdown from backend yet.
-  // I'll leave the stats as placeholder for now or remove them if they are misleading (showing only 10 items).
-  // Actually, let's keep them but maybe fetch a separate /api/stats endpoint later. For now, I will remove the inaccurate client-side stats derived from just 10 items.
-
   return (
     <Box sx={{ maxWidth: "1400px", margin: "0 auto", padding: isMobile ? 2 : 4, pb: 10 }}>
       {/* Hidden container for printing */}
@@ -350,41 +360,54 @@ const ItemsList = () => {
         </Stack>
       </motion.div>
 
-      {/* Stats Summary */}
-      {/* Stats Summary */}
+
       <AnimatePresence>
         {!loading && (
-          <Stack
-            direction={{ xs: "column", sm: "row" }}
-            spacing={2}
-            mb={4}
-            sx={{ overflowX: 'auto', pb: 1 }}
-          >
-            <StatCard
-              title="Total Jobs"
-              value={stats.total}
-              color="var(--color-primary)"
-              icon={<DeviceIcon fontSize="large" />}
-            />
-            <StatCard
-              title="In Progress"
-              value={stats.inProgress}
-              color="#f59e0b"
-              icon={<BuildIcon fontSize="large" />}
-            />
-            <StatCard
-              title="Waiting Parts"
-              value={stats.waiting}
-              color="#ef4444"
-              icon={<PendingIcon fontSize="large" />}
-            />
-            <StatCard
-              title="Ready"
-              value={stats.ready}
-              color="#10b981"
-              icon={<CheckCircleIcon fontSize="large" />}
-            />
-          </Stack>
+          <Box sx={{ position: 'relative', mb: 4 }}>
+            {/* Subtle Fade Edges for Scroll Indicator */}
+            <Box sx={{
+              position: 'absolute',
+              top: 0,
+              right: 0,
+              bottom: 0,
+              width: 40,
+              background: 'linear-gradient(to left, var(--background-default), transparent)',
+              zIndex: 2,
+              pointerEvents: 'none',
+              display: { md: 'none' }
+            }} />
+            <Box
+              sx={{
+                display: "flex",
+                gap: 2,
+                overflowX: { xs: "auto", md: "visible" },
+                pb: { xs: 1, md: 0 },
+                mx: { xs: -2, md: 0 },
+                px: { xs: 2, md: 0 },
+                scrollSnapType: { xs: "x mandatory", md: "none" },
+                scrollbarWidth: "none",
+                "&::-webkit-scrollbar": { display: "none" },
+              }}
+            >
+              {[
+                { title: "Total Jobs", value: stats.total, color: "var(--color-primary)", icon: <DeviceIcon /> },
+                { title: "In Progress", value: stats.inProgress, color: "#f59e0b", icon: <BuildIcon /> },
+                { title: "Waiting Parts", value: stats.waiting, color: "#ef4444", icon: <PendingIcon /> },
+                { title: "Ready", value: stats.ready, color: "#10b981", icon: <CheckCircleIcon /> }
+              ].map((stat, index) => (
+                <Box
+                  key={index}
+                  sx={{
+                    minWidth: { xs: "160px", sm: "200px", md: "auto" },
+                    flex: { xs: "0 0 auto", md: 1 },
+                    scrollSnapAlign: "start"
+                  }}
+                >
+                  <StatCard {...stat} isMobile={isMobile} />
+                </Box>
+              ))}
+            </Box>
+          </Box>
         )}
       </AnimatePresence>
 
