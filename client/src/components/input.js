@@ -18,13 +18,8 @@ const BRAND_OPTIONS = [
   "Toshiba",
   "Sony",
   "MSI",
-  "Xiaomi",
-  "Realme",
-  "Vivo",
-  "Oppo",
-  "OnePlus",
-  "LG",
-  "Nokia",
+  "Infinix",
+  "Life",
 ];
 
 const Input = () => {
