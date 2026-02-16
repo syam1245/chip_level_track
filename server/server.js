@@ -34,18 +34,18 @@ applySecurity(app);
 app.use("/api/items", itemsRouter);
 
 app.get("/api/health", (req, res) => {
-  res.json({ 
-    status: "OK", 
+  res.json({
+    status: "OK",
     uptime: process.uptime(),
-    timestamp: new Date().toISOString() 
+    timestamp: new Date().toISOString()
   });
 });
 
 /* =========================================================
    Static Assets & SPA Fallback
 ========================================================= */
-// Note: If using Vite, your folder is likely 'dist', not 'build'
-const clientBuildPath = path.join(__dirname, "../client/dist"); 
+// Vite is configured to output to 'build' folder (see vite.config.js)
+const clientBuildPath = path.join(__dirname, "../client/build");
 
 app.use(express.static(clientBuildPath));
 
