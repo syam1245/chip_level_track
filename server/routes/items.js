@@ -65,8 +65,17 @@ router.put("/:id", requirePermission("items:update"), async (req, res) => {
     if (customerName) item.customerName = String(customerName).trim();
     if (brand) item.brand = String(brand).trim();
     if (phoneNumber) item.phoneNumber = String(phoneNumber).trim();
-    if (status) item.status = status;
     if (repairNotes !== undefined) item.repairNotes = String(repairNotes).trim();
+
+    // Track status changes in history for future public service-history link
+    if (status && status !== item.status) {
+      item.status = status;
+      item.statusHistory.push({
+        status,
+        note: repairNotes ? String(repairNotes).trim() : "",
+        changedAt: new Date(),
+      });
+    }
 
     const updatedItem = await item.save();
     return res.json(updatedItem);
@@ -81,6 +90,7 @@ router.get("/", requirePermission("items:read"), async (req, res) => {
     const limit = Number.parseInt(req.query.limit, 10) || 10;
     const skip = (page - 1) * limit;
     const search = req.query.search ? String(req.query.search).trim() : "";
+    const statusFilter = req.query.statusGroup ? String(req.query.statusGroup).trim() : "";
 
     const query = { isDeleted: false };
 
@@ -94,27 +104,40 @@ router.get("/", requirePermission("items:read"), async (req, res) => {
       ];
     }
 
-    const items = await Item.find(query).sort({ createdAt: -1 }).skip(skip).limit(limit);
-    const total = await Item.countDocuments(query);
+    // Filter by status group when a dashboard card is active
+    if (statusFilter === "inProgress") {
+      query.status = { $in: ["Received", "In Progress", "Waiting for Parts", "Sent to Service"] };
+    } else if (statusFilter === "ready") {
+      query.status = { $in: ["Ready", "Delivered"] };
+    } else if (statusFilter === "pending") {
+      query.status = "Pending";
+    }
+    // "all" or empty = no status filter
 
-    const statsAggregation = await Item.aggregate([
-      { $match: { isDeleted: false } },
-      { $group: { _id: "$status", count: { $sum: 1 } } },
+    const [items, total, statsAggregation] = await Promise.all([
+      Item.find(query).sort({ createdAt: -1 }).skip(skip).limit(limit),
+      Item.countDocuments(query),
+      Item.aggregate([
+        { $match: { isDeleted: false } },
+        { $group: { _id: "$status", count: { $sum: 1 } } },
+      ]),
     ]);
 
     const stats = {
-      total: await Item.countDocuments({ isDeleted: false }),
+      total: 0,
       inProgress: 0,
-      waiting: 0,
       ready: 0,
-      delivered: 0,
+      pending: 0,
     };
 
+    const IN_PROGRESS_STATUSES = new Set(["Received", "In Progress", "Waiting for Parts", "Sent to Service"]);
+    const READY_STATUSES = new Set(["Ready", "Delivered"]);
+
     statsAggregation.forEach((entry) => {
-      if (entry._id === "In Progress") stats.inProgress = entry.count;
-      if (entry._id === "Waiting for Parts") stats.waiting = entry.count;
-      if (entry._id === "Ready") stats.ready = entry.count;
-      if (entry._id === "Delivered") stats.delivered = entry.count;
+      stats.total += entry.count;
+      if (IN_PROGRESS_STATUSES.has(entry._id)) stats.inProgress += entry.count;
+      if (READY_STATUSES.has(entry._id)) stats.ready += entry.count;
+      if (entry._id === "Pending") stats.pending += entry.count;
     });
 
     return res.json({

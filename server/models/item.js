@@ -12,10 +12,18 @@ const itemSchema = new mongoose.Schema(
     status: {
       type: String,
       default: "Received",
-      enum: ["Received", "In Progress", "Waiting for Parts", "Sent to Service", "Ready", "Delivered"],
+      enum: ["Received", "In Progress", "Waiting for Parts", "Sent to Service", "Ready", "Delivered", "Pending"],
       index: true
     },
     repairNotes: { type: String },
+    // Future: public service-history timeline per job
+    statusHistory: [
+      {
+        status: { type: String },
+        note: { type: String, default: "" },
+        changedAt: { type: Date, default: Date.now },
+      }
+    ],
     isDeleted: { type: Boolean, default: false, index: true },
   },
   { timestamps: true }

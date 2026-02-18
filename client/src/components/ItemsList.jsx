@@ -49,7 +49,9 @@ import {
   Pending as PendingIcon,
   CheckCircle as CheckCircleIcon,
   Logout as LogoutIcon,
-  Notes as NotesIcon
+  Notes as NotesIcon,
+  HourglassEmpty as HourglassIcon,
+  GridView as AllJobsIcon
 } from "@mui/icons-material";
 import { useNavigate } from "react-router-dom";
 import { useReactToPrint } from "react-to-print";
@@ -65,11 +67,23 @@ const STATUS_COLORS = {
   "Sent to Service": "info",
   Ready: "success",
   Delivered: "primary",
+  Pending: "default",
+};
+
+// Status accent colors for the card top bar
+const STATUS_ACCENT = {
+  Received: '#94a3b8',
+  'In Progress': '#f59e0b',
+  'Waiting for Parts': '#ef4444',
+  'Sent to Service': '#3b82f6',
+  Ready: '#10b981',
+  Delivered: '#6366f1',
+  Pending: '#a855f7',
 };
 
 // --- Sub-Components ---
 
-const StatCard = ({ title, value, color, icon, isMobile }) => (
+const StatCard = ({ title, value, color, icon, isActive, onClick }) => (
   <motion.div
     initial={{ opacity: 0, y: 20 }}
     animate={{ opacity: 1, y: 0 }}
@@ -78,46 +92,49 @@ const StatCard = ({ title, value, color, icon, isMobile }) => (
   >
     <Card
       elevation={0}
+      onClick={onClick}
       sx={{
-        bgcolor: "var(--surface)",
-        border: "1px solid var(--border)",
+        bgcolor: isActive ? `${color}18` : "var(--surface)",
+        border: isActive ? `2px solid ${color}` : "1px solid var(--border)",
         borderRadius: "var(--radius)",
-        boxShadow: "var(--shadow-sm)",
+        boxShadow: isActive ? `0 0 0 3px ${color}22` : "var(--shadow-sm)",
         height: '100%',
-        transition: "transform 0.2s",
-        "&:hover": { transform: "translateY(-4px)", boxShadow: "var(--shadow-md)" }
+        cursor: 'pointer',
+        transition: "all 0.2s ease",
+        "&:hover": { transform: "translateY(-3px)", boxShadow: `0 6px 20px ${color}30`, borderColor: color }
       }}
     >
       <CardContent sx={{
-        p: { xs: 1, md: 2 },
+        p: { xs: 1.5, md: 2 },
         display: 'flex',
         alignItems: 'center',
         justifyContent: 'space-between',
-        "&:last-child": { pb: { xs: 1, md: 2 } }
+        "&:last-child": { pb: { xs: 1.5, md: 2 } }
       }}>
         <Box>
-          <Typography variant="caption" color="text.secondary" fontWeight="700" textTransform="uppercase" sx={{ fontSize: { xs: '0.6rem', md: '0.75rem' }, letterSpacing: '0.05em' }}>
+          <Typography variant="caption" color="text.secondary" fontWeight="700" textTransform="uppercase" sx={{ fontSize: { xs: '0.6rem', md: '0.7rem' }, letterSpacing: '0.06em' }}>
             {title}
           </Typography>
           <Typography
-            variant={isMobile ? "h6" : "h5"}
+            variant="h5"
             fontWeight="800"
-            sx={{
-              color: color,
-              mt: { xs: 0, md: 0.5 },
-              lineHeight: 1.2
-            }}
+            sx={{ color: color, mt: 0.25, lineHeight: 1.2, fontSize: { xs: '1.4rem', md: '1.75rem' } }}
           >
             {value}
           </Typography>
+          {isActive && (
+            <Typography variant="caption" sx={{ color: color, fontWeight: 700, fontSize: '0.6rem' }}>
+              ● ACTIVE FILTER
+            </Typography>
+          )}
         </Box>
         <Box sx={{
-          bgcolor: `${color}15`,
-          p: { xs: 0.75, md: 1.5 },
+          bgcolor: `${color}18`,
+          p: { xs: 1, md: 1.5 },
           borderRadius: "12px",
           color: color,
           display: 'flex',
-          '& svg': { fontSize: { xs: '1.1rem', md: '1.75rem' } }
+          '& svg': { fontSize: { xs: '1.3rem', md: '1.75rem' } }
         }}>
           {icon}
         </Box>
@@ -145,17 +162,7 @@ const MobileCard = ({ item, onWhatsApp, onPrint, onEdit, onDelete, canDelete }) 
       {/* Status accent bar at top */}
       <Box sx={{
         height: '4px',
-        background: (() => {
-          const colorMap = {
-            'Received': '#94a3b8',
-            'In Progress': '#f59e0b',
-            'Waiting for Parts': '#ef4444',
-            'Sent to Service': '#3b82f6',
-            'Ready': '#10b981',
-            'Delivered': '#6366f1',
-          };
-          return colorMap[item.status] || '#94a3b8';
-        })()
+        background: STATUS_ACCENT[item.status] || '#94a3b8'
       }} />
       <CardContent sx={{ pb: 1 }}>
         {/* Header row: Job number + Status chip */}
@@ -262,8 +269,8 @@ const ItemsList = () => {
   const [stats, setStats] = useState({
     total: 0,
     inProgress: 0,
-    waiting: 0,
-    ready: 0
+    ready: 0,
+    pending: 0
   });
 
   // Pagination State
@@ -273,6 +280,8 @@ const ItemsList = () => {
 
   const [search, setSearch] = useState("");
   const [debouncedSearch, setDebouncedSearch] = useState("");
+  // activeFilter: 'all' | 'inProgress' | 'ready' | 'pending'
+  const [activeFilter, setActiveFilter] = useState("all");
 
   const [editItem, setEditItem] = useState(null);
   const [printItem, setPrintItem] = useState(null);
@@ -310,15 +319,17 @@ const ItemsList = () => {
   // Fetch items
   const fetchItems = useCallback(() => {
     setLoading(true);
-    let url = `${API_BASE_URL}/api/items?page=${page}&limit=${LIMIT}`;
+    let url = `/api/items?page=${page}&limit=${LIMIT}`;
     if (debouncedSearch) {
       url += `&search=${encodeURIComponent(debouncedSearch)}`;
     }
+    if (activeFilter && activeFilter !== "all") {
+      url += `&statusGroup=${activeFilter}`;
+    }
 
-    authFetch(url.replace(API_BASE_URL, ""), { method: "GET" })
+    authFetch(url, { method: "GET" })
       .then((res) => res.json())
       .then((data) => {
-        // Backend now returns { items, currentPage, totalPages, totalItems }
         setItems(data.items || []);
         setTotalPages(data.totalPages || 1);
         if (data.stats) setStats(data.stats);
@@ -329,7 +340,7 @@ const ItemsList = () => {
         setSnackbar({ open: true, message: "Failed to load data", severity: "error" });
         setLoading(false);
       });
-  }, [debouncedSearch, page]);
+  }, [debouncedSearch, page, activeFilter]);
 
   useEffect(() => {
     fetchItems();
@@ -386,6 +397,10 @@ const ItemsList = () => {
 
   const handleCloseSnackbar = () => setSnackbar({ ...snackbar, open: false });
   const handlePageChange = (event, value) => setPage(value);
+  const handleFilterChange = (filter) => {
+    setActiveFilter(filter);
+    setPage(1); // reset to page 1 on filter change
+  };
 
   return (
     <Box sx={{ maxWidth: "1400px", margin: "0 auto", padding: isMobile ? 2 : 4, pb: 10 }}>
@@ -468,51 +483,74 @@ const ItemsList = () => {
 
 
       <AnimatePresence>
-        {/* Stats Summary - Always visible to prevent layout shift */}
+        {/* Stats Filter Cards */}
         <Box sx={{ position: 'relative', mb: 4, opacity: loading ? 0.7 : 1, transition: 'opacity 0.2s' }}>
-          {/* Subtle Fade Edges for Scroll Indicator */}
-          <Box sx={{
-            position: 'absolute',
-            top: 0,
-            right: 0,
-            bottom: 0,
-            width: 40,
-            background: 'linear-gradient(to left, var(--surface-glass), transparent)',
-            zIndex: 2,
-            pointerEvents: 'none',
-            display: { md: 'none' }
-          }} />
           <Box
             sx={{
-              display: "flex",
-              gap: 2,
-              overflowX: { xs: "auto", md: "visible" },
-              pb: { xs: 1, md: 0 },
-              mx: { xs: -2, md: 0 },
-              px: { xs: 2, md: 0 },
-              scrollSnapType: { xs: "x mandatory", md: "none" },
-              scrollbarWidth: "none",
-              "&::-webkit-scrollbar": { display: "none" },
+              display: "grid",
+              gridTemplateColumns: { xs: "repeat(2, 1fr)", md: "repeat(4, 1fr)" },
+              gap: { xs: 1.5, md: 2 },
             }}
           >
             {[
-              { title: "Total Jobs", value: stats.total, color: "var(--color-primary)", icon: <DeviceIcon /> },
-              { title: "In Progress", value: stats.inProgress, color: "#f59e0b", icon: <BuildIcon /> },
-              { title: "Waiting Parts", value: stats.waiting, color: "#ef4444", icon: <PendingIcon /> },
-              { title: "Ready", value: stats.ready, color: "#10b981", icon: <CheckCircleIcon /> }
-            ].map((stat, index) => (
-              <Box
-                key={index}
-                sx={{
-                  minWidth: { xs: "160px", sm: "200px", md: "auto" },
-                  flex: { xs: "0 0 auto", md: 1 },
-                  scrollSnapAlign: "start"
-                }}
-              >
-                <StatCard {...stat} isMobile={isMobile} />
-              </Box>
+              {
+                key: "inProgress",
+                title: "In Progress",
+                value: stats.inProgress,
+                color: "#f59e0b",
+                icon: <BuildIcon />,
+                subtitle: "Received · Working · Waiting · Sent"
+              },
+              {
+                key: "ready",
+                title: "Ready / Done",
+                value: stats.ready,
+                color: "#10b981",
+                icon: <CheckCircleIcon />,
+                subtitle: "Ready for pickup · Delivered"
+              },
+              {
+                key: "pending",
+                title: "Pending",
+                value: stats.pending,
+                color: "#a855f7",
+                icon: <HourglassIcon />,
+                subtitle: "Awaiting customer feedback"
+              },
+              {
+                key: "all",
+                title: "All Jobs",
+                value: stats.total,
+                color: "var(--color-primary)",
+                icon: <AllJobsIcon />,
+                subtitle: "Every job in the system"
+              },
+            ].map((stat) => (
+              <StatCard
+                key={stat.key}
+                title={stat.title}
+                value={stat.value}
+                color={stat.color}
+                icon={stat.icon}
+                isActive={activeFilter === stat.key}
+                onClick={() => handleFilterChange(stat.key)}
+              />
             ))}
           </Box>
+          {/* Active filter label */}
+          {activeFilter !== "all" && (
+            <Box sx={{ mt: 1.5, display: 'flex', alignItems: 'center', gap: 1 }}>
+              <Typography variant="caption" color="text.secondary">
+                Showing filtered results —
+              </Typography>
+              <Chip
+                label={`Clear filter`}
+                size="small"
+                onDelete={() => handleFilterChange("all")}
+                sx={{ fontWeight: 600, fontSize: '0.7rem', height: '22px' }}
+              />
+            </Box>
+          )}
         </Box>
       </AnimatePresence>
 

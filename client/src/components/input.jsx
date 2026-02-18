@@ -75,8 +75,10 @@ const Input = () => {
       const data = await res.json();
 
       if (res.ok) {
-        setSnackbar({ open: true, message: "✅ Job created successfully!", severity: "success" });
+        setSnackbar({ open: true, message: "✅ Job created! Redirecting...", severity: "success" });
         setForm({ jobNumber: "", customerName: "", brand: "", phoneNumber: "" });
+        // Navigate to items list after a short delay so user sees the success message
+        setTimeout(() => navigate("/items"), 1500);
       } else {
         setSnackbar({ open: true, message: data.error || "Failed to save data.", severity: "error" });
       }
