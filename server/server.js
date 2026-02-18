@@ -1,63 +1,13 @@
-/* =========================================================
-   server.js
-   Refined Production Express 5 Server
-========================================================= */
-
-import express from "express";
-import dotenv from "dotenv";
-import path from "path";
-import { fileURLToPath } from "url";
-
+import "dotenv/config";
 import connectDB from "./config/db.js";
-import itemsRouter from "./routes/items.js";
-import { applySecurity } from "./appSecurity.js";
+import app from "./app.js";
 
-dotenv.config();
-
-const app = express();
 const PORT = process.env.PORT || 5000;
 
-/* =========================================================
-   ESM Path Resolution
-========================================================= */
-const __filename = fileURLToPath(import.meta.url);
-const __dirname = path.dirname(__filename);
+if (!process.env.AUTH_TOKEN_SECRET) {
+  throw new Error("AUTH_TOKEN_SECRET must be configured.");
+}
 
-/* =========================================================
-   Security & Global Middleware
-========================================================= */
-applySecurity(app);
-
-/* =========================================================
-   API Routes
-========================================================= */
-app.use("/api/items", itemsRouter);
-
-app.get("/api/health", (req, res) => {
-  res.json({
-    status: "OK",
-    uptime: process.uptime(),
-    timestamp: new Date().toISOString()
-  });
-});
-
-/* =========================================================
-   Static Assets & SPA Fallback
-========================================================= */
-// Vite is configured to output to 'build' folder (see vite.config.js)
-const clientBuildPath = path.join(__dirname, "../client/build");
-
-app.use(express.static(clientBuildPath));
-
-// FIX: Using a direct Regex object to bypass path-to-regexp string parsing errors
-// This matches any route that does NOT start with /api
-app.get(/^(?!\/api).+/, (req, res) => {
-  res.sendFile(path.join(clientBuildPath, "index.html"));
-});
-
-/* =========================================================
-   Lifecycle Management (Startup & Shutdown)
-========================================================= */
 let server;
 
 connectDB()
