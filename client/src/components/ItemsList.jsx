@@ -47,7 +47,9 @@ import {
   Devices as DeviceIcon,
   Build as BuildIcon,
   Pending as PendingIcon,
-  CheckCircle as CheckCircleIcon
+  CheckCircle as CheckCircleIcon,
+  Logout as LogoutIcon,
+  Notes as NotesIcon
 } from "@mui/icons-material";
 import { useNavigate } from "react-router-dom";
 import { useReactToPrint } from "react-to-print";
@@ -132,48 +134,122 @@ const MobileCard = ({ item, onWhatsApp, onPrint, onEdit, onDelete, canDelete }) 
     exit={{ opacity: 0, scale: 0.95 }}
     transition={{ duration: 0.2 }}
   >
-    <Card sx={{ mb: 2, borderRadius: "var(--radius)", boxShadow: "var(--shadow-sm)", border: "1px solid var(--border)" }}>
-      <CardContent>
-        <Box display="flex" justifyContent="space-between" alignItems="center" mb={1.5}>
-          <Typography variant="h6" fontWeight="800" sx={{ color: "var(--color-primary)" }}>
+    <Card sx={{
+      mb: 2,
+      borderRadius: "var(--radius)",
+      boxShadow: "var(--shadow-sm)",
+      border: "1px solid var(--border)",
+      overflow: 'hidden',
+      position: 'relative'
+    }}>
+      {/* Status accent bar at top */}
+      <Box sx={{
+        height: '4px',
+        background: (() => {
+          const colorMap = {
+            'Received': '#94a3b8',
+            'In Progress': '#f59e0b',
+            'Waiting for Parts': '#ef4444',
+            'Sent to Service': '#3b82f6',
+            'Ready': '#10b981',
+            'Delivered': '#6366f1',
+          };
+          return colorMap[item.status] || '#94a3b8';
+        })()
+      }} />
+      <CardContent sx={{ pb: 1 }}>
+        {/* Header row: Job number + Status chip */}
+        <Box display="flex" justifyContent="space-between" alignItems="center" mb={1}>
+          <Typography variant="subtitle2" fontWeight="800" sx={{ color: "var(--color-primary)", letterSpacing: '0.02em' }}>
             #{item.jobNumber}
           </Typography>
           <Chip
             label={item.status || "Received"}
             color={STATUS_COLORS[item.status] || "default"}
             size="small"
-            sx={{ fontWeight: 600, borderRadius: '6px' }}
+            sx={{ fontWeight: 700, borderRadius: '6px', fontSize: '0.7rem' }}
           />
         </Box>
-        <Typography variant="h6" fontWeight="600" gutterBottom>
-          {item.customerName}
-        </Typography>
-        <Typography variant="body2" color="text.secondary" sx={{ mb: 0.5 }}>
-          {item.brand}
-        </Typography>
-        <Typography variant="body2" color="text.secondary" sx={{ display: 'flex', alignItems: 'center', gap: 0.5 }}>
-          📞 {item.phoneNumber}
+
+        {/* Customer + Device row */}
+        <Box display="flex" justifyContent="space-between" alignItems="flex-start" mb={0.75}>
+          <Box flex={1} mr={1}>
+            <Typography variant="body1" fontWeight="700" sx={{ lineHeight: 1.3 }}>
+              {item.customerName}
+            </Typography>
+            <Typography variant="body2" color="text.secondary" fontWeight="500">
+              {item.brand}
+            </Typography>
+          </Box>
+          <Typography variant="body2" color="text.secondary" sx={{ display: 'flex', alignItems: 'center', gap: 0.5, whiteSpace: 'nowrap' }}>
+            📞 {item.phoneNumber}
+          </Typography>
+        </Box>
+
+        {/* Repair Notes — only shown if present */}
+        {item.repairNotes && (
+          <Box sx={{
+            mt: 1,
+            p: 1,
+            bgcolor: 'action.hover',
+            borderRadius: '8px',
+            borderLeft: '3px solid var(--color-primary)',
+            display: 'flex',
+            gap: 0.75,
+            alignItems: 'flex-start'
+          }}>
+            <NotesIcon sx={{ fontSize: '0.9rem', color: 'var(--color-primary)', mt: '2px', flexShrink: 0 }} />
+            <Typography
+              variant="caption"
+              color="text.secondary"
+              sx={{
+                lineHeight: 1.5,
+                display: '-webkit-box',
+                WebkitLineClamp: 2,
+                WebkitBoxOrient: 'vertical',
+                overflow: 'hidden',
+                fontStyle: 'italic'
+              }}
+            >
+              {item.repairNotes}
+            </Typography>
+          </Box>
+        )}
+
+        {/* Date */}
+        <Typography variant="caption" color="text.disabled" sx={{ display: 'block', mt: 1 }}>
+          {new Date(item.createdAt).toLocaleDateString('en-IN', { day: 'numeric', month: 'short', year: 'numeric' })}
         </Typography>
       </CardContent>
-      <Divider sx={{ opacity: 0.5 }} />
-      <CardActions sx={{ justifyContent: "space-between", px: 2, py: 1.5 }}>
-        <Box>
-          <IconButton size="small" color="success" onClick={() => onWhatsApp(item)} sx={{ bgcolor: '#dcfce7', mr: 1 }}>
-            <WhatsAppIcon fontSize="small" />
-          </IconButton>
-          <IconButton size="small" color="default" onClick={() => onPrint(item)} sx={{ bgcolor: '#f1f5f9' }}>
-            <PrintIcon fontSize="small" />
-          </IconButton>
+
+      <Divider sx={{ opacity: 0.4 }} />
+
+      <CardActions sx={{ justifyContent: "space-between", px: 1.5, py: 1 }}>
+        <Box display="flex" gap={0.75}>
+          <Tooltip title="WhatsApp">
+            <IconButton size="small" color="success" onClick={() => onWhatsApp(item)} sx={{ bgcolor: '#dcfce7' }}>
+              <WhatsAppIcon sx={{ fontSize: '1.1rem' }} />
+            </IconButton>
+          </Tooltip>
+          <Tooltip title="Print Job Sheet">
+            <IconButton size="small" onClick={() => onPrint(item)} sx={{ bgcolor: '#f1f5f9', color: '#64748b' }}>
+              <PrintIcon sx={{ fontSize: '1.1rem' }} />
+            </IconButton>
+          </Tooltip>
         </Box>
-        <Box>
-          <IconButton size="small" color="primary" onClick={() => onEdit(item)} sx={{ bgcolor: '#dbeafe', mr: 1 }}>
-            <EditIcon fontSize="small" />
-          </IconButton>
-          {canDelete ? (
-          <IconButton size="small" color="error" onClick={() => onDelete(item._id)} sx={{ bgcolor: '#fee2e2' }}>
-            <DeleteIcon fontSize="small" />
-          </IconButton>
-          ) : null}
+        <Box display="flex" gap={0.75}>
+          <Tooltip title="Edit">
+            <IconButton size="small" color="primary" onClick={() => onEdit(item)} sx={{ bgcolor: '#dbeafe' }}>
+              <EditIcon sx={{ fontSize: '1.1rem' }} />
+            </IconButton>
+          </Tooltip>
+          {canDelete && (
+            <Tooltip title="Delete">
+              <IconButton size="small" color="error" onClick={() => onDelete(item._id)} sx={{ bgcolor: '#fee2e2' }}>
+                <DeleteIcon sx={{ fontSize: '1.1rem' }} />
+              </IconButton>
+            </Tooltip>
+          )}
         </Box>
       </CardActions>
     </Card>
@@ -341,14 +417,14 @@ const ItemsList = () => {
 
           <Stack direction="row" spacing={2}>
             {isAdmin ? (
-            <Button
-              variant="outlined"
-              startIcon={<DownloadIcon />}
-              onClick={downloadBackup}
-              sx={{ borderRadius: "var(--radius)", textTransform: 'none', fontWeight: 600 }}
-            >
-              Backup Data
-            </Button>
+              <Button
+                variant="outlined"
+                startIcon={<DownloadIcon />}
+                onClick={downloadBackup}
+                sx={{ borderRadius: "var(--radius)", textTransform: 'none', fontWeight: 600 }}
+              >
+                Backup Data
+              </Button>
             ) : null}
             <Button
               variant="contained"
@@ -366,10 +442,22 @@ const ItemsList = () => {
               New Job
             </Button>
             <Button
-              variant="text"
+              variant="outlined"
+              color="error"
+              startIcon={<LogoutIcon />}
               onClick={async () => {
                 await logout();
                 navigate("/login", { replace: true });
+              }}
+              sx={{
+                borderRadius: "var(--radius)",
+                textTransform: 'none',
+                fontWeight: 600,
+                borderColor: 'error.main',
+                '&:hover': {
+                  bgcolor: '#fee2e2',
+                  borderColor: 'error.dark',
+                }
               }}
             >
               Logout
@@ -389,7 +477,7 @@ const ItemsList = () => {
             right: 0,
             bottom: 0,
             width: 40,
-            background: 'linear-gradient(to left, var(--background-default), transparent)',
+            background: 'linear-gradient(to left, var(--surface-glass), transparent)',
             zIndex: 2,
             pointerEvents: 'none',
             display: { md: 'none' }
@@ -529,11 +617,11 @@ const ItemsList = () => {
                             </IconButton>
                           </Tooltip>
                           {isAdmin ? (
-                          <Tooltip title="Delete">
-                            <IconButton size="small" onClick={() => handleDelete(item._id)} sx={{ color: '#ef4444', bgcolor: '#fee2e2' }}>
-                              <DeleteIcon fontSize="small" />
-                            </IconButton>
-                          </Tooltip>
+                            <Tooltip title="Delete">
+                              <IconButton size="small" onClick={() => handleDelete(item._id)} sx={{ color: '#ef4444', bgcolor: '#fee2e2' }}>
+                                <DeleteIcon fontSize="small" />
+                              </IconButton>
+                            </Tooltip>
                           ) : null}
                         </Stack>
                       </TableCell>

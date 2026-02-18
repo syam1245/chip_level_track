@@ -5,10 +5,15 @@
   --primary-l: 45%;
 
   --color-primary: #0071e3;
+  --color-primary-dark: #0058b0;
   /* Apple Blue */
   --color-success: #34c759;
   --color-warning: #ff9500;
   --color-danger: #ff3b30;
+
+  /* Surfaces */
+  --surface: #ffffff;
+  --surface-elevated: #f5f5f7;
 
   /* Backgrounds */
   --bg-gradient: linear-gradient(135deg, #f5f5f7 0%, #ffffff 100%);
@@ -30,9 +35,14 @@
 
 [data-theme='dark'] {
   --color-primary: #2997ff;
+  --color-primary-dark: #1a7fd4;
   --color-success: #30d158;
   --color-warning: #ff9f0a;
   --color-danger: #ff453a;
+
+  /* Surfaces */
+  --surface: #1c1c1e;
+  --surface-elevated: #2c2c2e;
 
   --bg-gradient: linear-gradient(135deg, #000000 0%, #1c1c1e 100%);
   --surface-glass: rgba(28, 28, 30, 0.7);
