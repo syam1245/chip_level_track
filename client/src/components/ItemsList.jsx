@@ -34,8 +34,9 @@ import {
   Grid,
   Pagination,
   CircularProgress,
-  Divider
+  Divider,
 } from "@mui/material";
+import { alpha } from "@mui/material/styles";
 import {
   Edit as EditIcon,
   Delete as DeleteIcon,
@@ -163,33 +164,42 @@ const MobileCard = ({ item, onWhatsApp, onPrint, onEdit, onDelete, canDelete }) 
         height: '4px',
         background: STATUS_ACCENT[item.status] || '#94a3b8'
       }} />
-      <CardContent sx={{ pb: 1 }}>
+      <CardContent sx={{ pb: 1, p: { xs: 1.5, sm: 2 } }}>
         {/* Header row: Job number + Status chip */}
-        <Box display="flex" justifyContent="space-between" alignItems="center" mb={1}>
-          <Typography variant="subtitle2" fontWeight="800" sx={{ color: "var(--color-primary)", letterSpacing: '0.02em' }}>
+        <Box display="flex" justifyContent="space-between" alignItems="center" mb={1.5}>
+          <Typography variant="caption" fontWeight="900" sx={{ color: "primary.main", letterSpacing: '0.05em', bgcolor: alpha('#3b82f6', 0.1), px: 1, py: 0.5, borderRadius: 1.5 }}>
             #{item.jobNumber}
           </Typography>
           <Chip
             label={item.status || "Received"}
             color={STATUS_COLORS[item.status] || "default"}
             size="small"
-            sx={{ fontWeight: 700, borderRadius: '6px', fontSize: '0.7rem' }}
+            sx={{ fontWeight: 800, borderRadius: '6px', fontSize: '0.65rem', height: 20 }}
           />
         </Box>
 
         {/* Customer + Device row */}
-        <Box display="flex" justifyContent="space-between" alignItems="flex-start" mb={0.75}>
-          <Box flex={1} mr={1}>
-            <Typography variant="body1" fontWeight="700" sx={{ lineHeight: 1.3 }}>
-              {item.customerName}
-            </Typography>
-            <Typography variant="body2" color="text.secondary" fontWeight="500">
+        <Box mb={1.5}>
+          <Typography variant="body1" fontWeight="800" sx={{ lineHeight: 1.2, mb: 0.5 }}>
+            {item.customerName}
+          </Typography>
+          <Box display="flex" alignItems="center" gap={1}>
+            <DeviceIcon sx={{ fontSize: 14, color: 'text.secondary' }} />
+            <Typography variant="body2" color="text.secondary" fontWeight="600" sx={{ fontSize: '0.8rem' }}>
               {item.brand}
             </Typography>
           </Box>
-          <Typography variant="body2" color="text.secondary" sx={{ display: 'flex', alignItems: 'center', gap: 0.5, whiteSpace: 'nowrap' }}>
+        </Box>
+
+        <Box display="flex" justifyContent="space-between" alignItems="center">
+          <Typography variant="caption" color="text.secondary" sx={{ display: 'flex', alignItems: 'center', gap: 0.5, fontWeight: 700 }}>
             📞 {item.phoneNumber}
           </Typography>
+          <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5 }}>
+            <Typography variant="caption" color="text.disabled" sx={{ fontSize: '0.65rem' }}>
+              By <strong>{item.technicianName}</strong> • {new Date(item.createdAt).toLocaleDateString()}
+            </Typography>
+          </Box>
         </Box>
 
         {/* Repair Notes — only shown if present */}
@@ -590,6 +600,7 @@ const ItemsList = () => {
                     <TableCell><Typography variant="subtitle2" fontWeight="700" color="text.secondary">JOB NO</Typography></TableCell>
                     <TableCell><Typography variant="subtitle2" fontWeight="700" color="text.secondary">CUSTOMER</Typography></TableCell>
                     <TableCell><Typography variant="subtitle2" fontWeight="700" color="text.secondary">DEVICE</Typography></TableCell>
+                    <TableCell><Typography variant="subtitle2" fontWeight="700" color="text.secondary">TECHNICIAN</Typography></TableCell>
                     <TableCell><Typography variant="subtitle2" fontWeight="700" color="text.secondary">PHONE</Typography></TableCell>
                     <TableCell><Typography variant="subtitle2" fontWeight="700" color="text.secondary">STATUS</Typography></TableCell>
                     <TableCell><Typography variant="subtitle2" fontWeight="700" color="text.secondary">NOTES</Typography></TableCell>
@@ -605,6 +616,9 @@ const ItemsList = () => {
                       </TableCell>
                       <TableCell>{item.customerName}</TableCell>
                       <TableCell>{item.brand}</TableCell>
+                      <TableCell>
+                        <Typography variant="body2" fontWeight="600">{item.technicianName}</Typography>
+                      </TableCell>
                       <TableCell>{item.phoneNumber}</TableCell>
                       <TableCell>
                         <Chip
@@ -689,11 +703,11 @@ const ItemsList = () => {
               page={page}
               onChange={handlePageChange}
               color="primary"
-              size="large"
-              showFirstButton
-              showLastButton
+              size={isMobile ? "small" : "large"}
+              showFirstButton={!isMobile}
+              showLastButton={!isMobile}
               sx={{
-                '& .MuiPaginationItem-root': { borderRadius: '8px' }
+                '& .MuiPaginationItem-root': { borderRadius: '10px', fontWeight: 700 }
               }}
             />
           </Box>
