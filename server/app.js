@@ -8,6 +8,7 @@ import { applySecurity } from "./appSecurity.js";
 import { attachAuth, requireAuth, requireCsrf } from "./middleware/auth.js";
 
 const app = express();
+app.set("trust proxy", 1); // Trust first hop proxy (Render/AWS)
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);

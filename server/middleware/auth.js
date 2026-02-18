@@ -23,10 +23,9 @@ export function attachAuth(req, res, next) {
   req.user = null;
 
   const token = req.cookies[AUTH_COOKIE_NAME];
-  const secret = process.env.AUTH_TOKEN_SECRET;
 
-  if (token && secret) {
-    const verified = verifyAuthToken(token, secret);
+  if (token) {
+    const verified = verifyAuthToken(token);
     if (verified.valid) {
       req.user = {
         username: verified.payload.username,

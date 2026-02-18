@@ -120,9 +120,6 @@ const Input = () => {
           <Typography variant="body1" align="center" color="text.secondary" mb={1.5} sx={{ position: "relative" }}>
             Enter device and customer details to generate a job sheet.
           </Typography>
-          <Typography variant="body2" align="center" color="text.secondary" mb={4} sx={{ position: "relative" }}>
-            Signed in as <strong>{user?.displayName}</strong> ({user?.role})
-          </Typography>
 
           <form onSubmit={handleSubmit} style={{ position: "relative", zIndex: 1 }}>
             <Stack spacing={3}>
@@ -241,15 +238,9 @@ const Input = () => {
         </Paper>
       </motion.div>
 
-      <Box sx={{ mt: 2, textAlign: "center" }}>
-        <Button
-          variant="text"
-          onClick={async () => {
-            await logout();
-            navigate("/login", { replace: true });
-          }}
-        >
-          Logout
+      <Box sx={{ mt: 3, textAlign: "center" }}>
+        <Button variant="text" size="small" onClick={() => navigate("/items")} sx={{ color: 'text.secondary', fontWeight: 700 }}>
+          Manage All Jobs
         </Button>
       </Box>
 

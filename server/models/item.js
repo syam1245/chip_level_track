@@ -25,6 +25,11 @@ const itemSchema = new mongoose.Schema(
       }
     ],
     isDeleted: { type: Boolean, default: false, index: true },
+    technicianName: { type: String, required: true },
+    metadata: {
+      type: Object,
+      select: false, // Hidden from normal queries
+    },
   },
   { timestamps: true }
 );

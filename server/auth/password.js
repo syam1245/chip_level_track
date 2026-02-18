@@ -1,31 +1,10 @@
-import crypto from "crypto";
+import bcrypt from "bcryptjs";
 
-const ITERATIONS = 210000;
-const KEY_LENGTH = 64;
-const DIGEST = "sha512";
-
-export function hashPassword(plainPassword, salt = crypto.randomBytes(16).toString("hex")) {
-  const hash = crypto
-    .pbkdf2Sync(plainPassword, salt, ITERATIONS, KEY_LENGTH, DIGEST)
-    .toString("hex");
-
-  return `${ITERATIONS}:${salt}:${hash}`;
+export async function hashPassword(plainPassword) {
+  const salt = await bcrypt.genSalt(10);
+  return bcrypt.hash(plainPassword, salt);
 }
 
-export function verifyPassword(plainPassword, storedHash) {
-  const [iterationsRaw, salt, originalHash] = String(storedHash).split(":");
-  const iterations = Number.parseInt(iterationsRaw, 10);
-
-  if (!iterations || !salt || !originalHash) return false;
-
-  const candidate = crypto
-    .pbkdf2Sync(plainPassword, salt, iterations, KEY_LENGTH, DIGEST)
-    .toString("hex");
-
-  const originalBuffer = Buffer.from(originalHash, "hex");
-  const candidateBuffer = Buffer.from(candidate, "hex");
-
-  if (originalBuffer.length !== candidateBuffer.length) return false;
-
-  return crypto.timingSafeEqual(originalBuffer, candidateBuffer);
+export async function verifyPassword(plainPassword, storedHash) {
+  return bcrypt.compare(plainPassword, storedHash);
 }

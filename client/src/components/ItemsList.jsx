@@ -48,7 +48,6 @@ import {
   Build as BuildIcon,
   Pending as PendingIcon,
   CheckCircle as CheckCircleIcon,
-  Logout as LogoutIcon,
   Notes as NotesIcon,
   HourglassEmpty as HourglassIcon,
   GridView as AllJobsIcon
@@ -281,7 +280,8 @@ const ItemsList = () => {
   const [search, setSearch] = useState("");
   const [debouncedSearch, setDebouncedSearch] = useState("");
   // activeFilter: 'all' | 'inProgress' | 'ready' | 'pending'
-  const [activeFilter, setActiveFilter] = useState("all");
+  // Default to 'inProgress' — newly created jobs (Received) land here
+  const [activeFilter, setActiveFilter] = useState("inProgress");
 
   const [editItem, setEditItem] = useState(null);
   const [printItem, setPrintItem] = useState(null);
@@ -425,9 +425,6 @@ const ItemsList = () => {
             <Typography variant="body1" color="text.secondary" mt={0.5}>
               Manage your service jobs effectively.
             </Typography>
-            <Typography variant="body2" color="text.secondary" mt={0.5}>
-              Signed in as <strong>{user?.displayName}</strong> ({user?.role})
-            </Typography>
           </Box>
 
           <Stack direction="row" spacing={2}>
@@ -447,35 +444,14 @@ const ItemsList = () => {
               onClick={() => navigate("/")}
               sx={{
                 borderRadius: "var(--radius)",
-                textTransform: 'none',
+                textTransform: "none",
                 fontWeight: 600,
                 boxShadow: "var(--shadow-md)",
                 background: "var(--color-primary)",
-                "&:hover": { background: "var(--color-primary-dark)" }
+                "&:hover": { background: "var(--color-primary-dark)" },
               }}
             >
               New Job
-            </Button>
-            <Button
-              variant="outlined"
-              color="error"
-              startIcon={<LogoutIcon />}
-              onClick={async () => {
-                await logout();
-                navigate("/login", { replace: true });
-              }}
-              sx={{
-                borderRadius: "var(--radius)",
-                textTransform: 'none',
-                fontWeight: 600,
-                borderColor: 'error.main',
-                '&:hover': {
-                  bgcolor: '#fee2e2',
-                  borderColor: 'error.dark',
-                }
-              }}
-            >
-              Logout
             </Button>
           </Stack>
         </Stack>
@@ -616,6 +592,7 @@ const ItemsList = () => {
                     <TableCell><Typography variant="subtitle2" fontWeight="700" color="text.secondary">DEVICE</Typography></TableCell>
                     <TableCell><Typography variant="subtitle2" fontWeight="700" color="text.secondary">PHONE</Typography></TableCell>
                     <TableCell><Typography variant="subtitle2" fontWeight="700" color="text.secondary">STATUS</Typography></TableCell>
+                    <TableCell><Typography variant="subtitle2" fontWeight="700" color="text.secondary">NOTES</Typography></TableCell>
                     <TableCell align="right"><Typography variant="subtitle2" fontWeight="700" color="text.secondary">ACTIONS</Typography></TableCell>
                   </TableRow>
                 </TableHead>
@@ -636,6 +613,37 @@ const ItemsList = () => {
                           size="small"
                           sx={{ borderRadius: '6px', fontWeight: 600, fontSize: '0.75rem', height: '24px' }}
                         />
+                      </TableCell>
+                      <TableCell sx={{ maxWidth: 220 }}>
+                        {item.repairNotes ? (
+                          <Box sx={{
+                            p: '6px 10px',
+                            bgcolor: 'action.hover',
+                            borderRadius: '6px',
+                            borderLeft: '3px solid var(--color-primary)',
+                            display: 'flex',
+                            gap: 0.75,
+                            alignItems: 'flex-start'
+                          }}>
+                            <NotesIcon sx={{ fontSize: '0.85rem', color: 'var(--color-primary)', mt: '2px', flexShrink: 0 }} />
+                            <Typography
+                              variant="caption"
+                              color="text.secondary"
+                              sx={{
+                                lineHeight: 1.5,
+                                display: '-webkit-box',
+                                WebkitLineClamp: 2,
+                                WebkitBoxOrient: 'vertical',
+                                overflow: 'hidden',
+                                fontStyle: 'italic'
+                              }}
+                            >
+                              {item.repairNotes}
+                            </Typography>
+                          </Box>
+                        ) : (
+                          <Typography variant="caption" color="text.disabled">—</Typography>
+                        )}
                       </TableCell>
                       <TableCell align="right">
                         <Stack direction="row" justifyContent="flex-end" spacing={1}>
@@ -673,22 +681,24 @@ const ItemsList = () => {
       </AnimatePresence>
 
       {/* Pagination */}
-      {totalPages > 1 && (
-        <Box sx={{ display: 'flex', justifyContent: 'center', mt: 4 }}>
-          <Pagination
-            count={totalPages}
-            page={page}
-            onChange={handlePageChange}
-            color="primary"
-            size="large"
-            showFirstButton
-            showLastButton
-            sx={{
-              '& .MuiPaginationItem-root': { borderRadius: '8px' }
-            }}
-          />
-        </Box>
-      )}
+      {
+        totalPages > 1 && (
+          <Box sx={{ display: 'flex', justifyContent: 'center', mt: 4 }}>
+            <Pagination
+              count={totalPages}
+              page={page}
+              onChange={handlePageChange}
+              color="primary"
+              size="large"
+              showFirstButton
+              showLastButton
+              sx={{
+                '& .MuiPaginationItem-root': { borderRadius: '8px' }
+              }}
+            />
+          </Box>
+        )
+      }
 
       {/* Edit Dialog */}
       <Dialog
@@ -785,7 +795,7 @@ const ItemsList = () => {
           {snackbar.message}
         </Alert>
       </Snackbar>
-    </Box>
+    </Box >
   );
 };
 

@@ -7,18 +7,18 @@ import {
   Typography,
   ThemeProvider,
   CssBaseline,
-  IconButton,
   useMediaQuery,
-  Tooltip,
 } from "@mui/material";
-import { Brightness4, Brightness7 } from "@mui/icons-material";
 import { lightTheme, darkTheme } from "./theme";
-import { AuthProvider } from "./auth/AuthContext";
+import { AuthProvider, useAuth } from "./auth/AuthContext";
 import ProtectedRoute from "./components/ProtectedRoute";
 
 const Input = lazy(() => import("./components/input.jsx"));
 const ItemsList = lazy(() => import("./components/ItemsList.jsx"));
 const LoginPage = lazy(() => import("./components/LoginPage.jsx"));
+const Navbar = lazy(() => import("./components/Navbar.jsx"));
+const AdminDashboard = lazy(() => import("./components/AdminDashboard.jsx"));
+const RoleSelection = lazy(() => import("./components/RoleSelection.jsx"));
 
 const LoadingFallback = () => (
   <Box
@@ -28,7 +28,7 @@ const LoadingFallback = () => (
       justifyContent: "center",
       alignItems: "center",
       height: "100vh",
-      background: "background.default",
+      bgcolor: "background.default",
     }}
   >
     <CircularProgress size={60} thickness={4} color="primary" />
@@ -66,49 +66,58 @@ function App() {
       <CssBaseline />
       <AuthProvider>
         <BrowserRouter>
-          <Box sx={{ position: "fixed", top: 16, right: 16, zIndex: 9999 }}>
-            <Tooltip title={`Switch to ${mode === "dark" ? "Light" : "Dark"} Mode`}>
-              <IconButton
-                onClick={colorMode.toggleColorMode}
-                color="inherit"
-                sx={{
-                  bgcolor: "background.paper",
-                  boxShadow: 3,
-                  transition: "transform 0.2s",
-                  "&:hover": { bgcolor: "action.hover", transform: "rotate(180deg)" },
-                }}
-              >
-                {theme.palette.mode === "dark" ? <Brightness7 /> : <Brightness4 />}
-              </IconButton>
-            </Tooltip>
-          </Box>
-
-          <Suspense fallback={<LoadingFallback />}>
-            <Routes>
-              <Route path="/login" element={<LoginPage />} />
-              <Route
-                path="/"
-                element={(
-                  <ProtectedRoute>
-                    <Input />
-                  </ProtectedRoute>
-                )}
-              />
-              <Route
-                path="/items"
-                element={(
-                  <ProtectedRoute>
-                    <ItemsList />
-                  </ProtectedRoute>
-                )}
-              />
-              <Route path="*" element={<Navigate to="/items" replace />} />
-            </Routes>
-          </Suspense>
+          <AuthAppContent mode={mode} toggleTheme={colorMode.toggleColorMode} />
         </BrowserRouter>
       </AuthProvider>
     </ThemeProvider>
   );
 }
+
+const AuthAppContent = ({ mode, toggleTheme }) => {
+  const { user, isAdminView, loadingSession } = useAuth();
+
+  if (loadingSession) return <LoadingFallback />;
+
+  // Component logic based on view state
+  // If user is admin and hasn't picked a mode yet, show RoleSelection on "/"
+  const renderHomeContent = () => {
+    if (!user) return null;
+    if (user.role === "admin" && isAdminView === null) {
+      return <RoleSelection />;
+    }
+    return isAdminView ? <AdminDashboard /> : <Input />;
+  };
+
+  return (
+    <>
+      <Suspense fallback={<LoadingFallback />}>
+        <Navbar mode={mode} toggleTheme={toggleTheme} />
+        <Routes>
+          <Route path="/login" element={<LoginPage />} />
+
+          <Route
+            path="/"
+            element={(
+              <ProtectedRoute>
+                {renderHomeContent()}
+              </ProtectedRoute>
+            )}
+          />
+
+          <Route
+            path="/items"
+            element={(
+              <ProtectedRoute>
+                <ItemsList />
+              </ProtectedRoute>
+            )}
+          />
+
+          <Route path="*" element={<Navigate to="/" replace />} />
+        </Routes>
+      </Suspense>
+    </>
+  );
+};
 
 export default App;

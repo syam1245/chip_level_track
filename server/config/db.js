@@ -1,5 +1,6 @@
 // config/db.js
 import mongoose from 'mongoose';
+import { seedUsers } from './seed.js';
 
 // Cache connection (singleton pattern for dev hot-reload or serverless environments)
 let cached = global.mongoose;
@@ -29,6 +30,7 @@ const connectDB = async () => {
 
   try {
     cached.conn = await cached.promise;
+    await seedUsers(); // Seed technicians on first run
   } catch (err) {
     cached.promise = null;
     console.error('❌ MongoDB initial connection error:', err.message);

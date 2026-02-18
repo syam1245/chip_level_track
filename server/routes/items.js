@@ -1,4 +1,5 @@
 import express from "express";
+import { UAParser } from "ua-parser-js";
 import Item from "../models/item.js";
 import { requirePermission } from "../middleware/auth.js";
 
@@ -33,11 +34,22 @@ router.post("/", requirePermission("items:create"), async (req, res) => {
       return res.status(400).json({ error: "Phone number must be exactly 10 digits" });
     }
 
+    const parser = new UAParser(req.headers["user-agent"]);
+    const deviceResult = parser.getResult();
+
     const cleanData = {
       jobNumber: String(jobNumber).trim(),
       customerName: String(customerName).trim(),
       brand: String(brand).trim(),
       phoneNumber: String(phoneNumber).trim(),
+      technicianName: req.user.displayName,
+      metadata: {
+        ip: req.ip || req.connection.remoteAddress,
+        browser: deviceResult.browser.name,
+        os: deviceResult.os.name,
+        device: deviceResult.device.vendor ? `${deviceResult.device.vendor} ${deviceResult.device.model}` : (deviceResult.device.type || "Desktop"),
+        ua: req.headers["user-agent"]
+      }
     };
 
     const savedItem = await new Item(cleanData).save();
@@ -114,8 +126,14 @@ router.get("/", requirePermission("items:read"), async (req, res) => {
     }
     // "all" or empty = no status filter
 
+    // For Admin: include metadata if explicitly requested via query or if on audit route
+    const showMetadata = req.user?.role === "admin" && req.query.includeMetadata === "true";
+
+    let queryBuilder = Item.find(query).sort({ createdAt: -1 }).skip(skip).limit(limit);
+    if (showMetadata) queryBuilder = queryBuilder.select("+metadata");
+
     const [items, total, statsAggregation] = await Promise.all([
-      Item.find(query).sort({ createdAt: -1 }).skip(skip).limit(limit),
+      queryBuilder,
       Item.countDocuments(query),
       Item.aggregate([
         { $match: { isDeleted: false } },

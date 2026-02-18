@@ -1,5 +1,5 @@
-import React, { useState } from "react";
-import { Box, Button, Container, Paper, Stack, TextField, Typography, Alert } from "@mui/material";
+import { Box, Button, Container, Paper, Stack, TextField, Typography, Alert, MenuItem, Select, FormControl, InputLabel, CircularProgress } from "@mui/material";
+import React, { useEffect, useState } from "react";
 import { Navigate, useNavigate } from "react-router-dom";
 import { useAuth } from "../auth/AuthContext";
 
@@ -8,8 +8,17 @@ const LoginPage = () => {
   const [password, setPassword] = useState("");
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
+  const [technicians, setTechnicians] = useState([]);
+  const [loadingTechs, setLoadingTechs] = useState(true);
   const navigate = useNavigate();
-  const { user, login } = useAuth();
+  const { user, login, fetchTechnicians } = useAuth();
+
+  useEffect(() => {
+    fetchTechnicians()
+      .then(setTechnicians)
+      .catch((err) => setError("Failed to load technicians list"))
+      .finally(() => setLoadingTechs(false));
+  }, [fetchTechnicians]);
 
   if (user) return <Navigate to="/items" replace />;
 
@@ -40,9 +49,31 @@ const LoginPage = () => {
         {error ? <Alert severity="error" sx={{ mb: 2 }}>{error}</Alert> : null}
 
         <Box component="form" onSubmit={onSubmit}>
-          <Stack spacing={2}>
-            <TextField label="Username" value={username} onChange={(event) => setUsername(event.target.value)} required />
-            <TextField label="Password" type="password" value={password} onChange={(event) => setPassword(event.target.value)} required />
+          <Stack spacing={3}>
+            <FormControl fullWidth required>
+              <InputLabel id="tech-select-label">Select Technician</InputLabel>
+              <Select
+                labelId="tech-select-label"
+                value={username}
+                label="Select Technician"
+                onChange={(e) => setUsername(e.target.value)}
+                disabled={loadingTechs}
+              >
+                {technicians.map((tech) => (
+                  <MenuItem key={tech.username} value={tech.username}>
+                    {tech.displayName}
+                  </MenuItem>
+                ))}
+              </Select>
+            </FormControl>
+            <TextField
+              label="Password"
+              type="password"
+              value={password}
+              onChange={(event) => setPassword(event.target.value)}
+              required
+              fullWidth
+            />
             <Button type="submit" variant="contained" disabled={loading}>
               {loading ? "Signing in..." : "Sign In"}
             </Button>
