@@ -1,6 +1,6 @@
 import React, { Suspense, lazy, useState, useMemo, useEffect } from "react";
 import "./App.css";
-import { BrowserRouter, Routes, Route } from "react-router-dom";
+import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
 import {
   CircularProgress,
   Box,
@@ -13,12 +13,13 @@ import {
 } from "@mui/material";
 import { Brightness4, Brightness7 } from "@mui/icons-material";
 import { lightTheme, darkTheme } from "./theme";
+import { AuthProvider } from "./auth/AuthContext";
+import ProtectedRoute from "./components/ProtectedRoute";
 
-// Lazy load components for better performance
 const Input = lazy(() => import("./components/input.jsx"));
 const ItemsList = lazy(() => import("./components/ItemsList.jsx"));
+const LoginPage = lazy(() => import("./components/LoginPage.jsx"));
 
-// Loading Component
 const LoadingFallback = () => (
   <Box
     sx={{
@@ -27,26 +28,24 @@ const LoadingFallback = () => (
       justifyContent: "center",
       alignItems: "center",
       height: "100vh",
-      background: "background.default" // Use theme background
+      background: "background.default",
     }}
   >
     <CircularProgress size={60} thickness={4} color="primary" />
-    <Typography variant="h6" sx={{ mt: 2, color: "text.secondary" }}>Loading Application...</Typography>
+    <Typography variant="h6" sx={{ mt: 2, color: "text.secondary" }}>
+      Loading Application...
+    </Typography>
   </Box>
 );
 
 function App() {
-  /* import Tooltip */
-
-  const prefersDarkMode = useMediaQuery('(prefers-color-scheme: dark)');
+  const prefersDarkMode = useMediaQuery("(prefers-color-scheme: dark)");
   const [mode, setMode] = useState(prefersDarkMode ? "dark" : "light");
 
-  // Automatically adapt to system theme changes
   useEffect(() => {
     setMode(prefersDarkMode ? "dark" : "light");
   }, [prefersDarkMode]);
 
-  // Apply theme class to body for CSS variables
   useEffect(() => {
     document.body.dataset.theme = mode;
   }, [mode]);
@@ -60,40 +59,54 @@ function App() {
     [],
   );
 
-  const theme = useMemo(
-    () => (mode === "dark" ? darkTheme : lightTheme),
-    [mode]
-  );
+  const theme = useMemo(() => (mode === "dark" ? darkTheme : lightTheme), [mode]);
 
   return (
     <ThemeProvider theme={theme}>
       <CssBaseline />
-      <BrowserRouter>
-        {/* Theme Toggle Button - Fixed Position */}
-        <Box sx={{ position: 'fixed', top: 16, right: 16, zIndex: 9999 }}>
-          <Tooltip title={`Switch to ${mode === 'dark' ? 'Light' : 'Dark'} Mode`}>
-            <IconButton
-              onClick={colorMode.toggleColorMode}
-              color="inherit"
-              sx={{
-                bgcolor: 'background.paper',
-                boxShadow: 3,
-                transition: 'transform 0.2s',
-                '&:hover': { bgcolor: 'action.hover', transform: 'rotate(180deg)' }
-              }}
-            >
-              {theme.palette.mode === 'dark' ? <Brightness7 /> : <Brightness4 />}
-            </IconButton>
-          </Tooltip>
-        </Box>
+      <AuthProvider>
+        <BrowserRouter>
+          <Box sx={{ position: "fixed", top: 16, right: 16, zIndex: 9999 }}>
+            <Tooltip title={`Switch to ${mode === "dark" ? "Light" : "Dark"} Mode`}>
+              <IconButton
+                onClick={colorMode.toggleColorMode}
+                color="inherit"
+                sx={{
+                  bgcolor: "background.paper",
+                  boxShadow: 3,
+                  transition: "transform 0.2s",
+                  "&:hover": { bgcolor: "action.hover", transform: "rotate(180deg)" },
+                }}
+              >
+                {theme.palette.mode === "dark" ? <Brightness7 /> : <Brightness4 />}
+              </IconButton>
+            </Tooltip>
+          </Box>
 
-        <Suspense fallback={<LoadingFallback />}>
-          <Routes>
-            <Route path="/" element={<Input />} />
-            <Route path="/items" element={<ItemsList />} />
-          </Routes>
-        </Suspense>
-      </BrowserRouter>
+          <Suspense fallback={<LoadingFallback />}>
+            <Routes>
+              <Route path="/login" element={<LoginPage />} />
+              <Route
+                path="/"
+                element={(
+                  <ProtectedRoute>
+                    <Input />
+                  </ProtectedRoute>
+                )}
+              />
+              <Route
+                path="/items"
+                element={(
+                  <ProtectedRoute>
+                    <ItemsList />
+                  </ProtectedRoute>
+                )}
+              />
+              <Route path="*" element={<Navigate to="/items" replace />} />
+            </Routes>
+          </Suspense>
+        </BrowserRouter>
+      </AuthProvider>
     </ThemeProvider>
   );
 }

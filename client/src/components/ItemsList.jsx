@@ -52,7 +52,8 @@ import {
 import { useNavigate } from "react-router-dom";
 import { useReactToPrint } from "react-to-print";
 import { motion, AnimatePresence } from "framer-motion";
-import API_BASE_URL from "../api";
+import API_BASE_URL, { authFetch } from "../api";
+import { useAuth } from "../auth/AuthContext";
 import JobSheetPrintTemplate from "./JobSheetPrintTemplate";
 
 const STATUS_COLORS = {
@@ -123,7 +124,7 @@ const StatCard = ({ title, value, color, icon, isMobile }) => (
   </motion.div>
 );
 
-const MobileCard = ({ item, onWhatsApp, onPrint, onEdit, onDelete }) => (
+const MobileCard = ({ item, onWhatsApp, onPrint, onEdit, onDelete, canDelete }) => (
   <motion.div
     layout
     initial={{ opacity: 0, scale: 0.95 }}
@@ -168,9 +169,11 @@ const MobileCard = ({ item, onWhatsApp, onPrint, onEdit, onDelete }) => (
           <IconButton size="small" color="primary" onClick={() => onEdit(item)} sx={{ bgcolor: '#dbeafe', mr: 1 }}>
             <EditIcon fontSize="small" />
           </IconButton>
+          {canDelete ? (
           <IconButton size="small" color="error" onClick={() => onDelete(item._id)} sx={{ bgcolor: '#fee2e2' }}>
             <DeleteIcon fontSize="small" />
           </IconButton>
+          ) : null}
         </Box>
       </CardActions>
     </Card>
@@ -200,6 +203,8 @@ const ItemsList = () => {
   const [snackbar, setSnackbar] = useState({ open: false, message: "", severity: "success" });
 
   const navigate = useNavigate();
+  const { user, logout } = useAuth();
+  const isAdmin = user?.role === "admin";
   const theme = useTheme();
   const isMobile = useMediaQuery(theme.breakpoints.down("md"));
   const printComponentRef = useRef();
@@ -234,7 +239,7 @@ const ItemsList = () => {
       url += `&search=${encodeURIComponent(debouncedSearch)}`;
     }
 
-    fetch(url)
+    authFetch(url.replace(API_BASE_URL, ""), { method: "GET" })
       .then((res) => res.json())
       .then((data) => {
         // Backend now returns { items, currentPage, totalPages, totalItems }
@@ -258,7 +263,7 @@ const ItemsList = () => {
     if (!window.confirm("Are you sure you want to delete this item?")) return;
 
     try {
-      const res = await fetch(`${API_BASE_URL}/api/items/${id}`, { method: "DELETE" });
+      const res = await authFetch(`/api/items/${id}`, { method: "DELETE" });
       if (res.ok) {
         setItems((prev) => prev.filter((item) => item._id !== id));
         setSnackbar({ open: true, message: "Deleted successfully", severity: "success" });
@@ -275,9 +280,8 @@ const ItemsList = () => {
     if (!editItem) return;
 
     try {
-      const res = await fetch(`${API_BASE_URL}/api/items/${editItem._id}`, {
+      const res = await authFetch(`/api/items/${editItem._id}`, {
         method: "PUT",
-        headers: { "Content-Type": "application/json" },
         body: JSON.stringify(editItem),
       });
 
@@ -330,9 +334,13 @@ const ItemsList = () => {
             <Typography variant="body1" color="text.secondary" mt={0.5}>
               Manage your service jobs effectively.
             </Typography>
+            <Typography variant="body2" color="text.secondary" mt={0.5}>
+              Signed in as <strong>{user?.displayName}</strong> ({user?.role})
+            </Typography>
           </Box>
 
           <Stack direction="row" spacing={2}>
+            {isAdmin ? (
             <Button
               variant="outlined"
               startIcon={<DownloadIcon />}
@@ -341,6 +349,7 @@ const ItemsList = () => {
             >
               Backup Data
             </Button>
+            ) : null}
             <Button
               variant="contained"
               startIcon={<AddIcon />}
@@ -355,6 +364,15 @@ const ItemsList = () => {
               }}
             >
               New Job
+            </Button>
+            <Button
+              variant="text"
+              onClick={async () => {
+                await logout();
+                navigate("/login", { replace: true });
+              }}
+            >
+              Logout
             </Button>
           </Stack>
         </Stack>
@@ -457,6 +475,7 @@ const ItemsList = () => {
                 onPrint={setPrintItem}
                 onEdit={setEditItem}
                 onDelete={handleDelete}
+                canDelete={isAdmin}
               />
             ))}
           </Box>
@@ -509,11 +528,13 @@ const ItemsList = () => {
                               <EditIcon fontSize="small" />
                             </IconButton>
                           </Tooltip>
+                          {isAdmin ? (
                           <Tooltip title="Delete">
                             <IconButton size="small" onClick={() => handleDelete(item._id)} sx={{ color: '#ef4444', bgcolor: '#fee2e2' }}>
                               <DeleteIcon fontSize="small" />
                             </IconButton>
                           </Tooltip>
+                          ) : null}
                         </Stack>
                       </TableCell>
                     </TableRow>

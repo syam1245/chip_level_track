@@ -1,21 +1,14 @@
-
-
-// server/routes/items.js
 import express from "express";
 import Item from "../models/item.js";
+import { requirePermission } from "../middleware/auth.js";
 
 const router = express.Router();
 
-// Helper: Escape Special Chars for Regex
 const escapeRegex = (text) => text.replace(/[-[\]{}()*+?.,\\^$|#\s]/g, "\\$&");
 
-// @route   GET /api/items/backup
-// @desc    Download full database backup
-router.get("/backup", async (req, res) => {
+router.get("/backup", requirePermission("items:backup"), async (req, res) => {
   try {
-    // Only admins should access this in a real app
     const items = await Item.find().sort({ createdAt: -1 });
-
     const timestamp = new Date().toISOString().replace(/[:.]/g, "-");
     const filename = `backup-${timestamp}.json`;
 
@@ -28,13 +21,10 @@ router.get("/backup", async (req, res) => {
   }
 });
 
-// @route   POST /api/items
-// @desc    Create new item
-router.post("/", async (req, res) => {
+router.post("/", requirePermission("items:create"), async (req, res) => {
   try {
     const { jobNumber, customerName, brand, phoneNumber } = req.body;
 
-    // Strict Input Validation
     if (!jobNumber || !customerName || !brand || !phoneNumber) {
       return res.status(400).json({ error: "All fields are required" });
     }
@@ -43,7 +33,6 @@ router.post("/", async (req, res) => {
       return res.status(400).json({ error: "Phone number must be exactly 10 digits" });
     }
 
-    // Sanitize inputs (basic)
     const cleanData = {
       jobNumber: String(jobNumber).trim(),
       customerName: String(customerName).trim(),
@@ -51,21 +40,18 @@ router.post("/", async (req, res) => {
       phoneNumber: String(phoneNumber).trim(),
     };
 
-    const newItem = new Item(cleanData);
-    const savedItem = await newItem.save();
-
-    res.status(201).json(savedItem);
+    const savedItem = await new Item(cleanData).save();
+    return res.status(201).json(savedItem);
   } catch (err) {
     if (err.code === 11000) {
       return res.status(400).json({ error: "Job number already exists" });
     }
-    res.status(500).json({ error: "Server error", details: err.message });
+
+    return res.status(500).json({ error: "Server error", details: err.message });
   }
 });
 
-// @route   PUT /api/items/:id
-// @desc    Update an item
-router.put("/:id", async (req, res) => {
+router.put("/:id", requirePermission("items:update"), async (req, res) => {
   try {
     const { customerName, brand, phoneNumber, status, repairNotes } = req.body;
 
@@ -76,7 +62,6 @@ router.put("/:id", async (req, res) => {
     const item = await Item.findById(req.params.id);
     if (!item) return res.status(404).json({ msg: "Item not found" });
 
-    // Update only allowed fields
     if (customerName) item.customerName = String(customerName).trim();
     if (brand) item.brand = String(brand).trim();
     if (phoneNumber) item.phoneNumber = String(phoneNumber).trim();
@@ -84,50 +69,37 @@ router.put("/:id", async (req, res) => {
     if (repairNotes !== undefined) item.repairNotes = String(repairNotes).trim();
 
     const updatedItem = await item.save();
-    res.json(updatedItem);
+    return res.json(updatedItem);
   } catch (err) {
-    res.status(500).json({ error: "Server error", details: err.message });
+    return res.status(500).json({ error: "Server error", details: err.message });
   }
 });
 
-// @route   GET /api/items
-// @desc    Get all items with Pagination & Search
-router.get("/", async (req, res) => {
+router.get("/", requirePermission("items:read"), async (req, res) => {
   try {
-    const page = parseInt(req.query.page) || 1;
-    const limit = parseInt(req.query.limit) || 10;
+    const page = Number.parseInt(req.query.page, 10) || 1;
+    const limit = Number.parseInt(req.query.limit, 10) || 10;
     const skip = (page - 1) * limit;
     const search = req.query.search ? String(req.query.search).trim() : "";
 
-    let query = { isDeleted: false };
+    const query = { isDeleted: false };
 
     if (search) {
-      // Use Mongo Text Search if possible, else Regex
-      // Since existing data might not be indexed perfectly or user wants partial match:
       const searchRegex = new RegExp(escapeRegex(search), "i");
-
       query.$or = [
         { customerName: searchRegex },
         { brand: searchRegex },
         { jobNumber: searchRegex },
-        { phoneNumber: searchRegex }
+        { phoneNumber: searchRegex },
       ];
     }
 
-    // Execute Query with Pagination
-    const items = await Item.find(query)
-      .sort({ createdAt: -1 })
-      .skip(skip)
-      .limit(limit);
-
+    const items = await Item.find(query).sort({ createdAt: -1 }).skip(skip).limit(limit);
     const total = await Item.countDocuments(query);
 
-    // Calculate Stats (Global, not just for search result to keep dashboard consistent, 
-    // or arguably for search result. Usually dashboard stats are global).
-    // Let's do Global Stats for the top cards.
-    const statsCheck = await Item.aggregate([
+    const statsAggregation = await Item.aggregate([
       { $match: { isDeleted: false } },
-      { $group: { _id: "$status", count: { $sum: 1 } } }
+      { $group: { _id: "$status", count: { $sum: 1 } } },
     ]);
 
     const stats = {
@@ -135,31 +107,29 @@ router.get("/", async (req, res) => {
       inProgress: 0,
       waiting: 0,
       ready: 0,
-      delivered: 0
+      delivered: 0,
     };
 
-    statsCheck.forEach(s => {
-      if (s._id === "In Progress") stats.inProgress = s.count;
-      if (s._id === "Waiting for Parts") stats.waiting = s.count;
-      if (s._id === "Ready") stats.ready = s.count;
-      if (s._id === "Delivered") stats.delivered = s.count;
+    statsAggregation.forEach((entry) => {
+      if (entry._id === "In Progress") stats.inProgress = entry.count;
+      if (entry._id === "Waiting for Parts") stats.waiting = entry.count;
+      if (entry._id === "Ready") stats.ready = entry.count;
+      if (entry._id === "Delivered") stats.delivered = entry.count;
     });
 
-    res.json({
+    return res.json({
       items,
       currentPage: page,
       totalPages: Math.ceil(total / limit),
       totalItems: total,
-      stats // Send aggregated stats
+      stats,
     });
   } catch (err) {
-    res.status(500).json({ error: "Server error", details: err.message });
+    return res.status(500).json({ error: "Server error", details: err.message });
   }
 });
 
-// @route   DELETE /api/items/:id
-// @desc    Soft delete an item
-router.delete("/:id", async (req, res) => {
+router.delete("/:id", requirePermission("items:delete"), async (req, res) => {
   try {
     const item = await Item.findById(req.params.id);
     if (!item) return res.status(404).json({ msg: "Item not found" });
@@ -167,9 +137,9 @@ router.delete("/:id", async (req, res) => {
     item.isDeleted = true;
     await item.save();
 
-    res.json({ msg: "Item removed" });
+    return res.json({ msg: "Item removed" });
   } catch (err) {
-    res.status(500).json({ error: "Server error", details: err.message });
+    return res.status(500).json({ error: "Server error", details: err.message });
   }
 });
 

@@ -10,7 +10,7 @@ import {
   Stack,
   Container,
   Box,
-  InputAdornment
+  InputAdornment,
 } from "@mui/material";
 import {
   Person as PersonIcon,
@@ -18,18 +18,20 @@ import {
   Devices as DeviceIcon,
   ConfirmationNumber as JobIcon,
   ArrowBack as ArrowBackIcon,
-  Save as SaveIcon
+  Save as SaveIcon,
 } from "@mui/icons-material";
 import { useNavigate } from "react-router-dom";
 import { motion } from "framer-motion";
-import API_BASE_URL from "../api";
+import { authFetch } from "../api";
+import { useAuth } from "../auth/AuthContext";
 
 const BRAND_OPTIONS = [
-  "HP", "Lenovo", "Dell", "Apple", "Samsung", "Acer", "Asus", "Toshiba", "Sony", "MSI", "Infinix", "Life"
+  "HP", "Lenovo", "Dell", "Apple", "Samsung", "Acer", "Asus", "Toshiba", "Sony", "MSI", "Infinix", "Life",
 ];
 
 const Input = () => {
   const navigate = useNavigate();
+  const { user, logout } = useAuth();
   const [form, setForm] = useState({
     jobNumber: "",
     customerName: "",
@@ -45,7 +47,7 @@ const Input = () => {
     setForm((prev) => ({ ...prev, [name]: value }));
   };
 
-  const handleBrandChange = (event, newValue) => {
+  const handleBrandChange = (_event, newValue) => {
     setForm((prev) => ({ ...prev, brand: newValue }));
   };
 
@@ -65,9 +67,8 @@ const Input = () => {
     setLoading(true);
 
     try {
-      const res = await fetch(`${API_BASE_URL}/api/items`, {
+      const res = await authFetch("/api/items", {
         method: "POST",
-        headers: { "Content-Type": "application/json" },
         body: JSON.stringify(form),
       });
 
@@ -76,12 +77,10 @@ const Input = () => {
       if (res.ok) {
         setSnackbar({ open: true, message: "✅ Job created successfully!", severity: "success" });
         setForm({ jobNumber: "", customerName: "", brand: "", phoneNumber: "" });
-        // Optional: Navigate to list after success
-        // navigate("/items"); 
       } else {
         setSnackbar({ open: true, message: data.error || "Failed to save data.", severity: "error" });
       }
-    } catch (err) {
+    } catch (_err) {
       setSnackbar({ open: true, message: "Error connecting to server.", severity: "error" });
     } finally {
       setLoading(false);
@@ -92,40 +91,35 @@ const Input = () => {
 
   return (
     <Container maxWidth="sm" sx={{ minHeight: "100vh", display: "flex", flexDirection: "column", justifyContent: "center", py: 4 }}>
-      <motion.div
-        initial={{ opacity: 0, y: 30 }}
-        animate={{ opacity: 1, y: 0 }}
-        transition={{ duration: 0.6, ease: "easeOut" }}
-      >
+      <motion.div initial={{ opacity: 0, y: 30 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.6, ease: "easeOut" }}>
         <Paper
           elevation={0}
           className="glass-panel"
-          sx={{
-            p: 5,
-            borderRadius: "var(--radius)",
-            position: "relative",
-            overflow: "hidden"
-          }}
+          sx={{ p: 5, borderRadius: "var(--radius)", position: "relative", overflow: "hidden" }}
         >
-          {/* Decorative Background Blob */}
-          <Box sx={{
-            position: "absolute",
-            top: -50,
-            right: -50,
-            width: 150,
-            height: 150,
-            backgroundImage: "linear-gradient(135deg, var(--color-primary), #4f46e5)",
-            filter: "blur(60px)",
-            opacity: 0.2,
-            zIndex: 0,
-            borderRadius: "50%"
-          }} />
+          <Box
+            sx={{
+              position: "absolute",
+              top: -50,
+              right: -50,
+              width: 150,
+              height: 150,
+              backgroundImage: "linear-gradient(135deg, var(--color-primary), #4f46e5)",
+              filter: "blur(60px)",
+              opacity: 0.2,
+              zIndex: 0,
+              borderRadius: "50%",
+            }}
+          />
 
           <Typography variant="h4" align="center" fontWeight="900" gutterBottom className="text-gradient" sx={{ position: "relative" }}>
             New Repair Job
           </Typography>
-          <Typography variant="body1" align="center" color="text.secondary" mb={5} sx={{ position: "relative" }}>
+          <Typography variant="body1" align="center" color="text.secondary" mb={1.5} sx={{ position: "relative" }}>
             Enter device and customer details to generate a job sheet.
+          </Typography>
+          <Typography variant="body2" align="center" color="text.secondary" mb={4} sx={{ position: "relative" }}>
+            Signed in as <strong>{user?.displayName}</strong> ({user?.role})
           </Typography>
 
           <form onSubmit={handleSubmit} style={{ position: "relative", zIndex: 1 }}>
@@ -169,7 +163,7 @@ const Input = () => {
                 options={BRAND_OPTIONS}
                 value={form.brand}
                 onChange={handleBrandChange}
-                onInputChange={(event, newInputValue) => {
+                onInputChange={(_event, newInputValue) => {
                   setForm((prev) => ({ ...prev, brand: newInputValue }));
                 }}
                 renderInput={(params) => (
@@ -234,7 +228,7 @@ const Input = () => {
                     background: "var(--color-primary)",
                     fontWeight: 700,
                     textTransform: "none",
-                    py: 1.2
+                    py: 1.2,
                   }}
                 >
                   {loading ? "Saving..." : "Create Job"}
@@ -244,6 +238,18 @@ const Input = () => {
           </form>
         </Paper>
       </motion.div>
+
+      <Box sx={{ mt: 2, textAlign: "center" }}>
+        <Button
+          variant="text"
+          onClick={async () => {
+            await logout();
+            navigate("/login", { replace: true });
+          }}
+        >
+          Logout
+        </Button>
+      </Box>
 
       <Snackbar
         open={snackbar.open}
