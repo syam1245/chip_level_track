@@ -3,7 +3,7 @@ import { Navigate } from "react-router-dom";
 import { Box, CircularProgress } from "@mui/material";
 import { useAuth } from "../auth/AuthContext";
 
-const ProtectedRoute = ({ children }) => {
+const ProtectedRoute = ({ children, adminOnly = false }) => {
   const { user, loadingSession } = useAuth();
 
   if (loadingSession) {
@@ -15,6 +15,7 @@ const ProtectedRoute = ({ children }) => {
   }
 
   if (!user) return <Navigate to="/login" replace />;
+  if (adminOnly && user.role !== "admin") return <Navigate to="/" replace />;
 
   return children;
 };

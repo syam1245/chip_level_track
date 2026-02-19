@@ -78,16 +78,6 @@ const AuthAppContent = ({ mode, toggleTheme }) => {
 
   if (loadingSession) return <LoadingFallback />;
 
-  // Component logic based on view state
-  // If user is admin and hasn't picked a mode yet, show RoleSelection on "/"
-  const renderHomeContent = () => {
-    if (!user) return null;
-    if (user.role === "admin" && isAdminView === null) {
-      return <RoleSelection />;
-    }
-    return isAdminView ? <AdminDashboard /> : <Input />;
-  };
-
   return (
     <>
       <Suspense fallback={<LoadingFallback />}>
@@ -95,22 +85,37 @@ const AuthAppContent = ({ mode, toggleTheme }) => {
         <Routes>
           <Route path="/login" element={<LoginPage />} />
 
+          {/* "/" = New Job form — always, regardless of admin mode */}
           <Route
             path="/"
-            element={(
+            element={
               <ProtectedRoute>
-                {renderHomeContent()}
+                {user?.role === "admin" && isAdminView === null
+                  ? <RoleSelection />
+                  : <Input />
+                }
               </ProtectedRoute>
-            )}
+            }
           />
 
+          {/* Dedicated route for job list (tech view) */}
           <Route
             path="/items"
-            element={(
+            element={
               <ProtectedRoute>
                 <ItemsList />
               </ProtectedRoute>
-            )}
+            }
+          />
+
+          {/* Dedicated route for admin dashboard */}
+          <Route
+            path="/admin"
+            element={
+              <ProtectedRoute adminOnly>
+                <AdminDashboard />
+              </ProtectedRoute>
+            }
           />
 
           <Route path="*" element={<Navigate to="/" replace />} />

@@ -57,15 +57,16 @@ const Navbar = ({ toggleTheme, mode }) => {
 
     const handleToggleWithRedirect = () => {
         toggleAdminView();
-        // Shift to the primary view of the selected mode
-        navigate("/");
+        // Navigate to the primary view of the selected mode
+        const nextIsAdmin = !isAdminView;
+        navigate(nextIsAdmin ? "/admin" : "/");
         if (isMobile) setMobileOpen(false);
     };
 
     const navItems = [
-        { label: "New Job", icon: <AddIcon />, path: "/", show: !isAdminView },
-        { label: "Admin Dashboard", icon: <DashboardIcon />, path: "/", show: isAdminView },
-        { label: "Job List", icon: <ListIcon />, path: "/items", show: true },
+        { label: "New Job", icon: <AddIcon />, path: "/", show: true },
+        { label: "Repair List", icon: <ListIcon />, path: "/items", show: true },
+        { label: "Admin Panel", icon: <DashboardIcon />, path: "/admin", show: isAdmin && isAdminView },
     ];
 
     const drawer = (
@@ -74,7 +75,6 @@ const Navbar = ({ toggleTheme, mode }) => {
                 <Avatar sx={{ bgcolor: 'var(--color-primary)', width: 40, height: 40 }}>{user.username[0]}</Avatar>
                 <Box>
                     <Typography variant="subtitle1" fontWeight={800}>{user.displayName}</Typography>
-                    <Typography variant="caption" color="text.secondary">{user.role.toUpperCase()}</Typography>
                 </Box>
             </Box>
             <Divider sx={{ mb: 2 }} />
@@ -165,7 +165,7 @@ const Navbar = ({ toggleTheme, mode }) => {
                             gap: 1,
                             letterSpacing: '-1px'
                         }}
-                        onClick={() => navigate("/")}
+                        onClick={() => navigate(isAdminView ? "/admin" : "/")}
                     >
                         {isAdminView ? <ManagementIcon /> : <AddIcon />}
                         Admin Info Solution
@@ -248,9 +248,7 @@ const Navbar = ({ toggleTheme, mode }) => {
                                         <Typography variant="body2" fontWeight={800} display="block" sx={{ lineHeight: 1 }}>
                                             {user.displayName}
                                         </Typography>
-                                        <Typography variant="caption" color="text.secondary">
-                                            {user.role}
-                                        </Typography>
+
                                     </Box>
                                     <Avatar
                                         sx={{

@@ -13,7 +13,7 @@ export const PREDEFINED_USERS = [
     username: "admin",
     role: ROLES.ADMIN,
     passwordHash: hashPassword(adminPassword),
-    displayName: "Admin User",
+    displayName: "Shyam",
   },
   {
     username: "user",

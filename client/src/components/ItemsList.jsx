@@ -295,6 +295,7 @@ const ItemsList = () => {
 
   const [editItem, setEditItem] = useState(null);
   const [printItem, setPrintItem] = useState(null);
+  const [deleteConfirmId, setDeleteConfirmId] = useState(null); // replaces window.confirm
   const [snackbar, setSnackbar] = useState({ open: false, message: "", severity: "success" });
 
   const navigate = useNavigate();
@@ -326,18 +327,21 @@ const ItemsList = () => {
     return () => clearTimeout(timer);
   }, [search]);
 
-  // Fetch items
+  // Fetch items — AbortController cancels stale requests on rapid re-triggers
   const fetchItems = useCallback(() => {
+    const controller = new AbortController();
     setLoading(true);
+
     let url = `/api/items?page=${page}&limit=${LIMIT}`;
     if (debouncedSearch) {
+      // Global search — ignore the active status card filter entirely
       url += `&search=${encodeURIComponent(debouncedSearch)}`;
-    }
-    if (activeFilter && activeFilter !== "all") {
+    } else if (activeFilter && activeFilter !== "all") {
+      // Card filter only applies when the search box is empty
       url += `&statusGroup=${activeFilter}`;
     }
 
-    authFetch(url, { method: "GET" })
+    authFetch(url, { method: "GET", signal: controller.signal })
       .then((res) => res.json())
       .then((data) => {
         setItems(data.items || []);
@@ -346,25 +350,34 @@ const ItemsList = () => {
         setLoading(false);
       })
       .catch((err) => {
+        if (err.name === "AbortError") return; // cancelled — ignore
         console.error(err);
         setSnackbar({ open: true, message: "Failed to load data", severity: "error" });
         setLoading(false);
       });
+
+    // Return cleanup so the useEffect can cancel on re-fire
+    return () => controller.abort();
   }, [debouncedSearch, page, activeFilter]);
 
   useEffect(() => {
-    fetchItems();
+    const cancel = fetchItems();
+    return cancel; // abort on cleanup
   }, [fetchItems]);
 
   const handleDelete = async (id) => {
-    if (!window.confirm("Are you sure you want to delete this item?")) return;
+    setDeleteConfirmId(id);
+  };
 
+  const confirmDelete = async () => {
+    const id = deleteConfirmId;
+    setDeleteConfirmId(null);
     try {
       const res = await authFetch(`/api/items/${id}`, { method: "DELETE" });
       if (res.ok) {
         setItems((prev) => prev.filter((item) => item._id !== id));
         setSnackbar({ open: true, message: "Deleted successfully", severity: "success" });
-        fetchItems(); // Refresh to update counts/pages
+        fetchItems();
       } else {
         setSnackbar({ open: true, message: "Failed to delete", severity: "error" });
       }
@@ -795,6 +808,35 @@ const ItemsList = () => {
         <DialogActions sx={{ p: 2 }}>
           <Button onClick={() => setEditItem(null)} sx={{ color: 'text.secondary' }}>Cancel</Button>
           <Button variant="contained" onClick={handleEditSave} sx={{ borderRadius: "8px" }}>Save Changes</Button>
+        </DialogActions>
+      </Dialog>
+
+      {/* Delete Confirmation Dialog */}
+      <Dialog
+        open={!!deleteConfirmId}
+        onClose={() => setDeleteConfirmId(null)}
+        PaperProps={{ sx: { borderRadius: "16px", p: 1 } }}
+        maxWidth="xs"
+        fullWidth
+      >
+        <DialogTitle sx={{ fontWeight: 800, pb: 0 }}>Delete Job?</DialogTitle>
+        <DialogContent>
+          <Typography color="text.secondary" sx={{ mt: 1 }}>
+            This action cannot be undone. The job will be permanently removed from the list.
+          </Typography>
+        </DialogContent>
+        <DialogActions sx={{ p: 2, gap: 1 }}>
+          <Button onClick={() => setDeleteConfirmId(null)} sx={{ color: "text.secondary", borderRadius: "8px" }}>
+            Cancel
+          </Button>
+          <Button
+            variant="contained"
+            color="error"
+            onClick={confirmDelete}
+            sx={{ borderRadius: "8px", fontWeight: 700 }}
+          >
+            Yes, Delete
+          </Button>
         </DialogActions>
       </Dialog>
 
