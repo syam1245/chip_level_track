@@ -30,7 +30,7 @@ export const applySecurity = (app) => {
 
   const limiter = rateLimit({
     windowMs: 15 * 60 * 1000, 
-    limit: 200,               
+    limit: 1000,               
     standardHeaders: 'draft-7', 
     legacyHeaders: false,
     message: { success: false, message: "Too many requests." },

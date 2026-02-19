@@ -129,40 +129,44 @@ router.get("/", requirePermission("items:read"), async (req, res) => {
     // For Admin: include metadata if explicitly requested via query or if on audit route
     const showMetadata = req.user?.role === "admin" && req.query.includeMetadata === "true";
 
-    let queryBuilder = Item.find(query).sort({ createdAt: -1 }).skip(skip).limit(limit);
+    let queryBuilder = Item.find(query).sort({ createdAt: -1 }).skip(skip).limit(limit).lean();
     if (showMetadata) queryBuilder = queryBuilder.select("+metadata");
 
-    const [items, total, statsAggregation] = await Promise.all([
+    // Run items fetch + full-collection stats aggregation in parallel
+    const [items, aggResult] = await Promise.all([
       queryBuilder,
-      Item.countDocuments(query),
       Item.aggregate([
         { $match: { isDeleted: false } },
-        { $group: { _id: "$status", count: { $sum: 1 } } },
+        {
+          $group: {
+            _id: null,
+            total: { $sum: 1 },
+            inProgress: { $sum: { $cond: [{ $in: ["$status", ["Received", "In Progress", "Waiting for Parts", "Sent to Service"]] }, 1, 0] } },
+            ready: { $sum: { $cond: [{ $in: ["$status", ["Ready", "Delivered"]] }, 1, 0] } },
+            pending: { $sum: { $cond: [{ $eq: ["$status", "Pending"] }, 1, 0] } },
+          },
+        },
       ]),
     ]);
 
+    // When search/status-filter is active we need an accurate filtered count for pagination
+    const filteredTotal = (search || statusFilter)
+      ? await Item.countDocuments(query)
+      : (aggResult[0]?.total ?? 0);
+
+    const statsRaw = aggResult[0] ?? {};
     const stats = {
-      total: 0,
-      inProgress: 0,
-      ready: 0,
-      pending: 0,
+      total: statsRaw.total ?? 0,
+      inProgress: statsRaw.inProgress ?? 0,
+      ready: statsRaw.ready ?? 0,
+      pending: statsRaw.pending ?? 0,
     };
-
-    const IN_PROGRESS_STATUSES = new Set(["Received", "In Progress", "Waiting for Parts", "Sent to Service"]);
-    const READY_STATUSES = new Set(["Ready", "Delivered"]);
-
-    statsAggregation.forEach((entry) => {
-      stats.total += entry.count;
-      if (IN_PROGRESS_STATUSES.has(entry._id)) stats.inProgress += entry.count;
-      if (READY_STATUSES.has(entry._id)) stats.ready += entry.count;
-      if (entry._id === "Pending") stats.pending += entry.count;
-    });
 
     return res.json({
       items,
       currentPage: page,
-      totalPages: Math.ceil(total / limit),
-      totalItems: total,
+      totalPages: Math.ceil(filteredTotal / limit),
+      totalItems: filteredTotal,
       stats,
     });
   } catch (err) {
