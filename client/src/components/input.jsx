@@ -287,7 +287,7 @@ const Input = () => {
                   }
                 }}
               >
-                Scan Job Sheet / Label with Gemini
+                Scan Job Sheet using Camera
               </Button>
 
               <Stack direction="row" spacing={2} pt={2}>
@@ -299,7 +299,7 @@ const Input = () => {
                   startIcon={<ArrowBackIcon />}
                   sx={{ color: "text.secondary", fontWeight: 600 }}
                 >
-                  Cancel / View All
+                  View All
                 </Button>
                 <Button
                   type="submit"
@@ -364,7 +364,7 @@ const Input = () => {
               {visionLoading && (
                 <Box sx={{ position: 'absolute', inset: 0, bgcolor: 'rgba(0,0,0,0.5)', display: 'flex', flexWrap: 'wrap', placeContent: 'center', gap: 2, color: '#fff', zIndex: 2 }}>
                   <CircularProgress color="inherit" />
-                  <Typography variant="h6" fontWeight="700">Gemini is analyzing...</Typography>
+                  <Typography variant="h6" fontWeight="700">Analyzing the image...</Typography>
                 </Box>
               )}
             </Box>
