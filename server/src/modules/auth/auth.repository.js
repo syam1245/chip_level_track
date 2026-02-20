@@ -6,7 +6,7 @@ class AuthRepository {
     }
 
     async findAllUsers() {
-        return await User.find({}, "username displayName role").sort({ username: 1 });
+        return await User.find({}, "username displayName role").sort({ username: 1 }).lean();
     }
 
     async updatePassword(username, hashedPassword) {
