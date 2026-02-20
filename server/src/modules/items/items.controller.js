@@ -1,0 +1,74 @@
+import ItemService from "./items.service.js";
+import ItemValidator from "./items.validator.js";
+import asyncHandler from "../../core/utils/asyncHandler.js";
+import { UAParser } from "ua-parser-js";
+
+class ItemController {
+    getAllItems = asyncHandler(async (req, res) => {
+        const page = Number.parseInt(req.query.page, 10) || 1;
+        const limit = Number.parseInt(req.query.limit, 10) || 10;
+        const search = req.query.search ? String(req.query.search).trim() : "";
+        const statusGroup = req.query.statusGroup ? String(req.query.statusGroup).trim() : "";
+        const includeMetadata = req.query.includeMetadata;
+
+        const result = await ItemService.getItems({
+            page,
+            limit,
+            search,
+            statusGroup,
+            userRole: req.user?.role,
+            includeMetadata
+        });
+
+        res.json(result);
+    });
+
+    createItem = asyncHandler(async (req, res) => {
+        ItemValidator.validateCreate(req.body);
+        const { jobNumber, customerName, brand, phoneNumber } = req.body;
+
+        const parser = new UAParser(req.headers["user-agent"]);
+        const deviceResult = parser.getResult();
+
+        const cleanData = {
+            jobNumber: String(jobNumber).trim(),
+            customerName: String(customerName).trim(),
+            brand: String(brand).trim(),
+            phoneNumber: String(phoneNumber).trim(),
+            metadata: {
+                ip: req.ip || req.connection.remoteAddress,
+                browser: deviceResult.browser.name,
+                os: deviceResult.os.name,
+                device: deviceResult.device.vendor ? `${deviceResult.device.vendor} ${deviceResult.device.model}` : (deviceResult.device.type || "Desktop"),
+                ua: req.headers["user-agent"]
+            }
+        };
+
+        const item = await ItemService.createItem(cleanData, req.user);
+        res.status(201).json(item);
+    });
+
+    updateItem = asyncHandler(async (req, res) => {
+        ItemValidator.validateUpdate(req.body);
+        const item = await ItemService.updateItem(req.params.id, req.body);
+        res.json(item);
+    });
+
+    deleteItem = asyncHandler(async (req, res) => {
+        await ItemService.deleteItem(req.params.id);
+        res.json({ msg: "Item removed" });
+    });
+
+    getBackup = asyncHandler(async (req, res) => {
+        const items = await ItemService.getBackup();
+        const timestamp = new Date().toISOString().replace(/[:.]/g, "-");
+        const filename = `backup-${timestamp}.json`;
+
+        res.setHeader("Content-Disposition", `attachment; filename=${filename}`);
+        res.setHeader("Content-Type", "application/json");
+
+        res.send(JSON.stringify(items, null, 2));
+    });
+}
+
+export default new ItemController();
