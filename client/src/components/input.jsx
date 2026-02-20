@@ -60,9 +60,35 @@ const Input = () => {
   const webcamRef = useRef(null);
   const fileInputRef = useRef(null);
 
+  const optimizeImage = (dataUrl, maxWidth = 1024) => {
+    return new Promise((resolve) => {
+      const img = new Image();
+      img.onload = () => {
+        let width = img.width;
+        let height = img.height;
+
+        if (width > maxWidth) {
+          height = Math.round((height * maxWidth) / width);
+          width = maxWidth;
+        }
+
+        const canvas = document.createElement("canvas");
+        canvas.width = width;
+        canvas.height = height;
+        const ctx = canvas.getContext("2d");
+        ctx.drawImage(img, 0, 0, width, height);
+
+        resolve(canvas.toDataURL("image/jpeg", 0.8));
+      };
+      img.src = dataUrl;
+    });
+  };
+
   const capture = useCallback(() => {
     const imageSrc = webcamRef.current.getScreenshot();
-    setCapturedImage(imageSrc);
+    optimizeImage(imageSrc).then(optimizedSrc => {
+      setCapturedImage(optimizedSrc);
+    });
   }, [webcamRef]);
 
   const handleFileUpload = (e) => {
@@ -70,7 +96,9 @@ const Input = () => {
     if (file) {
       const reader = new FileReader();
       reader.onloadend = () => {
-        setCapturedImage(reader.result);
+        optimizeImage(reader.result).then(optimizedSrc => {
+          setCapturedImage(optimizedSrc);
+        });
       };
       reader.readAsDataURL(file);
     }
