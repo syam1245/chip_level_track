@@ -16,6 +16,8 @@ const itemSchema = new mongoose.Schema(
       index: true
     },
     repairNotes: { type: String },
+    issue: { type: String },
+    cost: { type: Number, default: 0 },
     // Future: public service-history timeline per job
     statusHistory: [
       {

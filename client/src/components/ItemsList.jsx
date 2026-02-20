@@ -59,227 +59,10 @@ import { motion, AnimatePresence } from "framer-motion";
 import API_BASE_URL, { authFetch } from "../api";
 import { useAuth } from "../auth/AuthContext";
 import JobSheetPrintTemplate from "./JobSheetPrintTemplate";
-
-const STATUS_COLORS = {
-  Received: "default",
-  "In Progress": "warning",
-  "Waiting for Parts": "error",
-  "Sent to Service": "info",
-  Ready: "success",
-  Delivered: "primary",
-  Return: "default",
-};
-
-// Status accent colors for the card top bar
-const STATUS_ACCENT = {
-  Received: '#94a3b8',
-  'In Progress': '#f59e0b',
-  'Waiting for Parts': '#ef4444',
-  'Sent to Service': '#3b82f6',
-  Ready: '#10b981',
-  Delivered: '#6366f1',
-  Return: '#a855f7',
-};
-
-const formatDate = (date) => {
-  if (!date) return '—';
-  const d = new Date(date);
-  const day = String(d.getDate()).padStart(2, '0');
-  const month = String(d.getMonth() + 1).padStart(2, '0');
-  const year = String(d.getFullYear()).slice(-2);
-  return `${day}-${month}-${year}`;
-};
-
-// --- Sub-Components ---
-
-const StatCard = React.memo(({ title, value, color, icon, isActive, onClick }) => (
-  <motion.div
-    initial={{ opacity: 0, y: 20 }}
-    animate={{ opacity: 1, y: 0 }}
-    transition={{ duration: 0.3 }}
-    style={{ height: '100%' }}
-  >
-    <Card
-      elevation={0}
-      onClick={onClick}
-      sx={{
-        bgcolor: isActive ? `${color}18` : "var(--surface)",
-        border: isActive ? `2px solid ${color}` : "1px solid var(--border)",
-        borderRadius: "var(--radius)",
-        boxShadow: isActive ? `0 0 0 3px ${color}22` : "var(--shadow-sm)",
-        height: '100%',
-        cursor: 'pointer',
-        transition: "all 0.2s ease",
-        "&:hover": { transform: "translateY(-3px)", boxShadow: `0 6px 20px ${color}30`, borderColor: color }
-      }}
-    >
-      <CardContent sx={{
-        p: { xs: 1.5, md: 2 },
-        display: 'flex',
-        alignItems: 'center',
-        justifyContent: 'space-between',
-        "&:last-child": { pb: { xs: 1.5, md: 2 } }
-      }}>
-        <Box>
-          <Typography variant="caption" color="text.secondary" fontWeight="700" textTransform="uppercase" sx={{ fontSize: { xs: '0.6rem', md: '0.7rem' }, letterSpacing: '0.06em' }}>
-            {title}
-          </Typography>
-          <Typography
-            variant="h5"
-            fontWeight="800"
-            sx={{ color: color, mt: 0.25, lineHeight: 1.2, fontSize: { xs: '1.4rem', md: '1.75rem' } }}
-          >
-            {value}
-          </Typography>
-          {isActive && (
-            <Typography variant="caption" sx={{ color: color, fontWeight: 700, fontSize: '0.6rem' }}>
-              ● ACTIVE FILTER
-            </Typography>
-          )}
-        </Box>
-        <Box sx={{
-          bgcolor: `${color}18`,
-          p: { xs: 1, md: 1.5 },
-          borderRadius: "12px",
-          color: color,
-          display: 'flex',
-          '& svg': { fontSize: { xs: '1.3rem', md: '1.75rem' } }
-        }}>
-          {icon}
-        </Box>
-      </CardContent>
-    </Card>
-  </motion.div>
-));
-
-const MobileCard = React.memo(({ item, onWhatsApp, onPrint, onEdit, onDelete, canDelete }) => (
-  <motion.div
-    layout
-    initial={{ opacity: 0, scale: 0.95 }}
-    animate={{ opacity: 1, scale: 1 }}
-    exit={{ opacity: 0, scale: 0.95 }}
-    transition={{ duration: 0.2 }}
-  >
-    <Card sx={{
-      mb: 2,
-      borderRadius: "var(--radius)",
-      boxShadow: "var(--shadow-sm)",
-      border: "1px solid var(--border)",
-      overflow: 'hidden',
-      position: 'relative'
-    }}>
-      {/* Status accent bar at top */}
-      <Box sx={{
-        height: '4px',
-        background: STATUS_ACCENT[item.status] || '#94a3b8'
-      }} />
-      <CardContent sx={{ pb: 1, p: { xs: 1.5, sm: 2 } }}>
-        {/* Header row: Job number + Status chip */}
-        <Box display="flex" justifyContent="space-between" alignItems="center" mb={1.5}>
-          <Typography variant="caption" fontWeight="900" sx={{ color: "primary.main", letterSpacing: '0.05em', bgcolor: alpha('#3b82f6', 0.1), px: 1, py: 0.5, borderRadius: 1.5 }}>
-            #{item.jobNumber}
-          </Typography>
-          <Chip
-            label={item.status || "Received"}
-            color={STATUS_COLORS[item.status] || "default"}
-            size="small"
-            sx={{ fontWeight: 800, borderRadius: '6px', fontSize: '0.65rem', height: 20 }}
-          />
-        </Box>
-
-        {/* Customer + Device row */}
-        <Box mb={1.5}>
-          <Typography variant="body1" fontWeight="800" sx={{ lineHeight: 1.2, mb: 0.5 }}>
-            {item.customerName}
-          </Typography>
-          <Box display="flex" alignItems="center" gap={1}>
-            <DeviceIcon sx={{ fontSize: 14, color: 'text.secondary' }} />
-            <Typography variant="body2" color="text.secondary" fontWeight="600" sx={{ fontSize: '0.8rem' }}>
-              {item.brand}
-            </Typography>
-          </Box>
-        </Box>
-
-        <Box display="flex" justifyContent="space-between" alignItems="center">
-          <Typography variant="caption" color="text.secondary" sx={{ display: 'flex', alignItems: 'center', gap: 0.5, fontWeight: 700 }}>
-            📞 {item.phoneNumber}
-          </Typography>
-          <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5 }}>
-            <Typography variant="caption" color="text.disabled" sx={{ fontSize: '0.65rem' }}>
-              By <strong>{item.technicianName}</strong> • {formatDate(item.createdAt)}
-            </Typography>
-          </Box>
-        </Box>
-
-        {/* Repair Notes — only shown if present */}
-        {item.repairNotes && (
-          <Box sx={{
-            mt: 1,
-            p: 1,
-            bgcolor: 'action.hover',
-            borderRadius: '8px',
-            borderLeft: '3px solid var(--color-primary)',
-            display: 'flex',
-            gap: 0.75,
-            alignItems: 'flex-start'
-          }}>
-            <NotesIcon sx={{ fontSize: '0.9rem', color: 'var(--color-primary)', mt: '2px', flexShrink: 0 }} />
-            <Typography
-              variant="caption"
-              color="text.secondary"
-              sx={{
-                lineHeight: 1.5,
-                display: '-webkit-box',
-                WebkitLineClamp: 2,
-                WebkitBoxOrient: 'vertical',
-                overflow: 'hidden',
-                fontStyle: 'italic'
-              }}
-            >
-              {item.repairNotes}
-            </Typography>
-          </Box>
-        )}
-
-        {/* Date */}
-        <Typography variant="caption" color="text.disabled" sx={{ display: 'block', mt: 1 }}>
-          {formatDate(item.createdAt)}
-        </Typography>
-      </CardContent>
-
-      <Divider sx={{ opacity: 0.4 }} />
-
-      <CardActions sx={{ justifyContent: "space-between", px: 1.5, py: 1 }}>
-        <Box display="flex" gap={0.75}>
-          <Tooltip title="WhatsApp">
-            <IconButton size="small" color="success" onClick={() => onWhatsApp(item)} sx={{ bgcolor: '#dcfce7' }}>
-              <WhatsAppIcon sx={{ fontSize: '1.1rem' }} />
-            </IconButton>
-          </Tooltip>
-          <Tooltip title="Print Job Sheet">
-            <IconButton size="small" onClick={() => onPrint(item)} sx={{ bgcolor: '#f1f5f9', color: '#64748b' }}>
-              <PrintIcon sx={{ fontSize: '1.1rem' }} />
-            </IconButton>
-          </Tooltip>
-        </Box>
-        <Box display="flex" gap={0.75}>
-          <Tooltip title="Edit">
-            <IconButton size="small" color="primary" onClick={() => onEdit(item)} sx={{ bgcolor: '#dbeafe' }}>
-              <EditIcon sx={{ fontSize: '1.1rem' }} />
-            </IconButton>
-          </Tooltip>
-          {canDelete && (
-            <Tooltip title="Delete">
-              <IconButton size="small" color="error" onClick={() => onDelete(item._id)} sx={{ bgcolor: '#fee2e2' }}>
-                <DeleteIcon sx={{ fontSize: '1.1rem' }} />
-              </IconButton>
-            </Tooltip>
-          )}
-        </Box>
-      </CardActions>
-    </Card>
-  </motion.div>
-));
+import StatCard from "./StatCard";
+import MobileCard from "./MobileCard";
+import { STATUS_COLORS, STATUS_ACCENT } from "../constants/status";
+import { formatDate } from "../utils/date";
 
 const ItemsList = () => {
   const [items, setItems] = useState([]);
@@ -422,8 +205,10 @@ const ItemsList = () => {
   }, []);
 
   const handleWhatsApp = useCallback((item) => {
+    // Strips all non-numeric characters from the string
+    const cleanNumber = item.phoneNumber.replace(/\D/g, '');
     const message = `Hi I am from Admin info solution, your ${item.brand} (Job #${item.jobNumber}) is now READY for pickup! Give us a callback for further details.`;
-    const url = `https://wa.me/91${item.phoneNumber}?text=${encodeURIComponent(message)}`;
+    const url = `https://wa.me/91${cleanNumber}?text=${encodeURIComponent(message)}`;
     window.open(url, "_blank");
   }, []);
 
@@ -624,6 +409,7 @@ const ItemsList = () => {
                     <TableCell><Typography variant="subtitle2" fontWeight="700" color="text.secondary">DEVICE</Typography></TableCell>
                     <TableCell><Typography variant="subtitle2" fontWeight="700" color="text.secondary">TECHNICIAN</Typography></TableCell>
                     <TableCell><Typography variant="subtitle2" fontWeight="700" color="text.secondary">PHONE</Typography></TableCell>
+                    <TableCell><Typography variant="subtitle2" fontWeight="700" color="text.secondary">AMOUNT</Typography></TableCell>
                     <TableCell><Typography variant="subtitle2" fontWeight="700" color="text.secondary">STATUS</Typography></TableCell>
                     <TableCell><Typography variant="subtitle2" fontWeight="700" color="text.secondary">NOTES</Typography></TableCell>
                     <TableCell align="right"><Typography variant="subtitle2" fontWeight="700" color="text.secondary">ACTIONS</Typography></TableCell>
@@ -642,6 +428,11 @@ const ItemsList = () => {
                         <Typography variant="body2" fontWeight="600">{item.technicianName}</Typography>
                       </TableCell>
                       <TableCell>{item.phoneNumber}</TableCell>
+                      <TableCell>
+                        <Typography variant="body2" fontWeight="700" color="success.main">
+                          {item.cost ? `₹${item.cost}` : "—"}
+                        </Typography>
+                      </TableCell>
                       <TableCell>
                         <Chip
                           label={item.status || "Received"}
@@ -784,6 +575,28 @@ const ItemsList = () => {
                 fullWidth
                 size="small"
               />
+
+              <Grid container spacing={2}>
+                <Grid item xs={12} sm={6}>
+                  <TextField
+                    label="Fault / Issue"
+                    value={editItem.issue || ""}
+                    onChange={(e) => setEditItem({ ...editItem, issue: e.target.value })}
+                    fullWidth
+                    size="small"
+                  />
+                </Grid>
+                <Grid item xs={12} sm={6}>
+                  <TextField
+                    label="Total Cost (₹)"
+                    type="number"
+                    value={editItem.cost || ""}
+                    onChange={(e) => setEditItem({ ...editItem, cost: e.target.value })}
+                    fullWidth
+                    size="small"
+                  />
+                </Grid>
+              </Grid>
               <FormControl fullWidth size="small">
                 <InputLabel>Status</InputLabel>
                 <Select

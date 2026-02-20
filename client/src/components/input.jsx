@@ -48,6 +48,8 @@ const Input = () => {
     customerName: "",
     brand: "",
     phoneNumber: "",
+    issue: "",
+    cost: "",
   });
   const [snackbar, setSnackbar] = useState({ open: false, message: "", severity: "success" });
   const [loading, setLoading] = useState(false);
@@ -140,7 +142,7 @@ const Input = () => {
 
       if (res.ok) {
         setSnackbar({ open: true, message: "✅ Job created! Redirecting...", severity: "success" });
-        setForm({ jobNumber: "", customerName: "", brand: "", phoneNumber: "" });
+        setForm({ jobNumber: "", customerName: "", brand: "", phoneNumber: "", issue: "", cost: "" });
         // Navigate to items list after a short delay so user sees the success message
         setTimeout(() => navigate("/items"), 1500);
       } else {
@@ -266,6 +268,31 @@ const Input = () => {
                   ),
                 }}
               />
+
+              <Grid container spacing={2}>
+                <Grid item xs={12} sm={8}>
+                  <TextField
+                    name="issue"
+                    label="Fault / Issue"
+                    value={form.issue}
+                    onChange={handleChange}
+                    fullWidth
+                    variant="outlined"
+                    placeholder="E.g. Broken screen, Water damage..."
+                  />
+                </Grid>
+                <Grid item xs={12} sm={4}>
+                  <TextField
+                    name="cost"
+                    label="Est. Cost (₹)"
+                    type="number"
+                    value={form.cost}
+                    onChange={handleChange}
+                    fullWidth
+                    variant="outlined"
+                  />
+                </Grid>
+              </Grid>
 
               <Button
                 variant="outlined"
