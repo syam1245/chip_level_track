@@ -35,7 +35,7 @@ export const applySecurity = (app) => {
     app.use("/api/", limiter);
 
     app.use(helmet({
-        contentSecurityPolicy: config.isProduction ? undefined : false,
+        contentSecurityPolicy: undefined,
         crossOriginEmbedderPolicy: false,
     }));
 

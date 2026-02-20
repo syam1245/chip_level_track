@@ -2,7 +2,7 @@ import User from "./models/user.model.js";
 
 class AuthRepository {
     async findByUsername(username) {
-        return await User.findOne({ username });
+        return await User.findOne({ username: { $eq: username } });
     }
 
     async findAllUsers() {
@@ -11,7 +11,7 @@ class AuthRepository {
 
     async updatePassword(username, hashedPassword) {
         return await User.findOneAndUpdate(
-            { username },
+            { username: { $eq: username } },
             { password: hashedPassword },
             { new: true }
         );
