@@ -29,13 +29,13 @@ export const applySecurity = (app) => {
   }
 
   const limiter = rateLimit({
-    windowMs: 15 * 60 * 1000, 
-    limit: 1000,               
-    standardHeaders: 'draft-7', 
+    windowMs: 15 * 60 * 1000,
+    limit: 1000,
+    standardHeaders: 'draft-7',
     legacyHeaders: false,
     message: { success: false, message: "Too many requests." },
   });
-  
+
   app.use("/api/", limiter);
 
   app.use(helmet({
@@ -56,22 +56,13 @@ export const applySecurity = (app) => {
     credentials: true,
   }));
 
-  app.use(express.json({ limit: "10kb", strict: true }));
-  app.use(express.urlencoded({ extended: false, limit: "10kb" }));
+  app.use(express.json({ limit: "10mb", strict: true }));
+  app.use(express.urlencoded({ extended: false, limit: "10mb" }));
 
   app.use((req, res, next) => {
     if (req.body) deepSanitize(req.body);
     if (req.params) deepSanitize(req.params);
     if (req.query) deepSanitize(req.query);
     next();
-  });
-
-  app.use((err, req, res, next) => {
-    const statusCode = err.status || 500;
-    if (statusCode === 500) console.error("🔥 Server Error:", err);
-    res.status(statusCode).json({
-      success: false,
-      message: process.env.NODE_ENV === "production" ? "Internal error" : err.message,
-    });
   });
 };
