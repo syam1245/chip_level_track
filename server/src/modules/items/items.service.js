@@ -88,6 +88,8 @@ class ItemService {
         if (data.brand) item.brand = String(data.brand).trim();
         if (data.phoneNumber) item.phoneNumber = String(data.phoneNumber).trim();
         if (data.repairNotes !== undefined) item.repairNotes = String(data.repairNotes).trim();
+        if (data.issue !== undefined) item.issue = String(data.issue).trim();
+        if (data.cost !== undefined) item.cost = Number(data.cost) || 0;
 
         if (data.status && data.status !== item.status) {
             item.status = data.status;

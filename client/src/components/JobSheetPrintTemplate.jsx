@@ -124,7 +124,7 @@ const JobSheetPrintTemplate = forwardRef(({ item }, ref) => {
 
       {/* --- CUSTOMER & DEVICE DETAILS --- */}
       <Grid container spacing={4} sx={{ mb: 5 }}>
-        <Grid item xs={6}>
+        <Grid size={6}>
           <Box sx={{ p: 2, backgroundColor: '#f8fafc', borderRadius: '8px', height: '100%' }}>
             <InfoBlock
               title="Customer Details"
@@ -135,7 +135,7 @@ const JobSheetPrintTemplate = forwardRef(({ item }, ref) => {
             />
           </Box>
         </Grid>
-        <Grid item xs={6}>
+        <Grid size={6}>
           <Box sx={{ p: 2, backgroundColor: '#f8fafc', borderRadius: '8px', height: '100%' }}>
             <InfoBlock
               title="Device Information"

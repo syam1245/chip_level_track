@@ -23,7 +23,7 @@ const itemSchema = new mongoose.Schema(
             }
         ],
         isDeleted: { type: Boolean, default: false, index: true },
-        technicianName: { type: String, required: true },
+        technicianName: { type: String, default: "Unknown" },
         metadata: {
             type: Object,
             select: false,

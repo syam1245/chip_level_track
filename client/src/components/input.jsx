@@ -271,7 +271,7 @@ const Input = () => {
               />
 
               <Grid container spacing={2}>
-                <Grid item xs={12} sm={8}>
+                <Grid size={{ xs: 12, sm: 8 }}>
                   <TextField
                     name="issue"
                     label="Fault / Issue"
@@ -282,7 +282,7 @@ const Input = () => {
                     placeholder="E.g. Broken screen, Water damage..."
                   />
                 </Grid>
-                <Grid item xs={12} sm={4}>
+                <Grid size={{ xs: 12, sm: 4 }}>
                   <TextField
                     name="cost"
                     label="Est. Cost (₹)"
