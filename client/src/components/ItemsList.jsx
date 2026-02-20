@@ -67,7 +67,7 @@ const STATUS_COLORS = {
   "Sent to Service": "info",
   Ready: "success",
   Delivered: "primary",
-  Pending: "default",
+  Return: "default",
 };
 
 // Status accent colors for the card top bar
@@ -78,7 +78,7 @@ const STATUS_ACCENT = {
   'Sent to Service': '#3b82f6',
   Ready: '#10b981',
   Delivered: '#6366f1',
-  Pending: '#a855f7',
+  Return: '#a855f7',
 };
 
 // --- Sub-Components ---
@@ -279,7 +279,7 @@ const ItemsList = () => {
     total: 0,
     inProgress: 0,
     ready: 0,
-    pending: 0
+    returned: 0
   });
 
   // Pagination State
@@ -509,9 +509,9 @@ const ItemsList = () => {
                 subtitle: "Ready for pickup · Delivered"
               },
               {
-                key: "pending",
-                title: "Pending",
-                value: stats.pending,
+                key: "returned",
+                title: "Return",
+                value: stats.returned,
                 color: "#a855f7",
                 icon: <HourglassIcon />,
                 subtitle: "Awaiting customer feedback"
@@ -600,7 +600,7 @@ const ItemsList = () => {
                 onPrint={setPrintItem}
                 onEdit={setEditItem}
                 onDelete={handleDelete}
-                canDelete={isAdmin}
+                canDelete={true}
               />
             ))}
           </Box>
@@ -689,13 +689,11 @@ const ItemsList = () => {
                               <EditIcon fontSize="small" />
                             </IconButton>
                           </Tooltip>
-                          {isAdmin ? (
-                            <Tooltip title="Delete">
-                              <IconButton size="small" onClick={() => handleDelete(item._id)} sx={{ color: '#ef4444', bgcolor: '#fee2e2' }}>
-                                <DeleteIcon fontSize="small" />
-                              </IconButton>
-                            </Tooltip>
-                          ) : null}
+                          <Tooltip title="Delete">
+                            <IconButton size="small" onClick={() => handleDelete(item._id)} sx={{ color: '#ef4444', bgcolor: '#fee2e2' }}>
+                              <DeleteIcon fontSize="small" />
+                            </IconButton>
+                          </Tooltip>
                         </Stack>
                       </TableCell>
                     </TableRow>

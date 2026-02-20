@@ -121,8 +121,8 @@ router.get("/", requirePermission("items:read"), async (req, res) => {
       query.status = { $in: ["Received", "In Progress", "Waiting for Parts", "Sent to Service"] };
     } else if (statusFilter === "ready") {
       query.status = { $in: ["Ready", "Delivered"] };
-    } else if (statusFilter === "pending") {
-      query.status = "Pending";
+    } else if (statusFilter === "returned") {
+      query.status = { $in: ["Pending", "Return"] };
     }
     // "all" or empty = no status filter
 
@@ -143,7 +143,7 @@ router.get("/", requirePermission("items:read"), async (req, res) => {
             total: { $sum: 1 },
             inProgress: { $sum: { $cond: [{ $in: ["$status", ["Received", "In Progress", "Waiting for Parts", "Sent to Service"]] }, 1, 0] } },
             ready: { $sum: { $cond: [{ $in: ["$status", ["Ready", "Delivered"]] }, 1, 0] } },
-            pending: { $sum: { $cond: [{ $eq: ["$status", "Pending"] }, 1, 0] } },
+            returned: { $sum: { $cond: [{ $in: ["$status", ["Pending", "Return"]] }, 1, 0] } },
           },
         },
       ]),
@@ -159,7 +159,7 @@ router.get("/", requirePermission("items:read"), async (req, res) => {
       total: statsRaw.total ?? 0,
       inProgress: statsRaw.inProgress ?? 0,
       ready: statsRaw.ready ?? 0,
-      pending: statsRaw.pending ?? 0,
+      returned: statsRaw.returned ?? 0,
     };
 
     return res.json({

@@ -12,7 +12,7 @@ const itemSchema = new mongoose.Schema(
     status: {
       type: String,
       default: "Received",
-      enum: ["Received", "In Progress", "Waiting for Parts", "Sent to Service", "Ready", "Delivered", "Pending"],
+      enum: ["Received", "In Progress", "Waiting for Parts", "Sent to Service", "Ready", "Delivered", "Pending", "Return"],
       index: true
     },
     repairNotes: { type: String },

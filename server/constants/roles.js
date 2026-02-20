@@ -5,5 +5,5 @@ export const ROLES = Object.freeze({
 
 export const ROLE_PERMISSIONS = Object.freeze({
   [ROLES.ADMIN]: ["items:create", "items:read", "items:update", "items:delete", "items:backup", "admin:access"],
-  [ROLES.USER]: ["items:create", "items:read", "items:update"],
+  [ROLES.USER]: ["items:create", "items:read", "items:update", "items:delete"],
 });
