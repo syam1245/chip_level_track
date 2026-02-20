@@ -71,10 +71,18 @@
 Set these for the server:
 
 ```bash
-AUTH_TOKEN_SECRET=replace-with-long-random-secret
-ADMIN_PASSWORD=replace-with-admin-password
-NORMAL_USER_PASSWORD=replace-with-normal-user-password
-```
+
+
+AUTH_TOKEN_SECRET=a_very_long_random_string_here
+JWT_SECRET=a_very_long_random_string_here
+MONGODB_URI=mongodb://127.0.0.1:27017/myDB
+PORT=5000
+CORS_ORIGIN=http://localhost:3000
+TECH_PASSWORD_SHYAM=user_passwd
+TECH_PASSWORD_RAKESH=ruser_passwd
+TECH_PASSWORD_AKHIL=auser_passwd
+TECH_PASSWORD_NABEEL=user_passwd
+GEMINI_API_KEY=api_key
 
 ## Local Run
 
