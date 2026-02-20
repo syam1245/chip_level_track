@@ -27,32 +27,23 @@ class ItemService {
 
         const showMetadata = userRole === "admin" && includeMetadata === "true";
 
-        const [items, aggResult] = await Promise.all([
+        const [items, total, inProgress, ready, returned] = await Promise.all([
             ItemRepository.findAll({ query, skip, limit, showMetadata }),
-            ItemRepository.aggregate([
-                { $match: { isDeleted: false } },
-                {
-                    $group: {
-                        _id: null,
-                        total: { $sum: 1 },
-                        inProgress: { $sum: { $cond: [{ $in: ["$status", ["Received", "In Progress", "Waiting for Parts", "Sent to Service"]] }, 1, 0] } },
-                        ready: { $sum: { $cond: [{ $in: ["$status", ["Ready", "Delivered"]] }, 1, 0] } },
-                        returned: { $sum: { $cond: [{ $in: ["$status", ["Pending", "Return"]] }, 1, 0] } },
-                    },
-                },
-            ]),
+            ItemRepository.countDocuments({ isDeleted: false }),
+            ItemRepository.countDocuments({ isDeleted: false, status: { $in: ["Received", "In Progress", "Waiting for Parts", "Sent to Service"] } }),
+            ItemRepository.countDocuments({ isDeleted: false, status: { $in: ["Ready", "Delivered"] } }),
+            ItemRepository.countDocuments({ isDeleted: false, status: { $in: ["Pending", "Return"] } })
         ]);
 
         const filteredTotal = (search || statusGroup)
             ? await ItemRepository.countDocuments(query)
-            : (aggResult[0]?.total ?? 0);
+            : total;
 
-        const statsRaw = aggResult[0] ?? {};
         const stats = {
-            total: statsRaw.total ?? 0,
-            inProgress: statsRaw.inProgress ?? 0,
-            ready: statsRaw.ready ?? 0,
-            returned: statsRaw.returned ?? 0,
+            total: total || 0,
+            inProgress: inProgress || 0,
+            ready: ready || 0,
+            returned: returned || 0,
         };
 
         return {

@@ -1,5 +1,5 @@
 // This usage is effectively a "reset" for this file to fix the broken state.
-import React, { useEffect, useState, useCallback, useRef } from "react";
+import React, { useEffect, useState, useCallback, useRef, useMemo } from "react";
 import {
   Table,
   TableBody,
