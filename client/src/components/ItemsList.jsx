@@ -81,6 +81,15 @@ const STATUS_ACCENT = {
   Return: '#a855f7',
 };
 
+const formatDate = (date) => {
+  if (!date) return '—';
+  const d = new Date(date);
+  const day = String(d.getDate()).padStart(2, '0');
+  const month = String(d.getMonth() + 1).padStart(2, '0');
+  const year = String(d.getFullYear()).slice(-2);
+  return `${day}-${month}-${year}`;
+};
+
 // --- Sub-Components ---
 
 const StatCard = React.memo(({ title, value, color, icon, isActive, onClick }) => (
@@ -197,7 +206,7 @@ const MobileCard = React.memo(({ item, onWhatsApp, onPrint, onEdit, onDelete, ca
           </Typography>
           <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5 }}>
             <Typography variant="caption" color="text.disabled" sx={{ fontSize: '0.65rem' }}>
-              By <strong>{item.technicianName}</strong> • {new Date(item.createdAt).toLocaleDateString()}
+              By <strong>{item.technicianName}</strong> • {formatDate(item.createdAt)}
             </Typography>
           </Box>
         </Box>
@@ -234,7 +243,7 @@ const MobileCard = React.memo(({ item, onWhatsApp, onPrint, onEdit, onDelete, ca
 
         {/* Date */}
         <Typography variant="caption" color="text.disabled" sx={{ display: 'block', mt: 1 }}>
-          {new Date(item.createdAt).toLocaleDateString('en-IN', { day: 'numeric', month: 'short', year: 'numeric' })}
+          {formatDate(item.createdAt)}
         </Typography>
       </CardContent>
 
@@ -625,7 +634,7 @@ const ItemsList = () => {
                     <TableRow key={item._id} hover sx={{ '&:last-child td, &:last-child th': { border: 0 } }}>
                       <TableCell align="left">
                         <Typography fontWeight="600" color="primary">{item.jobNumber}</Typography>
-                        <Typography variant="caption" color="text.secondary">{new Date(item.createdAt).toLocaleDateString()}</Typography>
+                        <Typography variant="caption" color="text.secondary">{formatDate(item.createdAt)}</Typography>
                       </TableCell>
                       <TableCell>{item.customerName}</TableCell>
                       <TableCell>{item.brand}</TableCell>
