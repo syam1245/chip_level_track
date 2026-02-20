@@ -20,6 +20,8 @@ const JobSheetPrintTemplate = forwardRef(({ item }, ref) => {
       case 'waiting': return '#ef4444';
       case 'ready': return '#10b981';
       case 'delivered': return '#3b82f6';
+      case 'return':
+      case 'pending': return '#a855f7';
       default: return '#0f172a';
     }
   };
