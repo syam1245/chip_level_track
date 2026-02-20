@@ -21,12 +21,31 @@ connectDB()
     process.exit(1);
   });
 
-process.on("SIGTERM", () => {
-  console.info("SIGTERM received. Closing HTTP server...");
+const gracefulShutdown = async (signal) => {
+  console.info(`${signal} received. Closing HTTP server...`);
   if (server) {
-    server.close(() => {
+    server.close(async () => {
       console.log("HTTP server closed.");
+      try {
+        const mongoose = (await import("mongoose")).default;
+        await mongoose.connection.close();
+        console.log("MongoDB connection closed.");
+      } catch (err) {
+        console.error("Error closing MongoDB connection:", err);
+      }
       process.exit(0);
     });
+  } else {
+    try {
+      const mongoose = (await import("mongoose")).default;
+      await mongoose.connection.close();
+      console.log("MongoDB connection closed.");
+    } catch (err) {
+      console.error("Error closing MongoDB connection:", err);
+    }
+    process.exit(0);
   }
-});
+};
+
+process.on("SIGTERM", () => gracefulShutdown("SIGTERM"));
+process.on("SIGINT", () => gracefulShutdown("SIGINT"));

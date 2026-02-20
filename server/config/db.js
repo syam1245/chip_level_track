@@ -53,14 +53,4 @@ mongoose.connection.on('error', (err) => {
   console.error('❌ MongoDB runtime error:', err);
 });
 
-// --- Graceful shutdown ---
-const gracefulExit = async (signal) => {
-  await mongoose.connection.close();
-  console.log(`🔌 MongoDB connection closed due to ${signal}`);
-  process.exit(0);
-};
-
-process.on('SIGINT', () => gracefulExit('SIGINT'));
-process.on('SIGTERM', () => gracefulExit('SIGTERM'));
-
 export default connectDB;

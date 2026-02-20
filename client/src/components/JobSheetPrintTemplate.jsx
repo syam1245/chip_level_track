@@ -136,7 +136,7 @@ const JobSheetPrintTemplate = forwardRef(({ item }, ref) => {
 
       {/* MAIN DETAILS */}
       <Grid container spacing={6}>
-        <Grid item xs={6}>
+        <Grid size={6}>
           <Box>
             <Typography
               sx={{
@@ -155,7 +155,7 @@ const JobSheetPrintTemplate = forwardRef(({ item }, ref) => {
           </Box>
         </Grid>
 
-        <Grid item xs={6}>
+        <Grid size={6}>
           <Box>
             <Typography
               sx={{

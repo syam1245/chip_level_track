@@ -42,4 +42,8 @@ itemSchema.index({
   phoneNumber: "text"
 });
 
+// Optimize find() and aggregate() queries used in items.js
+itemSchema.index({ isDeleted: 1, createdAt: -1 });
+itemSchema.index({ isDeleted: 1, status: 1 });
+
 export default mongoose.model("Item", itemSchema);

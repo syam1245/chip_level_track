@@ -83,7 +83,7 @@ const STATUS_ACCENT = {
 
 // --- Sub-Components ---
 
-const StatCard = ({ title, value, color, icon, isActive, onClick }) => (
+const StatCard = React.memo(({ title, value, color, icon, isActive, onClick }) => (
   <motion.div
     initial={{ opacity: 0, y: 20 }}
     animate={{ opacity: 1, y: 0 }}
@@ -141,9 +141,9 @@ const StatCard = ({ title, value, color, icon, isActive, onClick }) => (
       </CardContent>
     </Card>
   </motion.div>
-);
+));
 
-const MobileCard = ({ item, onWhatsApp, onPrint, onEdit, onDelete, canDelete }) => (
+const MobileCard = React.memo(({ item, onWhatsApp, onPrint, onEdit, onDelete, canDelete }) => (
   <motion.div
     layout
     initial={{ opacity: 0, scale: 0.95 }}
@@ -270,7 +270,7 @@ const MobileCard = ({ item, onWhatsApp, onPrint, onEdit, onDelete, canDelete }) 
       </CardActions>
     </Card>
   </motion.div>
-);
+));
 
 const ItemsList = () => {
   const [items, setItems] = useState([]);
@@ -365,9 +365,9 @@ const ItemsList = () => {
     return cancel; // abort on cleanup
   }, [fetchItems]);
 
-  const handleDelete = async (id) => {
+  const handleDelete = useCallback(async (id) => {
     setDeleteConfirmId(id);
-  };
+  }, []);
 
   const confirmDelete = async () => {
     const id = deleteConfirmId;
@@ -408,22 +408,22 @@ const ItemsList = () => {
     }
   };
 
-  const downloadBackup = () => {
+  const downloadBackup = useCallback(() => {
     window.open(`${API_BASE_URL}/api/items/backup`, "_blank");
-  };
+  }, []);
 
-  const handleWhatsApp = (item) => {
+  const handleWhatsApp = useCallback((item) => {
     const message = `Hi I am from Admin info solution, your ${item.brand} (Job #${item.jobNumber}) is now READY for pickup! Give us a callback for further details.`;
     const url = `https://wa.me/91${item.phoneNumber}?text=${encodeURIComponent(message)}`;
     window.open(url, "_blank");
-  };
+  }, []);
 
-  const handleCloseSnackbar = () => setSnackbar({ ...snackbar, open: false });
-  const handlePageChange = (event, value) => setPage(value);
-  const handleFilterChange = (filter) => {
+  const handleCloseSnackbar = useCallback(() => setSnackbar((prev) => ({ ...prev, open: false })), []);
+  const handlePageChange = useCallback((event, value) => setPage(value), []);
+  const handleFilterChange = useCallback((filter) => {
     setActiveFilter(filter);
     setPage(1); // reset to page 1 on filter change
-  };
+  }, []);
 
   return (
     <Box sx={{ maxWidth: "1400px", margin: "0 auto", padding: isMobile ? 2 : 4, pb: 10 }}>
@@ -742,7 +742,7 @@ const ItemsList = () => {
           {editItem && (
             <Stack spacing={2} sx={{ mt: 1 }}>
               <Grid container spacing={2}>
-                <Grid item xs={6}>
+                <Grid size={6}>
                   <TextField
                     label="Job Number"
                     value={editItem.jobNumber}
@@ -752,7 +752,7 @@ const ItemsList = () => {
                     size="small"
                   />
                 </Grid>
-                <Grid item xs={6}>
+                <Grid size={6}>
                   <TextField
                     label="Brand"
                     value={editItem.brand}

@@ -132,7 +132,7 @@ const AdminDashboard = () => {
 
             <Grid container spacing={4}>
                 {/* Technicians Management */}
-                <Grid item xs={12} lg={4}>
+                <Grid size={{ xs: 12, lg: 4 }}>
                     <Paper elevation={0} className="glass-panel" sx={{ p: 3 }}>
                         <Typography variant="h6" fontWeight={800} mb={3} sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
                             <Engineering color="primary" /> Technicians
@@ -169,7 +169,7 @@ const AdminDashboard = () => {
                 </Grid>
 
                 {/* Audit Trail & Search */}
-                <Grid item xs={12} lg={8}>
+                <Grid size={{ xs: 12, lg: 8 }}>
                     <Paper elevation={0} className="glass-panel" sx={{ p: 3 }}>
                         <Stack direction={{ xs: 'column', sm: 'row' }} justifyContent="space-between" alignItems="center" spacing={2} mb={3}>
                             <Typography variant="h6" fontWeight={800} sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
