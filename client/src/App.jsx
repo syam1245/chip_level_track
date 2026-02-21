@@ -13,8 +13,8 @@ import { lightTheme, darkTheme } from "./theme";
 import { AuthProvider, useAuth } from "./auth/AuthContext";
 import ProtectedRoute from "./components/ProtectedRoute";
 
-const Input = lazy(() => import("./components/input.jsx"));
-const ItemsList = lazy(() => import("./components/ItemsList.jsx"));
+const Input = lazy(() => import("./components/InputForm"));
+const ItemsList = lazy(() => import("./components/items-list"));
 const LoginPage = lazy(() => import("./components/LoginPage.jsx"));
 const Navbar = lazy(() => import("./components/Navbar.jsx"));
 const AdminDashboard = lazy(() => import("./components/AdminDashboard.jsx"));

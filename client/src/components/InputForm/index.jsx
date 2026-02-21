@@ -1,0 +1,363 @@
+import React, { useState } from "react";
+import {
+    TextField,
+    Autocomplete,
+    Button,
+    Typography,
+    Paper,
+    Snackbar,
+    Alert,
+    Stack,
+    Container,
+    Box,
+    InputAdornment,
+    Grid
+} from "@mui/material";
+import {
+    Person as PersonIcon,
+    Phone as PhoneIcon,
+    Devices as DeviceIcon,
+    ConfirmationNumber as JobIcon,
+    ArrowBack as ArrowBackIcon,
+    Save as SaveIcon,
+    AutoFixHigh as MagicIcon
+} from "@mui/icons-material";
+import { useNavigate } from "react-router-dom";
+import { motion } from "framer-motion";
+
+import { authFetch } from "../../api";
+import { useAuth } from "../../auth/AuthContext";
+import VisionScannerDialog from "./VisionScannerDialog";
+
+const BRAND_OPTIONS = [
+    "HP", "Lenovo", "Dell", "Apple", "Samsung", "Acer", "Asus", "Toshiba", "Sony", "MSI", "Infinix", "Life",
+];
+
+const FAULT_OPTIONS = [
+    "Standby-Section",
+    "Power-Section",
+    "Charging-Section",
+    "I/O section",
+    "GPU-Section",
+    "Processor Short",
+    "KB-Short"
+];
+
+const Input = () => {
+    const navigate = useNavigate();
+    const { user, logout } = useAuth();
+
+    const [form, setForm] = useState({
+        jobNumber: "",
+        customerName: "",
+        brand: "",
+        phoneNumber: "",
+        issue: "",
+        cost: "",
+    });
+
+    const [snackbar, setSnackbar] = useState({ open: false, message: "", severity: "success" });
+    const [loading, setLoading] = useState(false);
+    const [visionOpen, setVisionOpen] = useState(false);
+
+    const handleChange = (e) => {
+        const { name, value } = e.target;
+        if (name === "phoneNumber" && !/^\d*$/.test(value)) return;
+        setForm((prev) => ({ ...prev, [name]: value }));
+    };
+
+    const handleBrandChange = (_event, newValue) => {
+        setForm((prev) => ({ ...prev, brand: newValue }));
+    };
+
+    const handleSubmit = async (e) => {
+        e.preventDefault();
+
+        if (!form.jobNumber || !form.customerName || !form.brand || !form.phoneNumber) {
+            setSnackbar({ open: true, message: "All fields are required.", severity: "error" });
+            return;
+        }
+
+        if (form.phoneNumber.length !== 10) {
+            setSnackbar({ open: true, message: "Phone number must be exactly 10 digits.", severity: "error" });
+            return;
+        }
+
+        setLoading(true);
+
+        try {
+            const res = await authFetch("/api/items", {
+                method: "POST",
+                body: JSON.stringify(form),
+            });
+
+            const data = await res.json();
+
+            if (res.ok) {
+                setSnackbar({ open: true, message: "✅ Job created! Redirecting...", severity: "success" });
+                setForm({ jobNumber: "", customerName: "", brand: "", phoneNumber: "", issue: "", cost: "" });
+                setTimeout(() => navigate("/items"), 1500);
+            } else {
+                setSnackbar({ open: true, message: data.error || "Failed to save data.", severity: "error" });
+            }
+        } catch (_err) {
+            setSnackbar({ open: true, message: "Error connecting to server.", severity: "error" });
+        } finally {
+            setLoading(false);
+        }
+    };
+
+    const handleVisionExtractSuccess = (extracted) => {
+        setForm((prev) => ({
+            ...prev,
+            jobNumber: extracted.jobNumber || prev.jobNumber,
+            customerName: extracted.customerName || prev.customerName,
+            brand: extracted.brand || prev.brand,
+            phoneNumber: extracted.phoneNumber || prev.phoneNumber,
+        }));
+        setSnackbar({ open: true, message: "✨ Data extracted successfully!", severity: "success" });
+        setVisionOpen(false);
+    };
+
+    const handleVisionExtractError = (errorMsg) => {
+        setSnackbar({ open: true, message: errorMsg, severity: "error" });
+    };
+
+    const handleCloseSnackbar = () => setSnackbar({ ...snackbar, open: false });
+
+    return (
+        <Container maxWidth="sm" sx={{ minHeight: "100vh", display: "flex", flexDirection: "column", justifyContent: "center", py: 4 }}>
+            <motion.div initial={{ opacity: 0, y: 30 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.6, ease: "easeOut" }}>
+                <Paper
+                    elevation={0}
+                    className="glass-panel"
+                    sx={{ p: 5, borderRadius: "var(--radius)", position: "relative", overflow: "hidden" }}
+                >
+                    <Box
+                        sx={{
+                            position: "absolute",
+                            top: -50,
+                            right: -50,
+                            width: 150,
+                            height: 150,
+                            backgroundImage: "linear-gradient(135deg, var(--color-primary), #4f46e5)",
+                            filter: "blur(60px)",
+                            opacity: 0.2,
+                            zIndex: 0,
+                            borderRadius: "50%",
+                        }}
+                    />
+
+                    <Typography variant="h4" align="center" fontWeight="900" gutterBottom className="text-gradient" sx={{ position: "relative" }}>
+                        New Repair Job
+                    </Typography>
+                    <Typography variant="body1" align="center" color="text.secondary" mb={1.5} sx={{ position: "relative" }}>
+                        Enter device and customer details to generate a job sheet.
+                    </Typography>
+
+                    <form onSubmit={handleSubmit} style={{ position: "relative", zIndex: 1 }}>
+                        <Stack spacing={3}>
+                            <TextField
+                                name="jobNumber"
+                                label="Job Number"
+                                value={form.jobNumber}
+                                onChange={handleChange}
+                                required
+                                fullWidth
+                                variant="outlined"
+                                InputProps={{
+                                    startAdornment: (
+                                        <InputAdornment position="start">
+                                            <JobIcon color="action" />
+                                        </InputAdornment>
+                                    ),
+                                }}
+                            />
+
+                            <TextField
+                                name="customerName"
+                                label="Customer Name"
+                                value={form.customerName}
+                                onChange={handleChange}
+                                required
+                                fullWidth
+                                variant="outlined"
+                                InputProps={{
+                                    startAdornment: (
+                                        <InputAdornment position="start">
+                                            <PersonIcon color="action" />
+                                        </InputAdornment>
+                                    ),
+                                }}
+                            />
+
+                            <Autocomplete
+                                freeSolo
+                                options={BRAND_OPTIONS}
+                                value={form.brand}
+                                onChange={handleBrandChange}
+                                onInputChange={(_event, newInputValue) => {
+                                    setForm((prev) => ({ ...prev, brand: newInputValue }));
+                                }}
+                                renderInput={(params) => (
+                                    <TextField
+                                        {...params}
+                                        label="Device Brand / Model"
+                                        name="brand"
+                                        required
+                                        onChange={handleChange}
+                                        fullWidth
+                                        InputProps={{
+                                            ...params.InputProps,
+                                            startAdornment: (
+                                                <InputAdornment position="start">
+                                                    <DeviceIcon color="action" />
+                                                </InputAdornment>
+                                            ),
+                                        }}
+                                    />
+                                )}
+                            />
+
+                            <TextField
+                                name="phoneNumber"
+                                label="Phone Number"
+                                value={form.phoneNumber}
+                                onChange={handleChange}
+                                required
+                                fullWidth
+                                inputProps={{ maxLength: 10 }}
+                                helperText={form.phoneNumber.length > 0 && form.phoneNumber.length < 10 ? "Must be 10 digits" : ""}
+                                InputProps={{
+                                    startAdornment: (
+                                        <InputAdornment position="start">
+                                            <PhoneIcon color="action" />
+                                        </InputAdornment>
+                                    ),
+                                }}
+                            />
+
+                            <Grid container spacing={2}>
+                                <Grid size={{ xs: 12, sm: 8 }}>
+                                    <Autocomplete
+                                        freeSolo
+                                        options={FAULT_OPTIONS}
+                                        value={form.issue}
+                                        onChange={(_event, newValue) => {
+                                            setForm((prev) => ({ ...prev, issue: newValue || "" }));
+                                        }}
+                                        onInputChange={(_event, newInputValue) => {
+                                            setForm((prev) => ({ ...prev, issue: newInputValue }));
+                                        }}
+                                        renderInput={(params) => (
+                                            <TextField
+                                                {...params}
+                                                name="issue"
+                                                label="Fault / Issue"
+                                                onChange={handleChange}
+                                                fullWidth
+                                                variant="outlined"
+                                                placeholder="E.g. Power-Section, Broken screen..."
+                                            />
+                                        )}
+                                    />
+                                </Grid>
+                                <Grid size={{ xs: 12, sm: 4 }}>
+                                    <TextField
+                                        name="cost"
+                                        label="Est. Cost (₹)"
+                                        type="number"
+                                        value={form.cost}
+                                        onChange={handleChange}
+                                        fullWidth
+                                        variant="outlined"
+                                    />
+                                </Grid>
+                            </Grid>
+
+                            <Button
+                                variant="outlined"
+                                fullWidth
+                                onClick={() => setVisionOpen(true)}
+                                startIcon={<MagicIcon />}
+                                sx={{
+                                    borderRadius: "8px",
+                                    borderStyle: "dashed",
+                                    borderWidth: "2px",
+                                    py: 1.5,
+                                    fontWeight: 700,
+                                    textTransform: "none",
+                                    color: "var(--color-primary)",
+                                    borderColor: "var(--color-primary)",
+                                    "&:hover": {
+                                        borderColor: "var(--color-primary-dark)",
+                                        bgcolor: "rgba(59, 130, 246, 0.05)",
+                                    }
+                                }}
+                            >
+                                Scan Job Sheet using Camera
+                            </Button>
+
+                            <Stack direction="row" spacing={2} pt={2}>
+                                <Button
+                                    variant="text"
+                                    fullWidth
+                                    onClick={() => navigate("/items")}
+                                    size="large"
+                                    startIcon={<ArrowBackIcon />}
+                                    sx={{ color: "text.secondary", fontWeight: 600 }}
+                                >
+                                    View All
+                                </Button>
+                                <Button
+                                    type="submit"
+                                    variant="contained"
+                                    fullWidth
+                                    size="large"
+                                    disabled={loading}
+                                    startIcon={!loading && <SaveIcon />}
+                                    sx={{
+                                        borderRadius: "8px",
+                                        boxShadow: "var(--shadow-md)",
+                                        background: "var(--color-primary)",
+                                        fontWeight: 700,
+                                        textTransform: "none",
+                                        py: 1.2,
+                                    }}
+                                >
+                                    {loading ? "Saving..." : "Create Job"}
+                                </Button>
+                            </Stack>
+                        </Stack>
+                    </form>
+                </Paper>
+            </motion.div>
+
+            <Box sx={{ mt: 3, textAlign: "center" }}>
+                <Button variant="text" size="small" onClick={() => navigate("/items")} sx={{ color: 'text.secondary', fontWeight: 700 }}>
+                    Manage All Jobs
+                </Button>
+            </Box>
+
+            <Snackbar
+                open={snackbar.open}
+                autoHideDuration={4000}
+                onClose={handleCloseSnackbar}
+                anchorOrigin={{ vertical: "bottom", horizontal: "center" }}
+            >
+                <Alert onClose={handleCloseSnackbar} severity={snackbar.severity} sx={{ width: "100%", borderRadius: "8px" }}>
+                    {snackbar.message}
+                </Alert>
+            </Snackbar>
+
+            <VisionScannerDialog
+                open={visionOpen}
+                onClose={() => setVisionOpen(false)}
+                onExtractSuccess={handleVisionExtractSuccess}
+                onExtractError={handleVisionExtractError}
+            />
+        </Container>
+    );
+};
+
+export default Input;
