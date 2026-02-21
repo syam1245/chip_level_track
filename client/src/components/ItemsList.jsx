@@ -576,6 +576,17 @@ const ItemsList = () => {
                 size="small"
               />
 
+              {isAdmin && (
+                <TextField
+                  label="Technician Name"
+                  value={editItem.technicianName || ""}
+                  onChange={(e) => setEditItem({ ...editItem, technicianName: e.target.value })}
+                  fullWidth
+                  size="small"
+                  helperText="Admin only."
+                />
+              )}
+
               <Grid container spacing={2}>
                 <Grid size={{ xs: 12, sm: 6 }}>
                   <TextField
