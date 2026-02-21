@@ -1,5 +1,5 @@
 export const generateWhatsAppMessage = (item) => {
-    const { status, brand, jobNumber, customerName, issue } = item;
+    const { status, brand, jobNumber, customerName, issue, cost } = item;
     const name = customerName ? customerName.split(' ')[0] : 'Customer';
     const issueText = issue ? ` (${issue})` : '';
 
@@ -23,7 +23,8 @@ export const generateWhatsAppMessage = (item) => {
             break;
 
         case 'Ready':
-            message = `Hi ${name}, your ${brand} device (Job Number ${jobNumber}) has been repaired and is ready for pickup. Please collect it at your convenience.`;
+            const costText = cost ? ` The repair cost is ₹${cost}.` : '';
+            message = `Hi ${name}, your ${brand} device (Job Number ${jobNumber}) has been repaired and is ready for pickup.${costText} Please collect it at your convenience.`;
             break;
 
         case 'Delivered':
