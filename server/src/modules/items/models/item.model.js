@@ -42,5 +42,6 @@ itemSchema.index({
 itemSchema.index({ isDeleted: 1, createdAt: -1 });
 itemSchema.index({ isDeleted: 1, status: 1 });
 itemSchema.index({ isDeleted: 1, status: 1, createdAt: -1 });
+itemSchema.index({ isDeleted: 1, cost: 1, createdAt: -1 });
 
 export default mongoose.model("Item", itemSchema);

@@ -4,6 +4,7 @@ import { fileURLToPath } from "url";
 import { applySecurity } from "./core/middlewares/security.middleware.js";
 import { attachAuth, requireAuth, requireCsrf } from "./modules/auth/auth.middleware.js";
 import errorMiddleware from "./core/middlewares/error.middleware.js";
+import httpLogger from "./core/middlewares/httpLogger.middleware.js";
 import authRoutes from "./modules/auth/auth.routes.js";
 import itemsRoutes from "./modules/items/items.routes.js";
 import statsRoutes from "./modules/stats/stats.routes.js";
@@ -16,6 +17,9 @@ const app = express();
 
 // Security stack
 applySecurity(app);
+
+// HTTP Logging
+app.use(httpLogger);
 
 // Auth attachment
 app.use(attachAuth);

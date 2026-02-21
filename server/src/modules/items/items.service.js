@@ -1,5 +1,8 @@
 import ItemRepository from "./items.repository.js";
 import AppError from "../../core/errors/AppError.js";
+import NodeCache from "node-cache";
+
+const statsCache = new NodeCache({ stdTTL: 300 }); // Cache for 5 minutes
 
 class ItemService {
     async getItems({ page, limit, search, statusGroup, userRole, includeMetadata, sortBy, sortOrder, technicianName }) {
@@ -41,12 +44,27 @@ class ItemService {
 
         const showMetadata = userRole === "admin" && includeMetadata === "true";
 
-        const [items, total, inProgress, ready, returned] = await Promise.all([
+        let inProgress = 0;
+        let ready = 0;
+        let returned = 0;
+
+        const cachedStats = statsCache.get("itemStats");
+        if (cachedStats) {
+            inProgress = cachedStats.inProgress;
+            ready = cachedStats.ready;
+            returned = cachedStats.returned;
+        } else {
+            [inProgress, ready, returned] = await Promise.all([
+                ItemRepository.countDocuments({ isDeleted: false, status: { $in: ["Received", "In Progress", "Waiting for Parts", "Sent to Service"] } }),
+                ItemRepository.countDocuments({ isDeleted: false, status: { $in: ["Ready", "Delivered"] } }),
+                ItemRepository.countDocuments({ isDeleted: false, status: { $in: ["Pending", "Return"] } })
+            ]);
+            statsCache.set("itemStats", { inProgress, ready, returned });
+        }
+
+        const [items, total] = await Promise.all([
             ItemRepository.findAll({ query, skip, limit, showMetadata, sort: sortObject }),
-            ItemRepository.countDocuments({ isDeleted: false }),
-            ItemRepository.countDocuments({ isDeleted: false, status: { $in: ["Received", "In Progress", "Waiting for Parts", "Sent to Service"] } }),
-            ItemRepository.countDocuments({ isDeleted: false, status: { $in: ["Ready", "Delivered"] } }),
-            ItemRepository.countDocuments({ isDeleted: false, status: { $in: ["Pending", "Return"] } })
+            ItemRepository.countDocuments({ isDeleted: false })
         ]);
 
         const filteredTotal = (search || statusGroup)
@@ -80,6 +98,7 @@ class ItemService {
             technicianName: user.displayName,
         };
 
+        statsCache.del("itemStats");
         return await ItemRepository.create(itemData);
     }
 
@@ -106,7 +125,11 @@ class ItemService {
             });
         }
 
-        return await item.save();
+        const savedItem = await item.save();
+        if (data.status) {
+            statsCache.del("itemStats");
+        }
+        return savedItem;
     }
 
     async deleteItem(id) {
@@ -114,6 +137,7 @@ class ItemService {
         if (!item) {
             throw new AppError("Item not found", 404);
         }
+        statsCache.del("itemStats");
         return await ItemRepository.softDelete(id);
     }
 
