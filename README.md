@@ -78,10 +78,10 @@ JWT_SECRET=a_very_long_random_string_here
 MONGODB_URI=mongodb://127.0.0.1:27017/myDB
 PORT=5000
 CORS_ORIGIN=http://localhost:3000
-TECH_PASSWORD_SHYAM=user_passwd
-TECH_PASSWORD_RAKESH=ruser_passwd
-TECH_PASSWORD_AKHIL=auser_passwd
-TECH_PASSWORD_NABEEL=user_passwd
+TECH_PASSWORD_NAME1=user_passwd
+TECH_PASSWORD_NAME2=ruser_passwd
+TECH_PASSWORD_NAME3=auser_passwd
+TECH_PASSWORD_NAME4=user_passwd
 GEMINI_API_KEY=api_key
 
 ## Local Run

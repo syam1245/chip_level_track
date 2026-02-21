@@ -17,29 +17,47 @@ import {
 } from "@mui/material";
 import { Engineering, VpnKey } from "@mui/icons-material";
 import { authFetch } from "../../api";
+import { useAuth } from "../../auth/AuthContext";
 
 const TechnicianList = ({ technicians, onUpdate }) => {
+    const { user } = useAuth();
+    const isAdmin = user?.role === "admin";
+
     const [resetUser, setResetUser] = useState(null);
     const [newPassword, setNewPassword] = useState("");
+    const [overrideUsername, setOverrideUsername] = useState("");
+    const [overridePassword, setOverridePassword] = useState("");
     const [message, setMessage] = useState({ text: "", type: "success" });
 
     const handleResetPassword = async () => {
         if (!newPassword || newPassword.length < 4) return;
+
         try {
+            const bodyData = { newPassword };
+            if (!isAdmin) {
+                bodyData.overrideUsername = overrideUsername;
+                bodyData.overridePassword = overridePassword;
+            }
+
             const res = await authFetch(`/api/auth/users/${resetUser.username}/password`, {
                 method: "PUT",
-                body: JSON.stringify({ newPassword })
+                body: JSON.stringify(bodyData)
             });
+
+            const data = await res.json();
+
             if (res.ok) {
                 setMessage({ text: `Password reset for ${resetUser.displayName}`, type: "success" });
                 setResetUser(null);
                 setNewPassword("");
+                setOverrideUsername("");
+                setOverridePassword("");
                 if (onUpdate) onUpdate();
             } else {
-                throw new Error("Reset failed");
+                setMessage({ text: data.error || "Reset failed", type: "error" });
             }
         } catch (err) {
-            setMessage({ text: "Failed to reset password", type: "error" });
+            setMessage({ text: "Failed to reset password. Connection error.", type: "error" });
         }
     };
 
@@ -91,6 +109,7 @@ const TechnicianList = ({ technicians, onUpdate }) => {
                     <Typography variant="body2" color="text.secondary" mb={3}>
                         Updating password for <strong>{resetUser?.displayName}</strong>.
                     </Typography>
+
                     <TextField
                         autoFocus
                         label="New Password"
@@ -99,12 +118,51 @@ const TechnicianList = ({ technicians, onUpdate }) => {
                         variant="outlined"
                         value={newPassword}
                         onChange={(e) => setNewPassword(e.target.value)}
-                        sx={{ mt: 1 }}
+                        sx={{ mt: 1, mb: 2 }}
                     />
+
+                    {!isAdmin && (
+                        <Box sx={{ p: 2, bgcolor: 'error.soft', borderRadius: 2, border: '1px solid', borderColor: 'error.main' }}>
+                            <Typography variant="subtitle2" color="error.main" fontWeight={800} mb={1}>
+                                Admin Override Required
+                            </Typography>
+                            <Typography variant="caption" color="error.main" display="block" mb={2}>
+                                You are not an administrator. An admin must provide their credentials below to authorize this password reset.
+                            </Typography>
+                            <TextField
+                                label="Admin Username"
+                                fullWidth
+                                size="small"
+                                variant="outlined"
+                                value={overrideUsername}
+                                onChange={(e) => setOverrideUsername(e.target.value)}
+                                sx={{ mb: 1.5 }}
+                            />
+                            <TextField
+                                label="Admin Password"
+                                type="password"
+                                fullWidth
+                                size="small"
+                                variant="outlined"
+                                value={overridePassword}
+                                onChange={(e) => setOverridePassword(e.target.value)}
+                            />
+                        </Box>
+                    )}
                 </DialogContent>
                 <DialogActions sx={{ p: 2 }}>
-                    <Button onClick={() => setResetUser(null)}>Cancel</Button>
-                    <Button variant="contained" onClick={handleResetPassword} disabled={!newPassword}>Update Password</Button>
+                    <Button onClick={() => {
+                        setResetUser(null);
+                        setOverrideUsername("");
+                        setOverridePassword("");
+                    }}>Cancel</Button>
+                    <Button
+                        variant="contained"
+                        onClick={handleResetPassword}
+                        disabled={!newPassword || (!isAdmin && (!overrideUsername || !overridePassword))}
+                    >
+                        Update Password
+                    </Button>
                 </DialogActions>
             </Dialog>
         </Paper>

@@ -36,11 +36,29 @@ class AuthController {
     });
 
     updatePassword = asyncHandler(async (req, res) => {
-        const { newPassword } = req.body;
+        const { newPassword, overrideUsername, overridePassword } = req.body;
         const { username } = req.params;
 
         if (!newPassword || newPassword.length < 4) {
             return res.status(400).json({ error: "Password must be at least 4 characters" });
+        }
+
+        // Check if current user is admin
+        if (req.user.role !== "admin") {
+            if (!overrideUsername || !overridePassword) {
+                return res.status(403).json({ error: "Admin credentials required to reset password." });
+            }
+
+            // Verify override credentials
+            try {
+                // We use AuthService.login just to verify the credentials without creating a new session
+                const { user: overrideUser } = await AuthService.login(overrideUsername, overridePassword);
+                if (overrideUser.role !== "admin") {
+                    return res.status(403).json({ error: "Override user must be an administrator." });
+                }
+            } catch (error) {
+                return res.status(403).json({ error: "Invalid admin override credentials." });
+            }
         }
 
         await AuthService.updatePassword(username, newPassword);

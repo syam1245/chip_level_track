@@ -112,7 +112,7 @@ const AuthAppContent = ({ mode, toggleTheme }) => {
           <Route
             path="/admin"
             element={
-              <ProtectedRoute adminOnly>
+              <ProtectedRoute>
                 <AdminDashboard />
               </ProtectedRoute>
             }

@@ -66,7 +66,7 @@ const Navbar = ({ toggleTheme, mode }) => {
     const navItems = [
         { label: "New Job", icon: <AddIcon />, path: "/", show: true },
         { label: "Repair List", icon: <ListIcon />, path: "/items", show: true },
-        { label: "Admin Panel", icon: <DashboardIcon />, path: "/admin", show: isAdmin && isAdminView },
+        { label: "Admin Panel", icon: <DashboardIcon />, path: "/admin", show: true },
     ];
 
     const drawer = (

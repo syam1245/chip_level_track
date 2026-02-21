@@ -18,12 +18,11 @@ router.post("/login", loginLimiter, AuthController.login);
 router.post("/logout", attachAuth, AuthController.logout);
 router.get("/session", attachAuth, requireAuth, AuthController.getSession);
 
-// ADMIN ONLY: Update technician password
+// ADMIN OVERRIDE: Update technician password
 router.put(
     "/users/:username/password",
     attachAuth,
     requireAuth,
-    requirePermission("admin:access"),
     AuthController.updatePassword
 );
 
