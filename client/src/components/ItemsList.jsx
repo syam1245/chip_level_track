@@ -33,8 +33,10 @@ import {
   Tooltip,
   Grid,
   Pagination,
-  CircularProgress,
   Divider,
+  TableSortLabel,
+  Menu,
+  CircularProgress,
 } from "@mui/material";
 import { alpha } from "@mui/material/styles";
 import {
@@ -51,7 +53,8 @@ import {
   CheckCircle as CheckCircleIcon,
   Notes as NotesIcon,
   HourglassEmpty as HourglassIcon,
-  GridView as AllJobsIcon
+  GridView as AllJobsIcon,
+  FilterList as FilterListIcon
 } from "@mui/icons-material";
 import { useNavigate } from "react-router-dom";
 import { useReactToPrint } from "react-to-print";
@@ -85,6 +88,15 @@ const ItemsList = () => {
   // Default to 'inProgress' — newly created jobs (Received) land here
   const [activeFilter, setActiveFilter] = useState("inProgress");
 
+  // Sorting State
+  const [sortBy, setSortBy] = useState("createdAt");
+  const [sortOrder, setSortOrder] = useState("desc");
+
+  // Filtering State
+  const [technicianFilter, setTechnicianFilter] = useState("All");
+  const [techniciansList, setTechniciansList] = useState([]);
+  const [techMenuAnchor, setTechMenuAnchor] = useState(null);
+
   const [editItem, setEditItem] = useState(null);
   const [printItem, setPrintItem] = useState(null);
   const [deleteConfirmId, setDeleteConfirmId] = useState(null); // replaces window.confirm
@@ -96,6 +108,18 @@ const ItemsList = () => {
   const theme = useTheme();
   const isMobile = useMediaQuery(theme.breakpoints.down("md"));
   const printComponentRef = useRef();
+
+  // Fetch matching technicians for filter
+  useEffect(() => {
+    authFetch("/api/auth/users")
+      .then(res => res.json())
+      .then(data => {
+        if (Array.isArray(data)) {
+          setTechniciansList(data);
+        }
+      })
+      .catch(console.error);
+  }, []);
 
   // Handle Print Logic
   const handlePrint = useReactToPrint({
@@ -124,7 +148,11 @@ const ItemsList = () => {
     const controller = new AbortController();
     setLoading(true);
 
-    let url = `/api/items?page=${page}&limit=${LIMIT}`;
+    let url = `/api/items?page=${page}&limit=${LIMIT}&sortBy=${sortBy}&sortOrder=${sortOrder}`;
+    if (technicianFilter !== "All") {
+      url += `&technicianName=${encodeURIComponent(technicianFilter)}`;
+    }
+
     if (debouncedSearch) {
       // Global search — ignore the active status card filter entirely
       url += `&search=${encodeURIComponent(debouncedSearch)}`;
@@ -150,12 +178,18 @@ const ItemsList = () => {
 
     // Return cleanup so the useEffect can cancel on re-fire
     return () => controller.abort();
-  }, [debouncedSearch, page, activeFilter]);
+  }, [debouncedSearch, page, activeFilter, sortBy, sortOrder, technicianFilter]);
 
   useEffect(() => {
     const cancel = fetchItems();
     return cancel; // abort on cleanup
   }, [fetchItems]);
+
+  const handleSort = useCallback((property) => {
+    setSortOrder((prevOrder) => (sortBy === property && prevOrder === "asc" ? "desc" : "asc"));
+    setSortBy(property);
+    setPage(1); // Reset page on sort
+  }, [sortBy]);
 
   const handleDelete = useCallback(async (id) => {
     setDeleteConfirmId(id);
@@ -404,13 +438,57 @@ const ItemsList = () => {
               <Table>
                 <TableHead sx={{ bgcolor: "#f8fafc" }}>
                   <TableRow>
-                    <TableCell><Typography variant="subtitle2" fontWeight="700" color="text.secondary">JOB NO</Typography></TableCell>
-                    <TableCell><Typography variant="subtitle2" fontWeight="700" color="text.secondary">CUSTOMER</Typography></TableCell>
+                    <TableCell>
+                      <TableSortLabel active={sortBy === 'createdAt'} direction={sortBy === 'createdAt' ? sortOrder : 'asc'} onClick={() => handleSort('createdAt')}>
+                        <Typography variant="subtitle2" fontWeight="700" color="text.secondary">JOB NO</Typography>
+                      </TableSortLabel>
+                    </TableCell>
+                    <TableCell>
+                      <TableSortLabel active={sortBy === 'customerName'} direction={sortBy === 'customerName' ? sortOrder : 'asc'} onClick={() => handleSort('customerName')}>
+                        <Typography variant="subtitle2" fontWeight="700" color="text.secondary">CUSTOMER</Typography>
+                      </TableSortLabel>
+                    </TableCell>
                     <TableCell><Typography variant="subtitle2" fontWeight="700" color="text.secondary">DEVICE</Typography></TableCell>
-                    <TableCell><Typography variant="subtitle2" fontWeight="700" color="text.secondary">TECHNICIAN</Typography></TableCell>
+                    <TableCell>
+                      <Box sx={{ display: 'flex', alignItems: 'center', cursor: 'pointer' }} onClick={(e) => setTechMenuAnchor(e.currentTarget)}>
+                        <Typography variant="subtitle2" fontWeight="700" color={technicianFilter !== 'All' ? 'primary.main' : 'text.secondary'}>
+                          TECHNICIAN {technicianFilter !== 'All' && `(${technicianFilter})`}
+                        </Typography>
+                        <FilterListIcon sx={{ ml: 0.5, fontSize: 16, color: technicianFilter !== 'All' ? 'primary.main' : 'text.secondary' }} />
+                      </Box>
+                      <Menu
+                        anchorEl={techMenuAnchor}
+                        open={Boolean(techMenuAnchor)}
+                        onClose={() => setTechMenuAnchor(null)}
+                      >
+                        <MenuItem
+                          selected={technicianFilter === "All"}
+                          onClick={() => { setTechnicianFilter("All"); setPage(1); setTechMenuAnchor(null); }}
+                        >
+                          All Technicians
+                        </MenuItem>
+                        {techniciansList.map(tech => (
+                          <MenuItem
+                            key={tech.displayName}
+                            selected={technicianFilter === tech.displayName}
+                            onClick={() => { setTechnicianFilter(tech.displayName); setPage(1); setTechMenuAnchor(null); }}
+                          >
+                            {tech.displayName}
+                          </MenuItem>
+                        ))}
+                      </Menu>
+                    </TableCell>
                     <TableCell><Typography variant="subtitle2" fontWeight="700" color="text.secondary">PHONE</Typography></TableCell>
-                    <TableCell><Typography variant="subtitle2" fontWeight="700" color="text.secondary">AMOUNT</Typography></TableCell>
-                    <TableCell><Typography variant="subtitle2" fontWeight="700" color="text.secondary">STATUS</Typography></TableCell>
+                    <TableCell>
+                      <TableSortLabel active={sortBy === 'cost'} direction={sortBy === 'cost' ? sortOrder : 'asc'} onClick={() => handleSort('cost')}>
+                        <Typography variant="subtitle2" fontWeight="700" color="text.secondary">AMOUNT</Typography>
+                      </TableSortLabel>
+                    </TableCell>
+                    <TableCell>
+                      <TableSortLabel active={sortBy === 'status'} direction={sortBy === 'status' ? sortOrder : 'asc'} onClick={() => handleSort('status')}>
+                        <Typography variant="subtitle2" fontWeight="700" color="text.secondary">STATUS</Typography>
+                      </TableSortLabel>
+                    </TableCell>
                     <TableCell><Typography variant="subtitle2" fontWeight="700" color="text.secondary">NOTES</Typography></TableCell>
                     <TableCell align="right"><Typography variant="subtitle2" fontWeight="700" color="text.secondary">ACTIONS</Typography></TableCell>
                   </TableRow>

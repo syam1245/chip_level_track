@@ -10,6 +10,9 @@ class ItemController {
         const search = req.query.search ? String(req.query.search).trim() : "";
         const statusGroup = req.query.statusGroup ? String(req.query.statusGroup).trim() : "";
         const includeMetadata = req.query.includeMetadata;
+        const sortBy = req.query.sortBy ? String(req.query.sortBy).trim() : "";
+        const sortOrder = req.query.sortOrder ? String(req.query.sortOrder).toLowerCase() : "desc";
+        const technicianName = req.query.technicianName ? String(req.query.technicianName).trim() : "";
 
         const result = await ItemService.getItems({
             page,
@@ -17,7 +20,10 @@ class ItemController {
             search,
             statusGroup,
             userRole: req.user?.role,
-            includeMetadata
+            includeMetadata,
+            sortBy,
+            sortOrder,
+            technicianName
         });
 
         res.json(result);

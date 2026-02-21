@@ -1,9 +1,9 @@
 import Item from "./models/item.model.js";
 
 class ItemRepository {
-    async findAll({ query, skip, limit, showMetadata = false }) {
+    async findAll({ query, skip, limit, showMetadata = false, sort = { createdAt: -1 } }) {
         let queryBuilder = Item.find(query)
-            .sort({ createdAt: -1 })
+            .sort(sort)
             .skip(skip)
             .limit(limit)
             .lean();

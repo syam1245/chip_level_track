@@ -2,7 +2,7 @@ import ItemRepository from "./items.repository.js";
 import AppError from "../../core/errors/AppError.js";
 
 class ItemService {
-    async getItems({ page, limit, search, statusGroup, userRole, includeMetadata }) {
+    async getItems({ page, limit, search, statusGroup, userRole, includeMetadata, sortBy, sortOrder, technicianName }) {
         const skip = (page - 1) * limit;
         const query = { isDeleted: false };
 
@@ -17,6 +17,10 @@ class ItemService {
             ];
         }
 
+        if (technicianName && technicianName !== 'All') {
+            query.technicianName = technicianName;
+        }
+
         if (statusGroup === "inProgress") {
             query.status = { $in: ["Received", "In Progress", "Waiting for Parts", "Sent to Service"] };
         } else if (statusGroup === "ready") {
@@ -25,10 +29,20 @@ class ItemService {
             query.status = { $in: ["Pending", "Return"] };
         }
 
+        let sortObject = { createdAt: -1 };
+        if (sortBy) {
+            const order = sortOrder === 'asc' ? 1 : -1;
+            sortObject = { [sortBy]: order };
+            // Add secondary sort by createdAt to keep things deterministic
+            if (sortBy !== 'createdAt') {
+                sortObject.createdAt = -1;
+            }
+        }
+
         const showMetadata = userRole === "admin" && includeMetadata === "true";
 
         const [items, total, inProgress, ready, returned] = await Promise.all([
-            ItemRepository.findAll({ query, skip, limit, showMetadata }),
+            ItemRepository.findAll({ query, skip, limit, showMetadata, sort: sortObject }),
             ItemRepository.countDocuments({ isDeleted: false }),
             ItemRepository.countDocuments({ isDeleted: false, status: { $in: ["Received", "In Progress", "Waiting for Parts", "Sent to Service"] } }),
             ItemRepository.countDocuments({ isDeleted: false, status: { $in: ["Ready", "Delivered"] } }),
