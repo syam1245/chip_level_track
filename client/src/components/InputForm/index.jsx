@@ -131,7 +131,7 @@ const Input = () => {
                 <Paper
                     elevation={0}
                     className="glass-panel"
-                    sx={{ p: 5, borderRadius: "var(--radius)", position: "relative", overflow: "hidden" }}
+                    sx={{ p: { xs: 3, md: 5 }, borderRadius: "var(--radius)", position: "relative", overflow: "hidden" }}
                 >
                     <Box
                         sx={{

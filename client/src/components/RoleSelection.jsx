@@ -81,8 +81,8 @@ const RoleSelection = () => {
                         >
                             <CardContent sx={{ p: 4, textAlign: "center" }}>
                                 <Box sx={{
-                                    bgcolor: "#dcfce7",
-                                    color: "#10b981",
+                                    bgcolor: alpha(theme.palette.success.main, 0.1),
+                                    color: "success.main",
                                     width: 80,
                                     height: 80,
                                     borderRadius: "24px",

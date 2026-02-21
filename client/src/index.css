@@ -1,57 +1,54 @@
 :root {
   /* HSL Color Palette - Light Mode Default */
-  --primary-h: 212;
-  --primary-s: 100%;
-  --primary-l: 45%;
+  --color-primary: #2563eb;
+  --color-primary-dark: #1d4ed8;
 
-  --color-primary: #0071e3;
-  --color-primary-dark: #0058b0;
-  /* Apple Blue */
-  --color-success: #34c759;
-  --color-warning: #ff9500;
-  --color-danger: #ff3b30;
+  --color-success: #10b981;
+  --color-warning: #f59e0b;
+  --color-danger: #ef4444;
 
   /* Surfaces */
   --surface: #ffffff;
-  --surface-elevated: #f5f5f7;
+  --surface-elevated: #f8fafc;
 
   /* Backgrounds */
-  --bg-gradient: linear-gradient(135deg, #f5f5f7 0%, #ffffff 100%);
-  --surface-glass: rgba(255, 255, 255, 0.7);
-  --glass-border: rgba(255, 255, 255, 0.5);
+  --bg-gradient: linear-gradient(135deg, #f1f5f9 0%, #ffffff 100%);
+  --surface-glass: rgba(255, 255, 255, 0.75);
+  --glass-border: rgba(255, 255, 255, 0.4);
 
   /* Text */
-  --text-main: #1d1d1f;
-  --text-muted: #86868b;
+  --text-main: #0f172a;
+  --text-muted: #475569;
 
   /* UI */
-  --border: #d2d2d7;
-  --radius: 12px;
-  --shadow-sm: 0 1px 3px rgba(0, 0, 0, 0.1);
-  --shadow-md: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
+  --border: #e2e8f0;
+  --radius: 16px;
+  --shadow-sm: 0 1px 2px 0 rgb(0 0 0 / 0.05);
+  --shadow-md: 0 4px 6px -1px rgb(0 0 0 / 0.1), 0 2px 4px -2px rgb(0 0 0 / 0.1);
 
-  --font-sans: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+  --font-sans: "Inter", -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
 }
 
 [data-theme='dark'] {
-  --color-primary: #2997ff;
-  --color-primary-dark: #1a7fd4;
-  --color-success: #30d158;
-  --color-warning: #ff9f0a;
-  --color-danger: #ff453a;
+  --color-primary: #60a5fa;
+  --color-primary-dark: #3b82f6;
+
+  --color-success: #34d399;
+  --color-warning: #fbbf24;
+  --color-danger: #f87171;
 
   /* Surfaces */
-  --surface: #1c1c1e;
-  --surface-elevated: #2c2c2e;
+  --surface: #1e293b;
+  --surface-elevated: #0f172a;
 
-  --bg-gradient: linear-gradient(135deg, #000000 0%, #1c1c1e 100%);
-  --surface-glass: rgba(28, 28, 30, 0.7);
-  --glass-border: rgba(255, 255, 255, 0.1);
+  --bg-gradient: linear-gradient(135deg, #020617 0%, #0f172a 100%);
+  --surface-glass: rgba(30, 41, 59, 0.75);
+  --glass-border: rgba(255, 255, 255, 0.08);
 
-  --text-main: #f5f5f7;
-  --text-muted: #a1a1a6;
+  --text-main: #f8fafc;
+  --text-muted: #94a3b8;
 
-  --border: #424245;
+  --border: #334155;
 }
 
 /* Base Styles */
@@ -59,60 +56,42 @@ body {
   margin: 0;
   font-family: var(--font-sans);
   background: var(--bg-gradient);
-  /* Fallback if MUI doesn't cover */
   color: var(--text-main);
-  transition: background 0.3s ease, color 0.3s ease;
-}
-
-/* Custom Scrollbar */
-::-webkit-scrollbar {
-  width: 10px;
-}
-
-::-webkit-scrollbar-track {
-  background: transparent;
-}
-
-::-webkit-scrollbar-thumb {
-  background: rgba(134, 134, 139, 0.5);
-  border-radius: 5px;
-  border: 2px solid transparent;
-  background-clip: content-box;
-}
-
-::-webkit-scrollbar-thumb:hover {
-  background: rgba(134, 134, 139, 0.8);
-  border: 2px solid transparent;
-  background-clip: content-box;
+  transition: background 0.3s ease, color 0.3s ease, border-color 0.3s ease;
+  min-height: 100vh;
 }
 
 /* Utilities */
 .glass-panel {
   background: var(--surface-glass) !important;
-  backdrop-filter: blur(20px);
-  -webkit-backdrop-filter: blur(20px);
+  backdrop-filter: blur(24px);
+  -webkit-backdrop-filter: blur(24px);
   border: 1px solid var(--glass-border) !important;
-  box-shadow: 0 4px 30px rgba(0, 0, 0, 0.1);
+  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.05);
   border-radius: var(--radius);
 }
 
+[data-theme='dark'] .glass-panel {
+  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.3);
+}
+
 .text-gradient {
-  background: linear-gradient(to right, var(--color-primary), #5e5ce6);
-  /* Apple Indigo */
+  background: linear-gradient(to right, var(--color-primary), #a78bfa);
   background-clip: text;
   -webkit-background-clip: text;
   -webkit-text-fill-color: transparent;
+  display: inline-block;
 }
 
 /* Animations */
 .fade-in {
-  animation: fadeIn 0.5s ease-out forwards;
+  animation: fadeIn 0.4s cubic-bezier(0.4, 0, 0.2, 1) forwards;
 }
 
 @keyframes fadeIn {
   from {
     opacity: 0;
-    transform: translateY(10px);
+    transform: translateY(15px);
   }
 
   to {

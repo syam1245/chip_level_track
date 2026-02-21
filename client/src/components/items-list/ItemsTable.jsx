@@ -58,7 +58,7 @@ const ItemsTable = ({
             }}
         >
             <Table>
-                <TableHead sx={{ bgcolor: "#f8fafc" }}>
+                <TableHead sx={{ bgcolor: "background.paper", borderBottom: "1px solid", borderColor: "divider" }}>
                     <TableRow>
                         <TableCell>
                             <TableSortLabel
@@ -222,22 +222,22 @@ const ItemsTable = ({
                             <TableCell align="right">
                                 <Stack direction="row" justifyContent="flex-end" spacing={1}>
                                     <Tooltip title="WhatsApp">
-                                        <IconButton size="small" onClick={() => handleWhatsApp(item)} sx={{ color: '#10b981', bgcolor: '#dcfce7' }}>
+                                        <IconButton size="small" onClick={() => handleWhatsApp(item)} sx={{ color: 'success.main', bgcolor: 'success.light', '&:hover': { bgcolor: 'success.main', color: 'success.contrastText' } }}>
                                             <WhatsAppIcon fontSize="small" />
                                         </IconButton>
                                     </Tooltip>
                                     <Tooltip title="Print">
-                                        <IconButton size="small" onClick={() => setPrintItem(item)} sx={{ color: '#64748b', bgcolor: '#f1f5f9' }}>
+                                        <IconButton size="small" onClick={() => setPrintItem(item)} sx={{ color: 'text.secondary', bgcolor: 'action.selected', '&:hover': { bgcolor: 'action.hover', color: 'text.primary' } }}>
                                             <PrintIcon fontSize="small" />
                                         </IconButton>
                                     </Tooltip>
                                     <Tooltip title="Edit">
-                                        <IconButton size="small" onClick={() => setEditItem(item)} sx={{ color: '#3b82f6', bgcolor: '#dbeafe' }}>
+                                        <IconButton size="small" onClick={() => setEditItem(item)} sx={{ color: 'primary.main', bgcolor: 'primary.light', '&:hover': { bgcolor: 'primary.main', color: 'primary.contrastText' } }}>
                                             <EditIcon fontSize="small" />
                                         </IconButton>
                                     </Tooltip>
                                     <Tooltip title="Delete">
-                                        <IconButton size="small" onClick={() => handleDelete(item._id)} sx={{ color: '#ef4444', bgcolor: '#fee2e2' }}>
+                                        <IconButton size="small" onClick={() => handleDelete(item._id)} sx={{ color: 'error.main', bgcolor: 'error.light', '&:hover': { bgcolor: 'error.main', color: 'error.contrastText' } }}>
                                             <DeleteIcon fontSize="small" />
                                         </IconButton>
                                     </Tooltip>

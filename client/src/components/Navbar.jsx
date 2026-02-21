@@ -135,10 +135,10 @@ const Navbar = ({ toggleTheme, mode }) => {
                 position="sticky"
                 elevation={0}
                 sx={{
-                    background: theme.palette.mode === 'dark' ? 'rgba(15, 15, 15, 0.8)' : 'rgba(255, 255, 255, 0.8)',
-                    backdropFilter: "blur(20px)",
+                    background: alpha(theme.palette.background.paper, 0.75),
+                    backdropFilter: "blur(24px)",
                     borderBottom: "1px solid",
-                    borderColor: theme.palette.mode === 'dark' ? 'rgba(255,255,255,0.08)' : 'rgba(0,0,0,0.06)',
+                    borderColor: "divider",
                 }}
             >
                 <Toolbar sx={{ height: 72, px: { xs: 2, md: 4 } }}>

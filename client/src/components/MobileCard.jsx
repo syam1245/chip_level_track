@@ -49,7 +49,7 @@ const MobileCard = React.memo(({ item, onWhatsApp, onPrint, onEdit, onDelete, ca
             <CardContent sx={{ pb: 1, p: { xs: 1.5, sm: 2 } }}>
                 {/* Header row: Job number + Status chip */}
                 <Box display="flex" justifyContent="space-between" alignItems="center" mb={1.5}>
-                    <Typography variant="caption" fontWeight="900" sx={{ color: "primary.main", letterSpacing: '0.05em', bgcolor: alpha('#3b82f6', 0.1), px: 1, py: 0.5, borderRadius: 1.5 }}>
+                    <Typography variant="caption" fontWeight="900" sx={{ color: "primary.main", letterSpacing: '0.05em', bgcolor: 'primary.light', px: 1, py: 0.5, borderRadius: 1.5 }}>
                         #{item.jobNumber}
                     </Typography>
                     <Chip
@@ -135,25 +135,25 @@ const MobileCard = React.memo(({ item, onWhatsApp, onPrint, onEdit, onDelete, ca
             <CardActions sx={{ justifyContent: "space-between", px: 1.5, py: 1 }}>
                 <Box display="flex" gap={0.75}>
                     <Tooltip title="WhatsApp">
-                        <IconButton size="small" color="success" onClick={() => onWhatsApp(item)} sx={{ bgcolor: '#dcfce7' }}>
+                        <IconButton size="small" onClick={() => onWhatsApp(item)} sx={{ color: 'success.main', bgcolor: 'success.light', '&:hover': { bgcolor: 'success.main', color: 'success.contrastText' } }}>
                             <WhatsAppIcon sx={{ fontSize: '1.1rem' }} />
                         </IconButton>
                     </Tooltip>
                     <Tooltip title="Print Job Sheet">
-                        <IconButton size="small" onClick={() => onPrint(item)} sx={{ bgcolor: '#f1f5f9', color: '#64748b' }}>
+                        <IconButton size="small" onClick={() => onPrint(item)} sx={{ color: 'text.secondary', bgcolor: 'action.selected', '&:hover': { bgcolor: 'action.hover', color: 'text.primary' } }}>
                             <PrintIcon sx={{ fontSize: '1.1rem' }} />
                         </IconButton>
                     </Tooltip>
                 </Box>
                 <Box display="flex" gap={0.75}>
                     <Tooltip title="Edit">
-                        <IconButton size="small" color="primary" onClick={() => onEdit(item)} sx={{ bgcolor: '#dbeafe' }}>
+                        <IconButton size="small" onClick={() => onEdit(item)} sx={{ color: 'primary.main', bgcolor: 'primary.light', '&:hover': { bgcolor: 'primary.main', color: 'primary.contrastText' } }}>
                             <EditIcon sx={{ fontSize: '1.1rem' }} />
                         </IconButton>
                     </Tooltip>
                     {canDelete && (
                         <Tooltip title="Delete">
-                            <IconButton size="small" color="error" onClick={() => onDelete(item._id)} sx={{ bgcolor: '#fee2e2' }}>
+                            <IconButton size="small" onClick={() => onDelete(item._id)} sx={{ color: 'error.main', bgcolor: 'error.light', '&:hover': { bgcolor: 'error.main', color: 'error.contrastText' } }}>
                                 <DeleteIcon sx={{ fontSize: '1.1rem' }} />
                             </IconButton>
                         </Tooltip>
