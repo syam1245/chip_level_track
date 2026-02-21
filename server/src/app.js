@@ -6,6 +6,7 @@ import { attachAuth, requireAuth, requireCsrf } from "./modules/auth/auth.middle
 import errorMiddleware from "./core/middlewares/error.middleware.js";
 import authRoutes from "./modules/auth/auth.routes.js";
 import itemsRoutes from "./modules/items/items.routes.js";
+import statsRoutes from "./modules/stats/stats.routes.js";
 import visionRoutes from "./modules/vision/vision.routes.js";
 
 const __filename = fileURLToPath(import.meta.url);
@@ -22,6 +23,7 @@ app.use(attachAuth);
 // Routes
 app.use("/api/auth", authRoutes);
 app.use("/api/items", requireAuth, requireCsrf, itemsRoutes);
+app.use("/api/stats", requireAuth, requireCsrf, statsRoutes);
 app.use("/api/vision", requireAuth, requireCsrf, visionRoutes);
 
 // Health check
