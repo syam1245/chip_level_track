@@ -21,6 +21,8 @@ import { useAuth } from "../../auth/AuthContext";
 import JobSheetPrintTemplate from "../JobSheetPrintTemplate";
 import MobileCard from "../MobileCard";
 
+import { generateWhatsAppMessage } from "../../utils/whatsapp";
+
 import ItemsListHeader from "./ItemsListHeader";
 import ItemsListFilters from "./ItemsListFilters";
 import ItemsTable from "./ItemsTable";
@@ -187,7 +189,7 @@ const ItemsList = () => {
 
     const handleWhatsApp = useCallback((item) => {
         const cleanNumber = item.phoneNumber.replace(/\D/g, '');
-        const message = `Hi I am from Admin info solution, your ${item.brand} (Job #${item.jobNumber}) is now READY for pickup! Give us a callback for further details.`;
+        const message = generateWhatsAppMessage(item);
         const url = `https://wa.me/91${cleanNumber}?text=${encodeURIComponent(message)}`;
         window.open(url, "_blank");
     }, []);
