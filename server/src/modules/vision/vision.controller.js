@@ -37,6 +37,7 @@ class VisionController {
             ...data,
             brand: combinedBrand || data.item || "",
             phoneNumber: data.customerMobileNo || "",
+            issue: data.remarks || data.handwrittenNotes || "",
         };
 
         res.json({

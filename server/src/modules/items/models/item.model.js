@@ -3,7 +3,7 @@ import mongoose from "mongoose";
 const itemSchema = new mongoose.Schema(
     {
         jobNumber: { type: String, required: true, unique: true, index: true },
-        customerName: { type: String, required: true },
+        customerName: { type: String, required: true, uppercase: true },
         brand: { type: String, required: true },
         phoneNumber: { type: String, required: true, index: true },
         status: {
@@ -13,7 +13,7 @@ const itemSchema = new mongoose.Schema(
             index: true
         },
         repairNotes: { type: String },
-        issue: { type: String },
+        issue: { type: String, uppercase: true },
         cost: { type: Number, default: 0 },
         statusHistory: [
             {

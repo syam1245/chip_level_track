@@ -63,7 +63,13 @@ const Input = () => {
     const handleChange = (e) => {
         const { name, value } = e.target;
         if (name === "phoneNumber" && !/^\d*$/.test(value)) return;
-        setForm((prev) => ({ ...prev, [name]: value }));
+
+        let finalValue = value;
+        if (name === "customerName" || name === "issue") {
+            finalValue = value.toUpperCase();
+        }
+
+        setForm((prev) => ({ ...prev, [name]: finalValue }));
     };
 
     const handleBrandChange = (_event, newValue) => {
@@ -114,6 +120,8 @@ const Input = () => {
             customerName: extracted.customerName || prev.customerName,
             brand: extracted.brand || prev.brand,
             phoneNumber: extracted.phoneNumber || prev.phoneNumber,
+            issue: extracted.issue || prev.issue,
+            cost: extracted.cost || prev.cost,
         }));
         setSnackbar({ open: true, message: "✨ Data extracted successfully!", severity: "success" });
         setVisionOpen(false);
@@ -244,10 +252,10 @@ const Input = () => {
                                         options={FAULT_OPTIONS}
                                         value={form.issue}
                                         onChange={(_event, newValue) => {
-                                            setForm((prev) => ({ ...prev, issue: newValue || "" }));
+                                            setForm((prev) => ({ ...prev, issue: (newValue || "").toUpperCase() }));
                                         }}
                                         onInputChange={(_event, newInputValue) => {
-                                            setForm((prev) => ({ ...prev, issue: newInputValue }));
+                                            setForm((prev) => ({ ...prev, issue: newInputValue.toUpperCase() }));
                                         }}
                                         renderInput={(params) => (
                                             <TextField

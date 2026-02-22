@@ -67,7 +67,7 @@ const EditJobDialog = ({ editItem, setEditItem, handleEditSave, isAdmin }) => {
                     <TextField
                         label="Customer Name"
                         value={editItem.customerName}
-                        onChange={(e) => setEditItem({ ...editItem, customerName: e.target.value })}
+                        onChange={(e) => setEditItem({ ...editItem, customerName: e.target.value.toUpperCase() })}
                         fullWidth
                         size="small"
                     />
@@ -97,16 +97,16 @@ const EditJobDialog = ({ editItem, setEditItem, handleEditSave, isAdmin }) => {
                                 options={FAULT_OPTIONS}
                                 value={editItem.issue || ""}
                                 onChange={(_event, newValue) => {
-                                    setEditItem({ ...editItem, issue: newValue || "" });
+                                    setEditItem({ ...editItem, issue: (newValue || "").toUpperCase() });
                                 }}
                                 onInputChange={(_event, newInputValue) => {
-                                    setEditItem({ ...editItem, issue: newInputValue });
+                                    setEditItem({ ...editItem, issue: newInputValue.toUpperCase() });
                                 }}
                                 renderInput={(params) => (
                                     <TextField
                                         {...params}
                                         label="Fault / Issue"
-                                        onChange={(e) => setEditItem({ ...editItem, issue: e.target.value })}
+                                        onChange={(e) => setEditItem({ ...editItem, issue: e.target.value.toUpperCase() })}
                                         fullWidth
                                         size="small"
                                     />
