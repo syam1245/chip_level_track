@@ -174,9 +174,25 @@ const ItemsTable = ({
                             </TableCell>
                             <TableCell>{item.phoneNumber}</TableCell>
                             <TableCell>
-                                <Typography variant="body2" fontWeight="700" color="success.main">
-                                    {item.cost ? `₹${item.cost}` : "—"}
-                                </Typography>
+                                {item.finalCost > 0 ? (
+                                    <Box>
+                                        <Typography variant="body2" fontWeight="700" color="success.main">
+                                            ₹{item.finalCost}
+                                        </Typography>
+                                        <Typography variant="caption" sx={{ fontSize: '0.65rem', color: 'success.dark', bgcolor: 'success.light', px: 0.8, py: 0.2, borderRadius: 1 }}>
+                                            FINAL
+                                        </Typography>
+                                    </Box>
+                                ) : (
+                                    <Box>
+                                        <Typography variant="body2" fontWeight="700" color="text.secondary">
+                                            {item.cost ? `₹${item.cost}` : "—"}
+                                        </Typography>
+                                        <Typography variant="caption" sx={{ fontSize: '0.65rem', color: 'text.disabled' }}>
+                                            Est.
+                                        </Typography>
+                                    </Box>
+                                )}
                             </TableCell>
                             <TableCell>
                                 <Chip

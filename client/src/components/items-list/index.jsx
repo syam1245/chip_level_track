@@ -101,6 +101,9 @@ const ItemsList = () => {
         setLoading(true);
 
         let url = `/api/items?page=${page}&limit=${LIMIT}&sortBy=${sortBy}&sortOrder=${sortOrder}`;
+        if (isAdmin) {
+            url += `&includeMetadata=true`;
+        }
         if (technicianFilter !== "All") {
             url += `&technicianName=${encodeURIComponent(technicianFilter)}`;
         }

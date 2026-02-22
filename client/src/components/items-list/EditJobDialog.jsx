@@ -12,7 +12,10 @@ import {
     InputLabel,
     FormControl,
     Grid,
-    Autocomplete
+    Autocomplete,
+    Paper,
+    Divider,
+    Typography
 } from '@mui/material';
 import { STATUS_COLORS } from "../../constants/status";
 
@@ -115,12 +118,23 @@ const EditJobDialog = ({ editItem, setEditItem, handleEditSave, isAdmin }) => {
                         </Grid>
                         <Grid size={{ xs: 12, sm: 6 }}>
                             <TextField
-                                label="Total Cost (₹)"
+                                label="Est. Cost (₹)"
                                 type="number"
                                 value={editItem.cost || ""}
                                 onChange={(e) => setEditItem({ ...editItem, cost: e.target.value })}
                                 fullWidth
                                 size="small"
+                            />
+                        </Grid>
+                        <Grid size={{ xs: 12, sm: 6 }}>
+                            <TextField
+                                label="Final Cost (₹)"
+                                type="number"
+                                value={editItem.finalCost || ""}
+                                onChange={(e) => setEditItem({ ...editItem, finalCost: e.target.value })}
+                                fullWidth
+                                size="small"
+                                helperText="Leave blank if not finalized."
                             />
                         </Grid>
                     </Grid>
@@ -150,13 +164,30 @@ const EditJobDialog = ({ editItem, setEditItem, handleEditSave, isAdmin }) => {
                         fullWidth
                         variant="outlined"
                     />
+
+                    {isAdmin && editItem.metadata && (
+                        <>
+                            <Divider sx={{ my: 1 }} />
+                            <Typography variant="subtitle2" color="text.secondary" fontWeight={700}>
+                                Creation Audit Log
+                            </Typography>
+                            <Paper elevation={0} sx={{ p: 2, bgcolor: "action.hover", borderRadius: "8px", border: "1px solid var(--border)" }}>
+                                <Grid container spacing={1}>
+                                    <Grid size={6}><Typography variant="caption" color="text.secondary"><strong>IP:</strong> {editItem.metadata.ip || "N/A"}</Typography></Grid>
+                                    <Grid size={6}><Typography variant="caption" color="text.secondary"><strong>OS:</strong> {editItem.metadata.os || "N/A"}</Typography></Grid>
+                                    <Grid size={6}><Typography variant="caption" color="text.secondary"><strong>Browser:</strong> {editItem.metadata.browser || "N/A"}</Typography></Grid>
+                                    <Grid size={6}><Typography variant="caption" color="text.secondary"><strong>Device:</strong> {editItem.metadata.device || "N/A"}</Typography></Grid>
+                                </Grid>
+                            </Paper>
+                        </>
+                    )}
                 </Stack>
             </DialogContent>
             <DialogActions sx={{ p: 2 }}>
                 <Button onClick={() => setEditItem(null)} sx={{ color: 'text.secondary' }}>Cancel</Button>
                 <Button variant="contained" onClick={handleEditSave} sx={{ borderRadius: "8px" }}>Save Changes</Button>
             </DialogActions>
-        </Dialog>
+        </Dialog >
     );
 };
 

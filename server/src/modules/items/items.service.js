@@ -121,6 +121,7 @@ class ItemService {
         if (data.repairNotes !== undefined) item.repairNotes = String(data.repairNotes).trim();
         if (data.issue !== undefined) item.issue = String(data.issue).trim();
         if (data.cost !== undefined) item.cost = Number(data.cost) || 0;
+        if (data.finalCost !== undefined) item.finalCost = Number(data.finalCost) || 0;
         if (data.technicianName !== undefined) item.technicianName = String(data.technicianName).trim();
 
         if (data.status && data.status !== item.status) {

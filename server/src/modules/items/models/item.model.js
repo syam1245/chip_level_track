@@ -15,6 +15,7 @@ const itemSchema = new mongoose.Schema(
         repairNotes: { type: String },
         issue: { type: String, uppercase: true },
         cost: { type: Number, default: 0 },
+        finalCost: { type: Number, default: 0 },
         statusHistory: [
             {
                 status: { type: String },

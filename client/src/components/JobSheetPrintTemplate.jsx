@@ -178,8 +178,7 @@ const JobSheetPrintTemplate = forwardRef(({ item }, ref) => {
                   </Typography>
                 </TableCell>
                 <TableCell align="right" sx={{ py: 3, verticalAlign: 'top', borderBottom: '1px solid #e2e8f0', fontSize: '16px', fontWeight: 600 }}>
-                  {/* Replace with item.totalCost or similar if you have it in your database */}
-                  {item.cost ? `₹${item.cost}` : 'TBD'}
+                  {item.finalCost ? `₹${item.finalCost}` : (item.cost ? `₹${item.cost}` : 'TBD')}
                 </TableCell>
               </TableRow>
             </TableBody>
@@ -189,8 +188,12 @@ const JobSheetPrintTemplate = forwardRef(({ item }, ref) => {
           <Box sx={{ display: 'flex', justifyContent: 'flex-end', mt: 2 }}>
             <Box sx={{ width: '250px' }}>
               <Box sx={{ display: 'flex', justifyContent: 'space-between', mb: 1 }}>
-                <Typography sx={{ fontSize: '15px', color: '#475569' }}>Subtotal:</Typography>
-                <Typography sx={{ fontSize: '15px', color: '#0f172a' }}>{item.cost ? `₹${item.cost}` : '—'}</Typography>
+                <Typography sx={{ fontSize: '15px', color: '#475569' }}>
+                  {item.finalCost ? 'Subtotal:' : 'Est. Subtotal:'}
+                </Typography>
+                <Typography sx={{ fontSize: '15px', color: '#0f172a' }}>
+                  {item.finalCost ? `₹${item.finalCost}` : (item.cost ? `₹${item.cost}` : '—')}
+                </Typography>
               </Box>
               <Box sx={{ display: 'flex', justifyContent: 'space-between', mb: 2 }}>
                 <Typography sx={{ fontSize: '15px', color: '#475569' }}>Tax:</Typography>
@@ -198,9 +201,11 @@ const JobSheetPrintTemplate = forwardRef(({ item }, ref) => {
               </Box>
               <Divider sx={{ mb: 1, borderColor: '#cbd5e1' }} />
               <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                <Typography sx={{ fontSize: '18px', fontWeight: 800, color: '#0f172a' }}>TOTAL:</Typography>
+                <Typography sx={{ fontSize: '18px', fontWeight: 800, color: '#0f172a' }}>
+                  {item.finalCost ? 'FINAL TOTAL:' : 'EST. TOTAL:'}
+                </Typography>
                 <Typography sx={{ fontSize: '20px', fontWeight: 800, color: accentColor }}>
-                  {item.cost ? `₹${item.cost}` : 'TBD'}
+                  {item.finalCost ? `₹${item.finalCost}` : (item.cost ? `₹${item.cost}` : 'TBD')}
                 </Typography>
               </Box>
             </Box>
