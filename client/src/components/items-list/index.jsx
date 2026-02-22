@@ -233,7 +233,11 @@ const ItemsList = () => {
                         <Paper sx={{ p: 8, textAlign: "center", borderRadius: "var(--radius)", bgcolor: "var(--surface)" }}>
                             <Typography variant="h5" fontWeight="bold" gutterBottom>No Jobs Found</Typography>
                             <Typography color="text.secondary">Try adjusting your search filters or add a new job.</Typography>
-                            <Button sx={{ mt: 3 }} variant="contained" onClick={() => setSearch("")}>Clear Search</Button>
+                            <Button sx={{ mt: 3 }} variant="contained" onClick={() => {
+                                setSearch("");
+                                setTechnicianFilter("All");
+                                setActiveFilter("all");
+                            }}>Clear Filters</Button>
                         </Paper>
                     </motion.div>
                 ) : isMobile ? (

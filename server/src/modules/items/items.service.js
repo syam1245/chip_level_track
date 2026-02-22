@@ -21,7 +21,14 @@ class ItemService {
         }
 
         if (technicianName && technicianName !== 'All') {
-            query.technicianName = technicianName;
+            // If the technicianName contains "(Admin)", allow matching the base name as well
+            // for backwards compatibility with jobs created before they were admins.
+            const baseName = technicianName.replace(/\s*\(Admin\)\s*$/i, '');
+            if (baseName !== technicianName) {
+                query.technicianName = { $in: [technicianName, baseName] };
+            } else {
+                query.technicianName = technicianName;
+            }
         }
 
         if (statusGroup === "inProgress") {

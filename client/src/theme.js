@@ -4,15 +4,15 @@ const getDesignTokens = (mode) => ({
     palette: {
         mode,
         primary: {
-            main: mode === "dark" ? "#60a5fa" : "#2563eb", // Blue 400 : Blue 600
-            light: mode === "dark" ? "#93c5fd" : "#3b82f6",
-            dark: mode === "dark" ? "#3b82f6" : "#1d4ed8",
+            main: mode === "dark" ? "#3b82f6" : "#2563eb", // Blue 500 : Blue 600
+            light: mode === "dark" ? "#60a5fa" : "#3b82f6",
+            dark: mode === "dark" ? "#2563eb" : "#1d4ed8",
             contrastText: "#ffffff",
         },
         secondary: {
-            main: mode === "dark" ? "#a78bfa" : "#7c3aed", // Violet 400 : Violet 600
-            light: mode === "dark" ? "#c4b5fd" : "#8b5cf6",
-            dark: mode === "dark" ? "#8b5cf6" : "#6d28d9",
+            main: mode === "dark" ? "#8b5cf6" : "#7c3aed", // Violet 500 : Violet 600
+            light: mode === "dark" ? "#a78bfa" : "#8b5cf6",
+            dark: mode === "dark" ? "#7c3aed" : "#6d28d9",
             contrastText: "#ffffff",
         },
         background: {
@@ -20,28 +20,28 @@ const getDesignTokens = (mode) => ({
             paper: mode === "dark" ? "#1e293b" : "#ffffff", // Slate 800 : White
         },
         text: {
-            primary: mode === "dark" ? "#f8fafc" : "#0f172a", // Slate 50 : Slate 900
-            secondary: mode === "dark" ? "#94a3b8" : "#475569", // Slate 400 : Slate 600
-            disabled: mode === "dark" ? "#475569" : "#94a3b8", // Slate 600 : Slate 400
+            primary: mode === "dark" ? "#ffffff" : "#0f172a", // White : Slate 900
+            secondary: mode === "dark" ? "#cbd5e1" : "#475569", // Slate 300 : Slate 600
+            disabled: mode === "dark" ? "#64748b" : "#94a3b8", // Slate 500 : Slate 400
         },
         success: {
-            main: mode === "dark" ? "#34d399" : "#10b981", // Emerald 400 : Emerald 500
-            light: mode === "dark" ? alpha("#34d399", 0.15) : alpha("#10b981", 0.15),
+            main: mode === "dark" ? "#10b981" : "#10b981", // Emerald 500
+            light: mode === "dark" ? alpha("#10b981", 0.15) : alpha("#10b981", 0.15),
             dark: mode === "dark" ? "#059669" : "#047857",
         },
         error: {
-            main: mode === "dark" ? "#f87171" : "#ef4444", // Red 400 : Red 500
-            light: mode === "dark" ? alpha("#f87171", 0.15) : alpha("#ef4444", 0.15),
+            main: mode === "dark" ? "#ef4444" : "#ef4444", // Red 500
+            light: mode === "dark" ? alpha("#ef4444", 0.15) : alpha("#ef4444", 0.15),
             dark: mode === "dark" ? "#dc2626" : "#b91c1c",
         },
         warning: {
-            main: mode === "dark" ? "#fbbf24" : "#f59e0b", // Amber 400 : Amber 500
-            light: mode === "dark" ? alpha("#fbbf24", 0.15) : alpha("#f59e0b", 0.15),
+            main: mode === "dark" ? "#f59e0b" : "#f59e0b", // Amber 500
+            light: mode === "dark" ? alpha("#f59e0b", 0.15) : alpha("#f59e0b", 0.15),
             dark: mode === "dark" ? "#d97706" : "#b45309",
         },
         info: {
-            main: mode === "dark" ? "#38bdf8" : "#0ea5e9", // Sky 400 : Sky 500
-            light: mode === "dark" ? alpha("#38bdf8", 0.15) : alpha("#0ea5e9", 0.15),
+            main: mode === "dark" ? "#0ea5e9" : "#0ea5e9", // Sky 500
+            light: mode === "dark" ? alpha("#0ea5e9", 0.15) : alpha("#0ea5e9", 0.15),
             dark: mode === "dark" ? "#0284c7" : "#0369a1",
         },
         divider: mode === "dark" ? "#334155" : "#e2e8f0", // Slate 700 : Slate 200

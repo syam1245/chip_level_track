@@ -6,9 +6,8 @@ const stream = {
 };
 
 const skip = () => {
-    // Optional: Add logic to skip logging certain requests, e.g., health checks in production
-    // if (config.env === 'production') return true;
-    return false;
+    // Skip these extremely verbose HTTP logs unless explicitly needed for debugging
+    return true;
 };
 
 const httpLogger = morgan(

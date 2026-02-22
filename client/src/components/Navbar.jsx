@@ -245,7 +245,7 @@ const Navbar = ({ toggleTheme, mode }) => {
                                 <Divider orientation="vertical" flexItem sx={{ mx: 1, my: 1.5 }} />
                                 <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5 }}>
                                     <Box textAlign="right">
-                                        <Typography variant="body2" fontWeight={800} display="block" sx={{ lineHeight: 1 }}>
+                                        <Typography variant="body2" fontWeight={800} display="block" sx={{ lineHeight: 1, color: 'text.primary' }}>
                                             {user.displayName}
                                         </Typography>
 

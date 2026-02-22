@@ -81,10 +81,10 @@ const JobSheetPrintTemplate = forwardRef(({ item }, ref) => {
         <Box>
           <Typography sx={{ fontWeight: 900, fontSize: '32px', letterSpacing: '-0.5px', color: '#0f172a', lineHeight: 1.1 }}>
             ADMIN INFO <br />
-            <span style={{ fontWeight: 800, color: '#475569', fontSize: '26px' }}>SOLUTION</span>
+            <span style={{ fontWeight: 900, color: '#0f172a', fontSize: '32px' }}>SOLUTION</span>
           </Typography>
           <Typography sx={{ fontSize: '13px', color: '#475569', mt: 1.5, fontWeight: 500 }}>
-            Harippad • Chip Level Service Excellence<br />
+            Harippad • Laptop Service<br />
             Phone: +91 9020448019
           </Typography>
         </Box>
@@ -153,8 +153,8 @@ const JobSheetPrintTemplate = forwardRef(({ item }, ref) => {
         <Table size="small" sx={{ borderCollapse: 'collapse' }}>
           <TableHead>
             <TableRow>
-              <TableCell sx={{ bgcolor: 'transparent', borderBottom: `2px solid ${accentColor}`, fontSize: '13px', fontWeight: 700, color: '#0f172a', py: 1.5, pl: 0 }}>Description / Repair Notes</TableCell>
-              <TableCell align="right" sx={{ bgcolor: 'transparent', borderBottom: `2px solid ${accentColor}`, fontSize: '13px', fontWeight: 700, color: '#0f172a', py: 1.5 }}>Amount</TableCell>
+              <TableCell sx={{ backgroundColor: 'transparent !important', borderBottom: `2px solid ${accentColor}`, fontSize: '13px', fontWeight: 700, color: '#0f172a !important', py: 1.5, pl: 0 }}>Description / Repair Notes</TableCell>
+              <TableCell align="right" sx={{ backgroundColor: 'transparent !important', borderBottom: `2px solid ${accentColor}`, fontSize: '13px', fontWeight: 700, color: '#0f172a !important', py: 1.5 }}>Amount</TableCell>
             </TableRow>
           </TableHead>
           <TableBody>
