@@ -5,31 +5,7 @@ const AuthContext = createContext(null);
 
 export const AuthProvider = ({ children }) => {
   const [user, setUser] = useState(null);
-  const [isAdminView, setIsAdminView] = useState(null);
   const [loadingSession, setLoadingSession] = useState(true);
-
-  // Initialize view mode based on role
-  useEffect(() => {
-    if (user) {
-      if (user.role !== "admin") {
-        setIsAdminView(false);
-      } else {
-        const saved = localStorage.getItem("preferred_view");
-        if (saved !== null) {
-          setIsAdminView(saved === "admin");
-        } else {
-          setIsAdminView(null);
-        }
-      }
-    } else {
-      setIsAdminView(null);
-    }
-  }, [user]);
-
-  const selectView = (isAdmin) => {
-    setIsAdminView(isAdmin);
-    localStorage.setItem("preferred_view", isAdmin ? "admin" : "tech");
-  };
 
   useEffect(() => {
     const loadSession = async () => {
@@ -70,16 +46,6 @@ export const AuthProvider = ({ children }) => {
   const logout = async () => {
     await authFetch("/api/auth/logout", { method: "POST" });
     setUser(null);
-    setIsAdminView(null);
-    localStorage.removeItem("preferred_view");
-  };
-
-  const toggleAdminView = () => {
-    if (user?.role === "admin") {
-      const newVal = !isAdminView;
-      setIsAdminView(newVal);
-      localStorage.setItem("preferred_view", newVal ? "admin" : "tech");
-    }
   };
 
   const fetchTechnicians = async () => {
@@ -89,8 +55,8 @@ export const AuthProvider = ({ children }) => {
   };
 
   const value = useMemo(
-    () => ({ user, login, logout, loadingSession, isAdminView, toggleAdminView, selectView, fetchTechnicians }),
-    [user, loadingSession, isAdminView]
+    () => ({ user, login, logout, loadingSession, fetchTechnicians }),
+    [user, loadingSession]
   );
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;

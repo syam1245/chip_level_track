@@ -6,8 +6,6 @@ import {
     Typography,
     Button,
     Box,
-    Switch,
-    FormControlLabel,
     Avatar,
     IconButton,
     Tooltip,
@@ -24,8 +22,6 @@ import {
     Paper
 } from "@mui/material";
 import {
-    AdminPanelSettings,
-    Engineering,
     Logout,
     Dashboard as DashboardIcon,
     AddCircle as AddIcon,
@@ -33,15 +29,14 @@ import {
     Menu as MenuIcon,
     Brightness4,
     Brightness7,
-    Person as PersonIcon,
-    Security as ManagementIcon
+    Person as PersonIcon
 } from "@mui/icons-material";
 import { useNavigate, useLocation } from "react-router-dom";
 import { useAuth } from "../auth/AuthContext";
 import { motion, AnimatePresence } from "framer-motion";
 
 const Navbar = ({ toggleTheme, mode }) => {
-    const { user, logout, isAdminView, toggleAdminView } = useAuth();
+    const { user, logout } = useAuth();
     const navigate = useNavigate();
     const location = useLocation();
     const theme = useTheme();
@@ -54,14 +49,6 @@ const Navbar = ({ toggleTheme, mode }) => {
     const isActive = (path) => location.pathname === path;
 
     const handleDrawerToggle = () => setMobileOpen(!mobileOpen);
-
-    const handleToggleWithRedirect = () => {
-        toggleAdminView();
-        // Navigate to the primary view of the selected mode
-        const nextIsAdmin = !isAdminView;
-        navigate(nextIsAdmin ? "/admin" : "/");
-        if (isMobile) setMobileOpen(false);
-    };
 
     const navItems = [
         { label: "New Job", icon: <AddIcon />, path: "/", show: true },
@@ -102,19 +89,6 @@ const Navbar = ({ toggleTheme, mode }) => {
             </List>
 
             <Box sx={{ position: 'absolute', bottom: 20, left: 20, right: 20 }}>
-                {isAdmin && (
-                    <Paper variant="outlined" sx={{ p: 2, mb: 2, borderRadius: 3, bgcolor: 'action.hover' }}>
-                        <Stack direction="row" alignItems="center" justifyContent="space-between">
-                            <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-                                {isAdminView ? <AdminPanelSettings color="primary" /> : <Engineering color="action" />}
-                                <Typography variant="body2" fontWeight={700}>
-                                    {isAdminView ? "Admin Mode" : "Tech Mode"}
-                                </Typography>
-                            </Box>
-                            <Switch size="small" checked={isAdminView} onChange={handleToggleWithRedirect} />
-                        </Stack>
-                    </Paper>
-                )}
                 <Button
                     fullWidth
                     variant="soft"
@@ -165,9 +139,9 @@ const Navbar = ({ toggleTheme, mode }) => {
                             gap: 1,
                             letterSpacing: '-1px'
                         }}
-                        onClick={() => navigate(isAdminView ? "/admin" : "/")}
+                        onClick={() => navigate("/")}
                     >
-                        {isAdminView ? <ManagementIcon /> : <AddIcon />}
+                        <AddIcon />
                         Admin Info Solution
                     </Typography>
 
@@ -198,35 +172,6 @@ const Navbar = ({ toggleTheme, mode }) => {
                     <Box sx={{ flexGrow: 1 }} />
 
                     <Stack direction="row" spacing={2} alignItems="center">
-                        {!isMobile && isAdmin && (
-                            <Box
-                                sx={{
-                                    display: 'flex',
-                                    alignItems: 'center',
-                                    gap: 1,
-                                    bgcolor: theme.palette.mode === 'dark' ? 'rgba(255,255,255,0.05)' : 'rgba(0,0,0,0.04)',
-                                    px: 2,
-                                    py: 0.75,
-                                    borderRadius: "14px",
-                                    border: '1px solid',
-                                    borderColor: 'divider'
-                                }}
-                            >
-                                <Typography variant="caption" fontWeight={800} color={isAdminView ? "primary" : "text.secondary"}>
-                                    {isAdminView ? "ADMIN MODE" : "TECH MODE"}
-                                </Typography>
-                                <Switch
-                                    size="small"
-                                    checked={isAdminView}
-                                    onChange={handleToggleWithRedirect}
-                                    sx={{
-                                        '& .MuiSwitch-switchBase.Mui-checked': { color: theme.palette.primary.main },
-                                        '& .MuiSwitch-switchBase.Mui-checked + .MuiSwitch-track': { backgroundColor: theme.palette.primary.main },
-                                    }}
-                                />
-                            </Box>
-                        )}
-
                         <Tooltip title={`Switch to ${mode === "dark" ? "Light" : "Dark"} Mode`}>
                             <IconButton
                                 onClick={toggleTheme}

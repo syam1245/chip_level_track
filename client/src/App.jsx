@@ -18,7 +18,6 @@ const ItemsList = lazy(() => import("./components/items-list"));
 const LoginPage = lazy(() => import("./components/LoginPage.jsx"));
 const Navbar = lazy(() => import("./components/Navbar.jsx"));
 const AdminDashboard = lazy(() => import("./components/AdminDashboard.jsx"));
-const RoleSelection = lazy(() => import("./components/RoleSelection.jsx"));
 
 const LoadingFallback = () => (
   <Box
@@ -74,7 +73,7 @@ function App() {
 }
 
 const AuthAppContent = ({ mode, toggleTheme }) => {
-  const { user, isAdminView, loadingSession } = useAuth();
+  const { user, loadingSession } = useAuth();
 
   if (loadingSession) return <LoadingFallback />;
 
@@ -85,15 +84,12 @@ const AuthAppContent = ({ mode, toggleTheme }) => {
         <Routes>
           <Route path="/login" element={<LoginPage />} />
 
-          {/* "/" = New Job form — always, regardless of admin mode */}
+          {/* "/" = New Job form */}
           <Route
             path="/"
             element={
               <ProtectedRoute>
-                {user?.role === "admin" && isAdminView === null
-                  ? <RoleSelection />
-                  : <Input />
-                }
+                <Input />
               </ProtectedRoute>
             }
           />
