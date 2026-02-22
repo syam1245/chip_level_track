@@ -30,35 +30,6 @@ class StatsRepository {
             breakdown: revenueByUser
         };
     }
-
-    async getKeyStatistics(startDate, endDate) {
-        const matchStage = {
-            isDeleted: false,
-            createdAt: { $gte: new Date(startDate), $lte: new Date(endDate) }
-        };
-
-        const topBrand = await Item.aggregate([
-            { $match: { ...matchStage, brand: { $nin: [null, "", " ", "Unknown"] } } },
-            { $group: { _id: "$brand", count: { $sum: 1 } } },
-            { $sort: { count: -1 } },
-            { $limit: 1 }
-        ]);
-
-        const topIssue = await Item.aggregate([
-            { $match: { ...matchStage, issue: { $nin: [null, "", " ", "Unknown"] } } },
-            { $group: { _id: "$issue", count: { $sum: 1 } } },
-            { $sort: { count: -1 } },
-            { $limit: 1 }
-        ]);
-
-        const totalDevices = await Item.countDocuments(matchStage);
-
-        return {
-            mostProcessedBrand: topBrand[0]?._id || "None",
-            mostCommonIssue: topIssue[0]?._id || "None",
-            totalDevices
-        };
-    }
 }
 
 export default new StatsRepository();

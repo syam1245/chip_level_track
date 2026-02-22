@@ -10,16 +10,6 @@ class StatsController {
             next(error);
         }
     }
-
-    async getSummary(req, res, next) {
-        try {
-            const { startDate, endDate } = req.query;
-            const data = await StatsService.getSummary(startDate, endDate);
-            res.json(data);
-        } catch (error) {
-            next(error);
-        }
-    }
 }
 
 export default new StatsController();

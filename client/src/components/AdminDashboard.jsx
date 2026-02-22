@@ -18,7 +18,6 @@ import { useAuth } from "../auth/AuthContext";
 import TechnicianList from "./admin/TechnicianList";
 import AuditTrail from "./admin/AuditTrail";
 import RevenueReport from "./admin/RevenueReport";
-import KeyStatistics from "./admin/KeyStatistics";
 import ServiceHistoryDialog from "./admin/ServiceHistoryDialog";
 
 const AdminDashboard = () => {
@@ -106,10 +105,7 @@ const AdminDashboard = () => {
             )}
 
             <Grid container spacing={4}>
-                {/* Top Row: Key Statistics */}
-                <Grid size={{ xs: 12 }}>
-                    <KeyStatistics startDate={dates.start} endDate={dates.end} />
-                </Grid>
+                {/* Top Row: Removed Key Statistics */}
 
                 {/* Middle Row: Revenue & Technicians */}
                 <Grid size={{ xs: 12, lg: 8 }}>

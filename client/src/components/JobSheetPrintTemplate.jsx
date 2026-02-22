@@ -50,8 +50,8 @@ const JobSheetPrintTemplate = forwardRef(({ item }, ref) => {
       ref={ref}
       className="print-root"
       sx={{
-        width: '210mm',
-        minHeight: '297mm',
+        width: '100%',
+        minHeight: '100%',
         padding: '20mm',
         backgroundColor: '#ffffff',
         fontFamily: '"Inter", "Roboto", sans-serif',
@@ -81,7 +81,7 @@ const JobSheetPrintTemplate = forwardRef(({ item }, ref) => {
         <Box>
           <Typography sx={{ fontWeight: 900, fontSize: '32px', letterSpacing: '-0.5px', color: '#0f172a', lineHeight: 1.1 }}>
             ADMIN INFO <br />
-            <span style={{ fontWeight: 300, color: '#475569', fontSize: '26px' }}>SOLUTION</span>
+            <span style={{ fontWeight: 800, color: '#475569', fontSize: '26px' }}>SOLUTION</span>
           </Typography>
           <Typography sx={{ fontSize: '13px', color: '#475569', mt: 1.5, fontWeight: 500 }}>
             Harippad • Chip Level Service Excellence<br />
@@ -91,7 +91,7 @@ const JobSheetPrintTemplate = forwardRef(({ item }, ref) => {
 
         <Box sx={{ textAlign: 'right' }}>
           <Typography sx={{ fontSize: '24px', fontWeight: 800, color: accentColor, letterSpacing: '1px', textTransform: 'uppercase' }}>
-            INVOICE / JOB SHEET
+            JOB SHEET
           </Typography>
           <Box sx={{ mt: 1.5 }}>
             <Typography sx={{ fontSize: '14px', color: '#475569', mb: 0.5 }}>
@@ -152,9 +152,9 @@ const JobSheetPrintTemplate = forwardRef(({ item }, ref) => {
       <Box sx={{ mb: 4 }}>
         <Table size="small" sx={{ borderCollapse: 'collapse' }}>
           <TableHead>
-            <TableRow sx={{ borderBottom: `2px solid ${accentColor}` }}>
-              <TableCell sx={{ fontSize: '13px', fontWeight: 700, color: '#0f172a', py: 1.5, pl: 0 }}>Description / Repair Notes</TableCell>
-              <TableCell align="right" sx={{ fontSize: '13px', fontWeight: 700, color: '#0f172a', py: 1.5 }}>Amount</TableCell>
+            <TableRow>
+              <TableCell sx={{ bgcolor: 'transparent', borderBottom: `2px solid ${accentColor}`, fontSize: '13px', fontWeight: 700, color: '#0f172a', py: 1.5, pl: 0 }}>Description / Repair Notes</TableCell>
+              <TableCell align="right" sx={{ bgcolor: 'transparent', borderBottom: `2px solid ${accentColor}`, fontSize: '13px', fontWeight: 700, color: '#0f172a', py: 1.5 }}>Amount</TableCell>
             </TableRow>
           </TableHead>
           <TableBody>
