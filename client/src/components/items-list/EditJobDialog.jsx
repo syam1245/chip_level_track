@@ -173,10 +173,14 @@ const EditJobDialog = ({ editItem, setEditItem, handleEditSave, isAdmin }) => {
                             </Typography>
                             <Paper elevation={0} sx={{ p: 2, bgcolor: "action.hover", borderRadius: "8px", border: "1px solid var(--border)" }}>
                                 <Grid container spacing={1}>
-                                    <Grid size={6}><Typography variant="caption" color="text.secondary"><strong>IP:</strong> {editItem.metadata.ip || "N/A"}</Typography></Grid>
-                                    <Grid size={6}><Typography variant="caption" color="text.secondary"><strong>OS:</strong> {editItem.metadata.os || "N/A"}</Typography></Grid>
-                                    <Grid size={6}><Typography variant="caption" color="text.secondary"><strong>Browser:</strong> {editItem.metadata.browser || "N/A"}</Typography></Grid>
-                                    <Grid size={6}><Typography variant="caption" color="text.secondary"><strong>Device:</strong> {editItem.metadata.device || "N/A"}</Typography></Grid>
+                                    <Grid size={6}><Typography variant="caption" color="text.secondary" sx={{ display: 'flex', gap: 1 }}><strong>IP:</strong> <span style={{ fontFamily: 'monospace' }}>{editItem.metadata.ip || "N/A"}</span></Typography></Grid>
+                                    <Grid size={6}><Typography variant="caption" color="text.secondary" sx={{ display: 'flex', gap: 1 }}><strong>User Role:</strong> <span>{editItem.metadata.userRole || "N/A"}</span></Typography></Grid>
+
+                                    <Grid size={6}><Typography variant="caption" color="text.secondary" sx={{ display: 'flex', gap: 1 }}><strong>OS & Browser:</strong> <span>{editItem.metadata.os || "N/A"} • {editItem.metadata.browser || "N/A"}</span></Typography></Grid>
+                                    <Grid size={6}><Typography variant="caption" color="text.secondary" sx={{ display: 'flex', gap: 1 }}><strong>Device:</strong> <span>{editItem.metadata.device || "N/A"}</span></Typography></Grid>
+
+                                    <Grid size={12}><Typography variant="caption" color="text.secondary" sx={{ display: 'flex', gap: 1, mt: 0.5 }}><strong>Time:</strong> <span>{editItem.metadata.timestamp ? new Date(editItem.metadata.timestamp).toLocaleString() : "N/A"}</span></Typography></Grid>
+                                    <Grid size={12}><Typography variant="caption" color="text.secondary" sx={{ display: 'flex', gap: 1, maxWidth: '100%', wordBreak: 'break-all' }}><strong>Source:</strong> <span>{editItem.metadata.referer || "N/A"}</span></Typography></Grid>
                                 </Grid>
                             </Paper>
                         </>

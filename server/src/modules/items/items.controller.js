@@ -45,10 +45,13 @@ class ItemController {
             cost: cost ? Number(cost) : 0,
             metadata: {
                 ip: req.ip || req.connection.remoteAddress,
-                browser: deviceResult.browser.name,
-                os: deviceResult.os.name,
+                browser: deviceResult.browser.name || "Unknown",
+                os: deviceResult.os.name || "Unknown",
                 device: deviceResult.device.vendor ? `${deviceResult.device.vendor} ${deviceResult.device.model}` : (deviceResult.device.type || "Desktop"),
-                ua: req.headers["user-agent"]
+                ua: req.headers["user-agent"] || "Unknown",
+                timestamp: new Date().toISOString(),
+                userRole: req.user?.role || "Unknown",
+                referer: req.headers["referer"] || req.headers["referrer"] || "Direct"
             }
         };
 
