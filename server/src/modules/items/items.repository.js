@@ -43,9 +43,9 @@ class ItemRepository {
         return await Item.findByIdAndUpdate(id, { isDeleted: true }, { new: true });
     }
 
-    // Backup utility: find all non-deleted items
+    // Backup utility: find all active (non-deleted) items only
     async findAllForBackup() {
-        return await Item.find().sort({ createdAt: -1 });
+        return await Item.find({ isDeleted: false }).sort({ createdAt: -1 }).lean();
     }
 }
 

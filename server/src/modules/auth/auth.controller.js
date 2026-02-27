@@ -39,8 +39,8 @@ class AuthController {
         const { newPassword, overrideUsername, overridePassword } = req.body;
         const { username } = req.params;
 
-        if (!newPassword || newPassword.length < 4) {
-            return res.status(400).json({ error: "Password must be at least 4 characters" });
+        if (!newPassword || newPassword.length < 8) {
+            return res.status(400).json({ error: "Password must be at least 8 characters" });
         }
 
         // Check if current user is admin
@@ -49,12 +49,11 @@ class AuthController {
                 return res.status(403).json({ error: "Admin credentials required to reset password." });
             }
 
-            // Verify override credentials
+            // Verify override credentials without creating a new session
             try {
-                // We use AuthService.login just to verify the credentials without creating a new session
-                const { user: overrideUser } = await AuthService.login(overrideUsername, overridePassword);
-                if (overrideUser.role !== "admin") {
-                    return res.status(403).json({ error: "Override user must be an administrator." });
+                const isValid = await AuthService.verifyCredentials(overrideUsername, overridePassword, "admin");
+                if (!isValid) {
+                    return res.status(403).json({ error: "Invalid admin override credentials." });
                 }
             } catch (error) {
                 return res.status(403).json({ error: "Invalid admin override credentials." });

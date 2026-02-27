@@ -8,15 +8,23 @@ class VisionController {
         let imageBuffer;
         let mimeType = "image/jpeg";
 
+        const ALLOWED_MIME_TYPES = new Set(["image/jpeg", "image/png", "image/webp", "image/gif"]);
+
         if (req.file) {
-            imageBuffer = req.file.buffer;
             mimeType = req.file.mimetype;
+            if (!ALLOWED_MIME_TYPES.has(mimeType)) {
+                throw new AppError("Unsupported image format. Allowed: JPEG, PNG, WebP, GIF.", 415);
+            }
+            imageBuffer = req.file.buffer;
         } else if (req.body.image) {
             let base64String = req.body.image;
             if (base64String.includes(",")) {
                 const match = base64String.match(/^data:([^;]+);base64,/);
                 if (match) mimeType = match[1];
                 base64String = base64String.split(",")[1];
+            }
+            if (!ALLOWED_MIME_TYPES.has(mimeType)) {
+                throw new AppError("Unsupported image format. Allowed: JPEG, PNG, WebP, GIF.", 415);
             }
             imageBuffer = Buffer.from(base64String, "base64");
         } else {

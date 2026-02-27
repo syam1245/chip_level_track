@@ -92,7 +92,7 @@ export function requireCsrf(req, res, next) {
 }
 
 export function setAuthCookies(res, token, csrfToken) {
-    const maxAge = 8 * 60 * 60 * 1000;
+    const maxAge = 12 * 60 * 60 * 1000; // 12 hours — matches JWT expiry
 
     res.cookie(AUTH_COOKIE_NAME, token, {
         httpOnly: true,

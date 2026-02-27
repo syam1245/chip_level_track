@@ -37,14 +37,30 @@ const LoadingFallback = () => (
   </Box>
 );
 
+const THEME_KEY = "chip_theme_mode";
+
+function getInitialMode(prefersDark) {
+  try {
+    const saved = localStorage.getItem(THEME_KEY);
+    if (saved === "dark" || saved === "light") return saved;
+  } catch (_) { /* localStorage unavailable (e.g. private browsing) */ }
+  return prefersDark ? "dark" : "light";
+}
+
 function App() {
   const prefersDarkMode = useMediaQuery("(prefers-color-scheme: dark)");
-  const [mode, setMode] = useState(prefersDarkMode ? "dark" : "light");
+  const [mode, setMode] = useState(() => getInitialMode(prefersDarkMode));
 
+  // If no saved preference exists, follow the OS setting
   useEffect(() => {
-    setMode(prefersDarkMode ? "dark" : "light");
+    try {
+      if (!localStorage.getItem(THEME_KEY)) {
+        setMode(prefersDarkMode ? "dark" : "light");
+      }
+    } catch (_) { }
   }, [prefersDarkMode]);
 
+  // Keep body data-theme attribute in sync (used by CSS custom properties)
   useEffect(() => {
     document.body.dataset.theme = mode;
   }, [mode]);
@@ -52,7 +68,11 @@ function App() {
   const colorMode = useMemo(
     () => ({
       toggleColorMode: () => {
-        setMode((prevMode) => (prevMode === "light" ? "dark" : "light"));
+        setMode((prev) => {
+          const next = prev === "light" ? "dark" : "light";
+          try { localStorage.setItem(THEME_KEY, next); } catch (_) { }
+          return next;
+        });
       },
     }),
     [],
@@ -104,11 +124,11 @@ const AuthAppContent = ({ mode, toggleTheme }) => {
             }
           />
 
-          {/* Dedicated route for admin dashboard */}
+          {/* Dedicated route for admin dashboard — admin role required */}
           <Route
             path="/admin"
             element={
-              <ProtectedRoute>
+              <ProtectedRoute adminOnly>
                 <AdminDashboard />
               </ProtectedRoute>
             }

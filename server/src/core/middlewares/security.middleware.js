@@ -35,8 +35,32 @@ export const applySecurity = (app) => {
     app.use("/api/", limiter);
 
     app.use(helmet({
-        contentSecurityPolicy: undefined,
-        crossOriginEmbedderPolicy: false,
+        contentSecurityPolicy: {
+            directives: {
+                // Only load scripts from our own origin
+                defaultSrc: ["'self'"],
+                scriptSrc: ["'self'"],
+                // Allow our own styles + Google Fonts (used by MUI)
+                styleSrc: ["'self'", "'unsafe-inline'", "https://fonts.googleapis.com"],
+                // Allow font files from Google Fonts
+                fontSrc: ["'self'", "https://fonts.gstatic.com", "data:"],
+                // Images: self + data URIs (webcam captures & base64 previews)
+                imgSrc: ["'self'", "data:", "blob:"],
+                // API calls: self + Gemini AI (vision feature) + WhatsApp
+                connectSrc: ["'self'", "https://generativelanguage.googleapis.com"],
+                // Webcam access via blob URLs
+                mediaSrc: ["'self'", "blob:"],
+                // Disallow all framing to prevent clickjacking
+                frameAncestors: ["'none'"],
+                // Restrict form submissions to self only
+                formAction: ["'self'"],
+                // Block mixed content entirely
+                upgradeInsecureRequests: config.isProduction ? [] : null,
+            },
+            reportOnly: false,
+        },
+        crossOriginEmbedderPolicy: false, // Required for webcam (react-webcam)
+        crossOriginResourcePolicy: { policy: "same-origin" },
     }));
 
     app.use(compression({ level: 6, threshold: 1024 }));

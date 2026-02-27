@@ -44,6 +44,25 @@ class AuthService {
         return await AuthRepository.findAllUsers();
     }
 
+    /**
+     * Verify credentials without creating a session.
+     * @param {string} username
+     * @param {string} password
+     * @param {string|null} requiredRole - If provided, user must also have this role
+     * @returns {boolean} true if credentials are valid (and role matches if specified)
+     */
+    async verifyCredentials(username, password, requiredRole = null) {
+        const user = await AuthRepository.findByUsername(username);
+        if (!user) return false;
+
+        const passwordOk = await this.verifyPassword(password, user.password);
+        if (!passwordOk) return false;
+
+        if (requiredRole && user.role !== requiredRole) return false;
+
+        return true;
+    }
+
     async updatePassword(username, newPassword) {
         const user = await AuthRepository.findByUsername(username);
         if (!user) {

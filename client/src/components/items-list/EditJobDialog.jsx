@@ -33,16 +33,7 @@ import {
     ExpandMore as ExpandMoreIcon
 } from '@mui/icons-material';
 import { STATUS_COLORS, STATUS_ACCENT } from "../../constants/status";
-
-const FAULT_OPTIONS = [
-    "Standby-Section",
-    "Power-Section",
-    "Charging-Section",
-    "I/O section",
-    "GPU-Section",
-    "Processor Short",
-    "KB-Short"
-];
+import { FAULT_OPTIONS } from "../../constants/faults";
 
 const EditJobDialog = ({ editItem, setEditItem, handleEditSave, isAdmin }) => {
     const theme = useTheme();

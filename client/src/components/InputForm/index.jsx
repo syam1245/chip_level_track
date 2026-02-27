@@ -28,20 +28,12 @@ import { motion } from "framer-motion";
 import { authFetch } from "../../api";
 import { useAuth } from "../../auth/AuthContext";
 import VisionScannerDialog from "./VisionScannerDialog";
+import { FAULT_OPTIONS } from "../../constants/faults";
 
 const BRAND_OPTIONS = [
     "HP", "Lenovo", "Dell", "Apple", "Samsung", "Acer", "Asus", "Toshiba", "Sony", "MSI", "Infinix", "Life",
 ];
 
-const FAULT_OPTIONS = [
-    "Standby-Section",
-    "Power-Section",
-    "Charging-Section",
-    "I/O section",
-    "GPU-Section",
-    "Processor Short",
-    "KB-Short"
-];
 
 const Input = () => {
     const navigate = useNavigate();

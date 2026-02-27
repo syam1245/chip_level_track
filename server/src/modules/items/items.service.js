@@ -10,14 +10,10 @@ class ItemService {
         const query = { isDeleted: false };
 
         if (search) {
-            const escapeRegex = (text) => text.replace(/[-[\]{}()*+?.,\\^$|#\s]/g, "\\$&");
-            const searchRegex = new RegExp(escapeRegex(search), "i");
-            query.$or = [
-                { customerName: searchRegex },
-                { brand: searchRegex },
-                { jobNumber: searchRegex },
-                { phoneNumber: searchRegex },
-            ];
+            // $text uses the compound text index on (customerName, brand, jobNumber, phoneNumber)
+            // — dramatically faster than $regex on large collections since it uses the index.
+            // Trade-off: matches whole words/tokens (e.g., full job number or full name).
+            query.$text = { $search: search };
         }
 
         if (technicianName && technicianName !== 'All') {

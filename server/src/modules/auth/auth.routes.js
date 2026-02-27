@@ -1,7 +1,7 @@
 import express from "express";
 import rateLimit from "express-rate-limit";
 import AuthController from "./auth.controller.js";
-import { attachAuth, requireAuth, requirePermission } from "./auth.middleware.js";
+import { requireAuth } from "./auth.middleware.js";
 
 const router = express.Router();
 
@@ -10,20 +10,17 @@ const loginLimiter = rateLimit({
     limit: 10,
     standardHeaders: "draft-7",
     legacyHeaders: false,
+    skipSuccessfulRequests: true, // Only count failed attempts toward the limit
     message: { error: "Too many login attempts. Try again later." },
 });
 
-router.get("/users", AuthController.getUsers);
+// NOTE: attachAuth is applied globally in app.js — no need to repeat it here.
+router.get("/users", requireAuth, AuthController.getUsers);
 router.post("/login", loginLimiter, AuthController.login);
-router.post("/logout", attachAuth, AuthController.logout);
-router.get("/session", attachAuth, requireAuth, AuthController.getSession);
+router.post("/logout", AuthController.logout);           // attachAuth already ran globally
+router.get("/session", requireAuth, AuthController.getSession);
 
-// ADMIN OVERRIDE: Update technician password
-router.put(
-    "/users/:username/password",
-    attachAuth,
-    requireAuth,
-    AuthController.updatePassword
-);
+// ADMIN: Update technician password (any authenticated user, controller enforces role)
+router.put("/users/:username/password", requireAuth, AuthController.updatePassword);
 
 export default router;
