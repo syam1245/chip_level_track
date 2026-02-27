@@ -44,7 +44,7 @@ class ItemController {
             issue: issue ? String(issue).trim() : "",
             cost: cost ? Number(cost) : 0,
             metadata: {
-                ip: req.ip || req.connection.remoteAddress,
+                ip: req.ip || req.socket?.remoteAddress || "unknown",
                 browser: deviceResult.browser.name || "Unknown",
                 os: deviceResult.os.name || "Unknown",
                 device: deviceResult.device.vendor ? `${deviceResult.device.vendor} ${deviceResult.device.model}` : (deviceResult.device.type || "Desktop"),

@@ -1,4 +1,4 @@
-import React, { createContext, useContext, useEffect, useMemo, useState } from "react";
+import React, { createContext, useCallback, useContext, useEffect, useMemo, useState } from "react";
 import { authFetch } from "../api";
 
 const AuthContext = createContext(null);
@@ -15,7 +15,6 @@ export const AuthProvider = ({ children }) => {
           setUser(null);
           return;
         }
-
         const session = await res.json();
         setUser(session);
       } catch (_err) {
@@ -28,7 +27,11 @@ export const AuthProvider = ({ children }) => {
     loadSession();
   }, []);
 
-  const login = async (username, password) => {
+  // useCallback gives each function a stable identity across renders.
+  // Without this, the functions would be recreated on every render and
+  // the useMemo context value would change needlessly, triggering
+  // re-renders in every consumer of useAuth().
+  const login = useCallback(async (username, password) => {
     const res = await authFetch("/api/auth/login", {
       method: "POST",
       body: JSON.stringify({ username, password }),
@@ -41,22 +44,24 @@ export const AuthProvider = ({ children }) => {
 
     setUser(data);
     return data;
-  };
+  }, []);
 
-  const logout = async () => {
+  const logout = useCallback(async () => {
     await authFetch("/api/auth/logout", { method: "POST" });
     setUser(null);
-  };
+  }, []);
 
-  const fetchTechnicians = async () => {
+  const fetchTechnicians = useCallback(async () => {
     const res = await authFetch("/api/auth/users");
     if (!res.ok) throw new Error("Failed to load technicians");
     return res.json();
-  };
+  }, []);
 
+  // Now all deps are truly stable — context object only changes when
+  // user or loadingSession changes, not on every render.
   const value = useMemo(
     () => ({ user, login, logout, loadingSession, fetchTechnicians }),
-    [user, loadingSession]
+    [user, loadingSession, login, logout, fetchTechnicians]
   );
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;

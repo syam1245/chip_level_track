@@ -38,6 +38,10 @@ const ItemsList = () => {
         ready: 0,
         returned: 0
     });
+    // Incrementing this counter causes the main fetchItems useEffect to re-run
+    // without adding fetchItems to its deps — avoids fire-and-forget anti-pattern.
+    const [dataVersion, setDataVersion] = useState(0);
+    const refetch = useCallback(() => setDataVersion((v) => v + 1), []);
 
     const [page, setPage] = useState(1);
     const [totalPages, setTotalPages] = useState(1);
@@ -49,6 +53,9 @@ const ItemsList = () => {
 
     const [sortBy, setSortBy] = useState("createdAt");
     const [sortOrder, setSortOrder] = useState("desc");
+    // Debounced sort — prevents a new API request on every rapid column-header click
+    const [debouncedSortBy, setDebouncedSortBy] = useState("createdAt");
+    const [debouncedSortOrder, setDebouncedSortOrder] = useState("desc");
 
     const [technicianFilter, setTechnicianFilter] = useState("All");
     const [techniciansList, setTechniciansList] = useState([]);
@@ -96,11 +103,21 @@ const ItemsList = () => {
         return () => clearTimeout(timer);
     }, [search]);
 
+    // Debounce sort changes — 150ms is imperceptible to users but prevents
+    // a burst of API calls when a column header is clicked repeatedly.
+    useEffect(() => {
+        const timer = setTimeout(() => {
+            setDebouncedSortBy(sortBy);
+            setDebouncedSortOrder(sortOrder);
+        }, 150);
+        return () => clearTimeout(timer);
+    }, [sortBy, sortOrder]);
+
     const fetchItems = useCallback(() => {
         const controller = new AbortController();
         setLoading(true);
 
-        let url = `/api/items?page=${page}&limit=${LIMIT}&sortBy=${sortBy}&sortOrder=${sortOrder}`;
+        let url = `/api/items?page=${page}&limit=${LIMIT}&sortBy=${debouncedSortBy}&sortOrder=${debouncedSortOrder}`;
         if (isAdmin) {
             url += `&includeMetadata=true`;
         }
@@ -130,12 +147,14 @@ const ItemsList = () => {
             });
 
         return () => controller.abort();
-    }, [debouncedSearch, page, activeFilter, sortBy, sortOrder, technicianFilter]);
+    }, [debouncedSearch, page, activeFilter, debouncedSortBy, debouncedSortOrder, technicianFilter, isAdmin]);
 
     useEffect(() => {
         const cancel = fetchItems();
         return cancel;
-    }, [fetchItems]);
+        // dataVersion is intentionally included — incrementing it triggers a clean refetch
+        // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, [fetchItems, dataVersion]);
 
     const handleSort = useCallback((property) => {
         setSortOrder((prevOrder) => (sortBy === property && prevOrder === "asc" ? "desc" : "asc"));
@@ -153,9 +172,11 @@ const ItemsList = () => {
         try {
             const res = await authFetch(`/api/items/${id}`, { method: "DELETE" });
             if (res.ok) {
+                // Optimistic UI update — remove the item immediately from view
                 setItems((prev) => prev.filter((item) => item._id !== id));
                 setSnackbar({ open: true, message: "Deleted successfully", severity: "success" });
-                fetchItems();
+                // Trigger a clean server-driven refetch to sync pagination totals
+                refetch();
             } else {
                 setSnackbar({ open: true, message: "Failed to delete", severity: "error" });
             }
@@ -176,7 +197,7 @@ const ItemsList = () => {
             if (res.ok) {
                 setSnackbar({ open: true, message: "Updated successfully", severity: "success" });
                 setEditItem(null);
-                fetchItems();
+                refetch(); // Clean re-fetch via version counter
             } else {
                 const data = await res.json();
                 setSnackbar({ open: true, message: data.error || "Update failed", severity: "error" });

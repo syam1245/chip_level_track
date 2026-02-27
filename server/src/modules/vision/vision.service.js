@@ -36,7 +36,7 @@ class VisionService {
         }
         this.genAI = new GoogleGenerativeAI(config.geminiApiKey);
         this.model = this.genAI.getGenerativeModel({
-            model: "gemini-2.5-flash",
+            model: config.geminiModel,
             systemInstruction: "You are an OCR extraction engine specializing in repair service forms. Your goal is to accurately extract handwritten and printed text and map it directly to the structured schema. Ignore company contact details. Extract handwritten notes as accurately as possible.",
         });
     }
