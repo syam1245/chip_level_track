@@ -89,6 +89,22 @@ class ItemController {
 
         res.send(JSON.stringify(items, null, 2));
     });
+
+    trackItem = asyncHandler(async (req, res) => {
+        const jobNumber = req.query.jobNumber ? String(req.query.jobNumber).trim() : null;
+        const phoneNumber = req.query.phoneNumber ? String(req.query.phoneNumber).trim() : null;
+
+        if (!jobNumber || !phoneNumber) {
+            return res.status(400).json({ error: "Job number and phone number are required" });
+        }
+
+        const item = await ItemService.trackItem(jobNumber, phoneNumber);
+        if (!item) {
+            return res.status(404).json({ error: "No matching repair job found" });
+        }
+
+        res.json(item);
+    });
 }
 
 export default new ItemController();

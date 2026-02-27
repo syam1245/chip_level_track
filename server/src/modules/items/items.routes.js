@@ -1,10 +1,16 @@
 import express from "express";
 import ItemController from "./items.controller.js";
-import { requirePermission } from "../auth/auth.middleware.js";
+import { requirePermission, requireAuth, requireCsrf } from "../auth/auth.middleware.js";
 
 const router = express.Router();
 
-// Static routes first — must precede /:id to avoid 'bulk-status' being matched as an ID
+// Public route FIRST
+router.get("/track", ItemController.trackItem); // Public tracking endpoint
+
+// Apply auth to all subsequent routes
+router.use(requireAuth, requireCsrf);
+
+// Static routes
 router.get("/backup", requirePermission("items:backup"), ItemController.getBackup);
 router.patch("/bulk-status", requirePermission("items:update"), ItemController.bulkUpdateStatus);
 router.post("/", requirePermission("items:create"), ItemController.createItem);

@@ -26,7 +26,7 @@ app.use(attachAuth);
 
 // Routes
 app.use("/api/auth", authRoutes);
-app.use("/api/items", requireAuth, requireCsrf, itemsRoutes);
+app.use("/api/items", itemsRoutes);
 app.use("/api/stats", requireAuth, requireCsrf, statsRoutes);
 app.use("/api/vision", requireAuth, requireCsrf, visionRoutes);
 

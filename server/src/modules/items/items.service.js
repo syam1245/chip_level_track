@@ -170,6 +170,10 @@ class ItemService {
         return result;
     }
 
+    async trackItem(jobNumber, phoneNumber) {
+        return await ItemRepository.findByTrackingDetails(jobNumber, phoneNumber);
+    }
+
     async getBackup() {
         return await ItemRepository.findAllForBackup();
     }

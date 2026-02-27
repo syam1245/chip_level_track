@@ -58,6 +58,16 @@ class ItemRepository {
             }
         );
     }
+
+    async findByTrackingDetails(jobNumber, phoneNumber) {
+        return await Item.findOne({
+            jobNumber,
+            phoneNumber,
+            isDeleted: false
+        })
+            .select("-metadata -isDeleted -createdAt -updatedAt")
+            .lean();
+    }
 }
 
 export default new ItemRepository();

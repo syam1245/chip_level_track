@@ -18,6 +18,7 @@ const ItemsList = lazy(() => import("./components/items-list"));
 const LoginPage = lazy(() => import("./components/LoginPage.jsx"));
 const Navbar = lazy(() => import("./components/Navbar.jsx"));
 const AdminDashboard = lazy(() => import("./components/AdminDashboard.jsx"));
+const TrackJob = lazy(() => import("./components/TrackJob.jsx"));
 
 const LoadingFallback = () => (
   <Box
@@ -103,6 +104,7 @@ const AuthAppContent = ({ mode, toggleTheme }) => {
         <Navbar mode={mode} toggleTheme={toggleTheme} />
         <Routes>
           <Route path="/login" element={<LoginPage />} />
+          <Route path="/track" element={<TrackJob />} />
 
           {/* "/" = New Job form */}
           <Route
