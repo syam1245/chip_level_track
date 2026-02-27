@@ -10,21 +10,21 @@ class ItemService {
         const query = { isDeleted: false };
 
         if (search) {
-            // Check if there are multiple words (like a full name)
             const isMultiWord = search.trim().includes(' ');
 
-            // For multi-word queries or exact job numbers, $text is better
-            // For partial words (e.g. searching "app" to find "apple"), $regex is needed
-            // We use an $or query to get the best of both:
-            // 1. $text index guarantees fast lookups and handles typos well for full words
-            // 2. $regex handles substring matching within fields
-            query.$or = [
-                { $text: { $search: search } },
-                { jobNumber: { $regex: search, $options: "i" } },
-                { customerName: { $regex: search, $options: "i" } },
-                { brand: { $regex: search, $options: "i" } },
-                { phoneNumber: { $regex: search, $options: "i" } }
-            ];
+            // To prevent a MongoDB issue combining $text and $regex in an $or array without full indexing,
+            // we conditionally use the $text index for complex/multi-word searches (faster),
+            // and fallback to $regex for single-word partial searches (handles substrings like partial phone #).
+            if (isMultiWord) {
+                query.$text = { $search: `"${search}"` }; // Wrap in quotes for exact phrase text matching if possible
+            } else {
+                query.$or = [
+                    { jobNumber: { $regex: search, $options: "i" } },
+                    { customerName: { $regex: search, $options: "i" } },
+                    { brand: { $regex: search, $options: "i" } },
+                    { phoneNumber: { $regex: search, $options: "i" } }
+                ];
+            }
         }
 
         if (technicianName && technicianName !== 'All') {
