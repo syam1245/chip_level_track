@@ -10,10 +10,21 @@ class ItemService {
         const query = { isDeleted: false };
 
         if (search) {
-            // $text uses the compound text index on (customerName, brand, jobNumber, phoneNumber)
-            // — dramatically faster than $regex on large collections since it uses the index.
-            // Trade-off: matches whole words/tokens (e.g., full job number or full name).
-            query.$text = { $search: search };
+            // Check if there are multiple words (like a full name)
+            const isMultiWord = search.trim().includes(' ');
+
+            // For multi-word queries or exact job numbers, $text is better
+            // For partial words (e.g. searching "app" to find "apple"), $regex is needed
+            // We use an $or query to get the best of both:
+            // 1. $text index guarantees fast lookups and handles typos well for full words
+            // 2. $regex handles substring matching within fields
+            query.$or = [
+                { $text: { $search: search } },
+                { jobNumber: { $regex: search, $options: "i" } },
+                { customerName: { $regex: search, $options: "i" } },
+                { brand: { $regex: search, $options: "i" } },
+                { phoneNumber: { $regex: search, $options: "i" } }
+            ];
         }
 
         if (technicianName && technicianName !== 'All') {
