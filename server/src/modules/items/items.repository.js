@@ -47,6 +47,17 @@ class ItemRepository {
     async findAllForBackup() {
         return await Item.find({ isDeleted: false }).sort({ createdAt: -1 }).lean();
     }
+
+    async bulkUpdateStatus(ids, newStatus) {
+        const historyEntry = { status: newStatus, note: "Bulk status update", changedAt: new Date() };
+        return await Item.updateMany(
+            { _id: { $in: ids }, isDeleted: false },
+            {
+                $set: { status: newStatus },
+                $push: { statusHistory: historyEntry },
+            }
+        );
+    }
 }
 
 export default new ItemRepository();

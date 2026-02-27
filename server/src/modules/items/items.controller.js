@@ -70,6 +70,15 @@ class ItemController {
         res.json({ msg: "Item removed" });
     });
 
+    bulkUpdateStatus = asyncHandler(async (req, res) => {
+        const { ids, status } = req.body;
+        if (!Array.isArray(ids) || ids.length === 0 || !status) {
+            return res.status(400).json({ error: "ids (array) and status are required" });
+        }
+        const result = await ItemService.bulkUpdateStatus(ids, status);
+        res.json({ success: true, modifiedCount: result.modifiedCount });
+    });
+
     getBackup = asyncHandler(async (req, res) => {
         const items = await ItemService.getBackup();
         const timestamp = new Date().toISOString().replace(/[:.]/g, "-");

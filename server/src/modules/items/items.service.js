@@ -119,6 +119,7 @@ class ItemService {
         if (data.cost !== undefined) item.cost = Number(data.cost) || 0;
         if (data.finalCost !== undefined) item.finalCost = Number(data.finalCost) || 0;
         if (data.technicianName !== undefined) item.technicianName = String(data.technicianName).trim();
+        if (data.dueDate !== undefined) item.dueDate = data.dueDate ? new Date(data.dueDate) : null;
 
         if (data.status && data.status !== item.status) {
             item.status = data.status;
@@ -143,6 +144,19 @@ class ItemService {
         }
         statsCache.del("itemStats");
         return await ItemRepository.softDelete(id);
+    }
+
+    async bulkUpdateStatus(ids, newStatus) {
+        if (!Array.isArray(ids) || ids.length === 0) {
+            throw new AppError("ids must be a non-empty array", 400);
+        }
+        if (!newStatus) {
+            throw new AppError("newStatus is required", 400);
+        }
+
+        const result = await ItemRepository.bulkUpdateStatus(ids, newStatus);
+        statsCache.del("itemStats");
+        return result;
     }
 
     async getBackup() {

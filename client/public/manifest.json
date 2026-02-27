@@ -1,0 +1,57 @@
+{
+    "name": "ChipLevel Track",
+    "short_name": "ChipTrack",
+    "description": "Chip-level repair shop job management system",
+    "start_url": "/items",
+    "display": "standalone",
+    "orientation": "portrait-primary",
+    "background_color": "#0f172a",
+    "theme_color": "#6366f1",
+    "icons": [
+        {
+            "src": "/favicon.ico",
+            "sizes": "any",
+            "type": "image/x-icon"
+        },
+        {
+            "src": "/icon-192.png",
+            "sizes": "192x192",
+            "type": "image/png",
+            "purpose": "any maskable"
+        },
+        {
+            "src": "/icon-512.png",
+            "sizes": "512x512",
+            "type": "image/png",
+            "purpose": "any"
+        }
+    ],
+    "shortcuts": [
+        {
+            "name": "New Job",
+            "short_name": "New Job",
+            "url": "/",
+            "icons": [
+                {
+                    "src": "/favicon.ico",
+                    "sizes": "any"
+                }
+            ]
+        },
+        {
+            "name": "Job List",
+            "short_name": "Jobs",
+            "url": "/items",
+            "icons": [
+                {
+                    "src": "/favicon.ico",
+                    "sizes": "any"
+                }
+            ]
+        }
+    ],
+    "categories": [
+        "business",
+        "productivity"
+    ]
+}

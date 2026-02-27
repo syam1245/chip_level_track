@@ -25,6 +25,7 @@ const itemSchema = new mongoose.Schema(
         ],
         isDeleted: { type: Boolean, default: false, index: true },
         technicianName: { type: String, default: "Unknown" },
+        dueDate: { type: Date, default: null, index: true }, // Expected completion deadline
         metadata: {
             type: Object,
             select: false,
@@ -45,5 +46,6 @@ itemSchema.index({ isDeleted: 1, status: 1 });
 itemSchema.index({ isDeleted: 1, status: 1, createdAt: -1 });
 itemSchema.index({ isDeleted: 1, cost: 1, createdAt: -1 });
 itemSchema.index({ isDeleted: 1, technicianName: 1, createdAt: -1 }); // Technician filter
+itemSchema.index({ isDeleted: 1, dueDate: 1, status: 1 });             // Overdue queries
 
 export default mongoose.model("Item", itemSchema);

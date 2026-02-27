@@ -213,6 +213,20 @@ const EditJobDialog = ({ editItem, setEditItem, handleEditSave, isAdmin }) => {
                                     }}
                                 />
                             </Grid>
+                            <Grid size={{ xs: 12, sm: 6 }}>
+                                <TextField
+                                    label="Due Date (Deadline)"
+                                    type="date"
+                                    value={editItem.dueDate ? new Date(editItem.dueDate).toISOString().slice(0, 10) : ""}
+                                    onChange={(e) => setEditItem({ ...editItem, dueDate: e.target.value || null })}
+                                    fullWidth
+                                    size="small"
+                                    color="warning"
+                                    InputLabelProps={{ shrink: true }}
+                                    helperText="Optional — leave blank for no deadline"
+                                    sx={{ '& .MuiOutlinedInput-root': { bgcolor: 'background.paper' } }}
+                                />
+                            </Grid>
                         </Grid>
                     </Box>
 

@@ -9,8 +9,17 @@ import {
     CircularProgress,
     Paper,
     Typography,
-    Button
+    Button,
+    Chip,
+    Select,
+    MenuItem,
+    FormControl,
+    InputLabel,
+    Stack,
+    Tooltip,
+    IconButton,
 } from "@mui/material";
+import { Close as CloseIcon, CheckBox as CheckBoxIcon } from "@mui/icons-material";
 import { motion, AnimatePresence } from "framer-motion";
 import { useNavigate } from "react-router-dom";
 import { useReactToPrint } from "react-to-print";
@@ -28,8 +37,18 @@ import ItemsListFilters from "./ItemsListFilters";
 import ItemsTable from "./ItemsTable";
 import EditJobDialog from "./EditJobDialog";
 import DeleteJobDialog from "./DeleteJobDialog";
+import { useNotifications } from "../../hooks/useNotifications";
 
 const ItemsList = () => {
+    // ── Context / hooks that other state depends on — must come first ──────────
+    const navigate = useNavigate();
+    const { user } = useAuth();
+    const { notify } = useNotifications();
+    const theme = useTheme();
+    const isMobile = useMediaQuery(theme.breakpoints.down("md"));
+    const isAdmin = user?.role === "admin";
+
+    // ── State ──────────────────────────────────────────────────────────────────
     const [items, setItems] = useState([]);
     const [loading, setLoading] = useState(true);
     const [stats, setStats] = useState({
@@ -57,7 +76,11 @@ const ItemsList = () => {
     const [debouncedSortBy, setDebouncedSortBy] = useState("createdAt");
     const [debouncedSortOrder, setDebouncedSortOrder] = useState("desc");
 
-    const [technicianFilter, setTechnicianFilter] = useState("All");
+    const [technicianFilter, setTechnicianFilter] = useState(() =>
+        // Non-admins default to "My Jobs"; admins see everyone by default.
+        // user is declared above so this initializer can safely reference it.
+        user?.role !== "admin" && user?.displayName ? user.displayName : "All"
+    );
     const [techniciansList, setTechniciansList] = useState([]);
 
     const [editItem, setEditItem] = useState(null);
@@ -65,11 +88,24 @@ const ItemsList = () => {
     const [deleteConfirmId, setDeleteConfirmId] = useState(null);
     const [snackbar, setSnackbar] = useState({ open: false, message: "", severity: "success" });
 
-    const navigate = useNavigate();
-    const { user } = useAuth();
-    const isAdmin = user?.role === "admin";
-    const theme = useTheme();
-    const isMobile = useMediaQuery(theme.breakpoints.down("md"));
+    // Bulk selection — uses a Set for O(1) lookup
+    const [selectedIds, setSelectedIds] = useState(new Set());
+    const [bulkStatus, setBulkStatus] = useState("");
+
+    const onSelectChange = useCallback((id, checked) => {
+        setSelectedIds(prev => {
+            const next = new Set(prev);
+            checked ? next.add(id) : next.delete(id);
+            return next;
+        });
+    }, []);
+
+    const clearSelection = useCallback(() => {
+        setSelectedIds(new Set());
+        setBulkStatus("");
+    }, []);
+
+    // ── Refs ───────────────────────────────────────────────────────────────────
     const printComponentRef = useRef();
 
     useEffect(() => {
@@ -85,7 +121,7 @@ const ItemsList = () => {
 
     const handlePrint = useReactToPrint({
         contentRef: printComponentRef,
-        documentTitle: printItem ? `Receipt_${printItem.jobNumber}` : "Receipt",
+        documentTitle: printItem ? `JobSheet_${printItem.jobNumber}` : "JobSheet",
         onAfterPrint: () => setPrintItem(null)
     });
 
@@ -187,6 +223,7 @@ const ItemsList = () => {
 
     const handleEditSave = async () => {
         if (!editItem) return;
+        const prevStatus = items.find(i => i._id === editItem._id)?.status;
 
         try {
             const res = await authFetch(`/api/items/${editItem._id}`, {
@@ -196,8 +233,15 @@ const ItemsList = () => {
 
             if (res.ok) {
                 setSnackbar({ open: true, message: "Updated successfully", severity: "success" });
+                // Fire notification if status changed
+                if (editItem.status && editItem.status !== prevStatus) {
+                    notify(
+                        `Job ${editItem.jobNumber} — ${editItem.status}`,
+                        { body: `${editItem.customerName} · ${editItem.brand}` }
+                    );
+                }
                 setEditItem(null);
-                refetch(); // Clean re-fetch via version counter
+                refetch();
             } else {
                 const data = await res.json();
                 setSnackbar({ open: true, message: data.error || "Update failed", severity: "error" });
@@ -224,6 +268,29 @@ const ItemsList = () => {
         setActiveFilter(filter);
         setPage(1);
     }, []);
+
+    // Clear selection when page changes
+    useEffect(() => { clearSelection(); }, [page, clearSelection]);
+
+    const handleBulkApply = useCallback(async () => {
+        if (!bulkStatus || selectedIds.size === 0) return;
+        try {
+            const res = await authFetch("/api/items/bulk-status", {
+                method: "PATCH",
+                body: JSON.stringify({ ids: [...selectedIds], status: bulkStatus }),
+            });
+            const data = await res.json();
+            if (res.ok) {
+                setSnackbar({ open: true, message: `${data.modifiedCount} job(s) updated to "${bulkStatus}"`, severity: "success" });
+                clearSelection();
+                refetch();
+            } else {
+                setSnackbar({ open: true, message: data.error || "Bulk update failed", severity: "error" });
+            }
+        } catch {
+            setSnackbar({ open: true, message: "Network error", severity: "error" });
+        }
+    }, [bulkStatus, selectedIds, clearSelection, refetch]);
 
     return (
         <Box sx={{ maxWidth: "1400px", margin: "0 auto", padding: isMobile ? 2 : 4, pb: 10 }}>
@@ -280,6 +347,60 @@ const ItemsList = () => {
                     </Box>
                 ) : (
                     <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }}>
+                        {/* Bulk action toolbar — appears when rows are selected */}
+                        {selectedIds.size > 0 && (
+                            <Paper
+                                elevation={4}
+                                sx={{
+                                    mb: 1, px: 2, py: 1, borderRadius: 2,
+                                    display: 'flex', alignItems: 'center', gap: 2, flexWrap: 'wrap',
+                                    bgcolor: 'primary.dark', color: 'primary.contrastText',
+                                    border: '1px solid', borderColor: 'primary.main'
+                                }}
+                            >
+                                <CheckBoxIcon sx={{ color: 'primary.contrastText' }} />
+                                <Chip
+                                    label={`${selectedIds.size} selected`}
+                                    size="small"
+                                    sx={{ bgcolor: 'primary.main', color: 'primary.contrastText', fontWeight: 700 }}
+                                />
+                                <Stack direction="row" spacing={1} alignItems="center" sx={{ ml: 'auto' }}>
+                                    <FormControl size="small" sx={{ minWidth: 170 }}>
+                                        <InputLabel sx={{ color: 'primary.contrastText', '&.Mui-focused': { color: 'primary.contrastText' } }}>
+                                            Set Status
+                                        </InputLabel>
+                                        <Select
+                                            value={bulkStatus}
+                                            label="Set Status"
+                                            onChange={(e) => setBulkStatus(e.target.value)}
+                                            sx={{
+                                                color: 'primary.contrastText',
+                                                '& .MuiOutlinedInput-notchedOutline': { borderColor: 'rgba(255,255,255,0.4)' },
+                                                '& .MuiSvgIcon-root': { color: 'primary.contrastText' },
+                                            }}
+                                        >
+                                            {['Received', 'Sent to Service', 'In Progress', 'Waiting for Parts', 'Ready', 'Delivered', 'Return', 'Pending'].map(s => (
+                                                <MenuItem key={s} value={s}>{s}</MenuItem>
+                                            ))}
+                                        </Select>
+                                    </FormControl>
+                                    <Button
+                                        variant="contained"
+                                        size="small"
+                                        onClick={handleBulkApply}
+                                        disabled={!bulkStatus}
+                                        sx={{ bgcolor: 'white', color: 'primary.dark', fontWeight: 700, '&:hover': { bgcolor: 'grey.100' } }}
+                                    >
+                                        Apply
+                                    </Button>
+                                    <Tooltip title="Clear selection (Esc)">
+                                        <IconButton size="small" onClick={clearSelection} sx={{ color: 'primary.contrastText' }}>
+                                            <CloseIcon fontSize="small" />
+                                        </IconButton>
+                                    </Tooltip>
+                                </Stack>
+                            </Paper>
+                        )}
                         <ItemsTable
                             items={items}
                             loading={loading}
@@ -294,6 +415,9 @@ const ItemsList = () => {
                             setPrintItem={setPrintItem}
                             setEditItem={setEditItem}
                             handleDelete={handleDelete}
+                            selectedIds={selectedIds}
+                            onSelectChange={onSelectChange}
+                            isAdmin={isAdmin}
                         />
                     </motion.div>
                 )}
