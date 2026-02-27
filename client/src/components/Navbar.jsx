@@ -208,17 +208,19 @@ const Navbar = ({ toggleTheme, mode }) => {
                                         {user.username[0]}
                                     </Avatar>
                                 </Box>
-                                <IconButton
-                                    onClick={logout}
-                                    sx={{
-                                        color: 'error.main',
-                                        bgcolor: 'rgba(239, 68, 68, 0.08)',
-                                        '&:hover': { bgcolor: 'rgba(239, 68, 68, 0.15)' },
-                                        borderRadius: "12px"
-                                    }}
-                                >
-                                    <Logout fontSize="small" />
-                                </IconButton>
+                                <Tooltip title="Sign Out">
+                                    <IconButton
+                                        onClick={logout}
+                                        sx={{
+                                            color: 'error.main',
+                                            bgcolor: 'rgba(239, 68, 68, 0.08)',
+                                            '&:hover': { bgcolor: 'rgba(239, 68, 68, 0.15)' },
+                                            borderRadius: "12px"
+                                        }}
+                                    >
+                                        <Logout fontSize="small" />
+                                    </IconButton>
+                                </Tooltip>
                             </>
                         )}
                     </Stack>

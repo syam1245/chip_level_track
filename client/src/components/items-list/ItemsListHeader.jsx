@@ -1,5 +1,5 @@
 import React from 'react';
-import { Stack, Box, Typography, Button } from '@mui/material';
+import { Stack, Box, Typography, Button, Tooltip } from '@mui/material';
 import { Download as DownloadIcon, Add as AddIcon } from '@mui/icons-material';
 import { motion } from 'framer-motion';
 
@@ -14,7 +14,15 @@ const ItemsListHeader = ({ isAdmin, downloadBackup, onNewJob }) => {
                 mb={5}
             >
                 <Box>
-                    <Typography variant="h3" fontWeight="900" className="text-gradient" sx={{ letterSpacing: '-1px' }}>
+                    <Typography
+                        variant="h3"
+                        fontWeight="900"
+                        className="text-gradient"
+                        sx={{
+                            letterSpacing: '-1px',
+                            fontSize: { xs: '2rem', sm: '2.5rem', md: '3rem' }
+                        }}
+                    >
                         Repair Dashboard
                     </Typography>
                     <Typography variant="body1" color="text.secondary" mt={0.5}>
@@ -24,14 +32,16 @@ const ItemsListHeader = ({ isAdmin, downloadBackup, onNewJob }) => {
 
                 <Stack direction="row" spacing={2}>
                     {isAdmin && (
-                        <Button
-                            variant="outlined"
-                            startIcon={<DownloadIcon />}
-                            onClick={downloadBackup}
-                            sx={{ borderRadius: "var(--radius)", textTransform: 'none', fontWeight: 600 }}
-                        >
-                            Backup Data
-                        </Button>
+                        <Tooltip title="Download Complete Database Backup">
+                            <Button
+                                variant="outlined"
+                                startIcon={<DownloadIcon />}
+                                onClick={downloadBackup}
+                                sx={{ borderRadius: "var(--radius)", textTransform: 'none', fontWeight: 600 }}
+                            >
+                                Backup Data
+                            </Button>
+                        </Tooltip>
                     )}
                     <Button
                         variant="contained"

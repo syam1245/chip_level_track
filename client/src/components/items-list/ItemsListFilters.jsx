@@ -1,5 +1,4 @@
-import React from 'react';
-import { Box, Typography, Chip, Paper, CircularProgress } from '@mui/material';
+import { Box, Typography, Chip, Paper, CircularProgress, InputBase } from '@mui/material';
 import {
     Search as SearchIcon,
     Build as BuildIcon,
@@ -93,17 +92,23 @@ const ItemsListFilters = ({
             <Paper
                 elevation={0}
                 className="glass-panel"
-                sx={{ p: 2, mb: 4, display: 'flex', alignItems: 'center', gap: 2 }}
+                sx={{
+                    p: { xs: 1.5, md: 2 },
+                    mb: { xs: 2, md: 4 },
+                    display: 'flex',
+                    alignItems: 'center',
+                    gap: { xs: 1, md: 2 }
+                }}
             >
-                <SearchIcon color="action" />
-                <input
-                    style={{
-                        border: 'none',
-                        outline: 'none',
+                <SearchIcon color="action" sx={{ fontSize: { xs: '1.25rem', md: '1.5rem' } }} />
+                <InputBase
+                    sx={{
                         width: '100%',
-                        fontSize: '1rem',
-                        background: 'transparent',
-                        color: 'var(--text-main)'
+                        fontSize: { xs: '0.9rem', md: '1rem' },
+                        color: 'var(--text-main)',
+                        '& .MuiInputBase-input::placeholder': {
+                            fontSize: { xs: '0.85rem', md: '1rem' },
+                        }
                     }}
                     placeholder="Search by Customer, Job Number, Brand or Phone..."
                     value={search}
