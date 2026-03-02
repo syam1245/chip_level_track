@@ -25,10 +25,10 @@ import {
     Print as PrintIcon,
     Notes as NotesIcon,
     FilterList as FilterListIcon,
-    Schedule as ScheduleIcon
 } from '@mui/icons-material';
 import { STATUS_COLORS } from "../../constants/status";
 import { formatDate } from "../../utils/date";
+import { getAgingInfo, formatAge } from "../../utils/aging";
 
 const ItemsTable = ({
     items,
@@ -46,14 +46,10 @@ const ItemsTable = ({
     handleDelete,
     selectedIds,
     onSelectChange,
-    isAdmin
+    isAdmin,
+    focusedRowIndex = -1
 }) => {
     const [techMenuAnchor, setTechMenuAnchor] = useState(null);
-    const now = new Date();
-    const CLOSED_STATUSES = new Set(['Delivered', 'Return']);
-
-    const isOverdue = (item) =>
-        item.dueDate && !CLOSED_STATUSES.has(item.status) && new Date(item.dueDate) < now;
 
     const allSelected = items.length > 0 && items.every(i => selectedIds.has(i._id));
     const someSelected = items.some(i => selectedIds.has(i._id)) && !allSelected;
@@ -190,18 +186,33 @@ const ItemsTable = ({
                     </TableRow>
                 </TableHead>
                 <TableBody>
-                    {items.map((item) => {
-                        const overdue = isOverdue(item);
+                    {items.map((item, rowIdx) => {
+                        const aging = getAgingInfo(item);
+                        const isFocused = rowIdx === focusedRowIndex;
                         return (
-                            <TableRow key={item._id} hover selected={selectedIds.has(item._id)} sx={{
-                                '&:last-child td, &:last-child th': { border: 0 },
-                                bgcolor: overdue
-                                    ? 'rgba(239,68,68,0.07)'
-                                    : selectedIds.has(item._id)
-                                        ? 'action.selected'
-                                        : undefined,
-                                borderLeft: overdue ? '3px solid #ef4444' : undefined,
-                            }}>
+                            <TableRow
+                                key={item._id}
+                                hover
+                                selected={selectedIds.has(item._id)}
+                                ref={isFocused ? (el) => el?.scrollIntoView?.({ block: 'nearest', behavior: 'smooth' }) : undefined}
+                                sx={{
+                                    '&:last-child td, &:last-child th': { border: 0 },
+                                    bgcolor: aging.tier === 'critical'
+                                        ? 'rgba(239,68,68,0.06)'
+                                        : aging.tier === 'overdue'
+                                            ? 'rgba(249,115,22,0.05)'
+                                            : selectedIds.has(item._id)
+                                                ? 'action.selected'
+                                                : undefined,
+                                    borderLeft: aging.isAging ? `3px solid ${aging.color}` : undefined,
+                                    transition: 'background-color 0.3s ease, outline 0.15s ease',
+                                    outline: isFocused ? '2px solid' : 'none',
+                                    outlineColor: isFocused ? 'primary.main' : 'transparent',
+                                    outlineOffset: '-2px',
+                                    borderRadius: isFocused ? '4px' : undefined,
+                                    position: isFocused ? 'relative' : undefined,
+                                    zIndex: isFocused ? 1 : undefined,
+                                }}>
                                 <TableCell padding="checkbox">
                                     <Checkbox
                                         size="small"
@@ -212,16 +223,36 @@ const ItemsTable = ({
                                 <TableCell align="left">
                                     <Typography fontWeight="600" color="primary">{item.jobNumber}</Typography>
                                     <Typography variant="caption" color="text.secondary">{formatDate(item.createdAt)}</Typography>
-                                    {item.dueDate && (
-                                        <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.3, mt: 0.2 }}>
-                                            <ScheduleIcon sx={{ fontSize: 11, color: overdue ? 'error.main' : 'text.disabled' }} />
-                                            <Typography
-                                                variant="caption"
-                                                sx={{ fontSize: '0.6rem', color: overdue ? 'error.main' : 'text.disabled', fontWeight: overdue ? 700 : 400 }}
+                                    {aging.isAging && (
+                                        <Tooltip title={`${aging.label} — ${aging.ageDays} day${aging.ageDays !== 1 ? 's' : ''} since received`} arrow placement="right">
+                                            <Box
+                                                component="span"
+                                                sx={{
+                                                    display: 'inline-flex',
+                                                    alignItems: 'center',
+                                                    gap: 0.4,
+                                                    ml: 0.8,
+                                                    px: 0.8,
+                                                    py: 0.1,
+                                                    borderRadius: '6px',
+                                                    fontSize: '0.6rem',
+                                                    fontWeight: 800,
+                                                    letterSpacing: '0.03em',
+                                                    color: aging.color,
+                                                    bgcolor: `${aging.color}18`,
+                                                    border: `1px solid ${aging.color}30`,
+                                                    animation: aging.tier === 'critical' ? 'agingPulse 2.5s ease-in-out infinite' : 'none',
+                                                    verticalAlign: 'middle',
+                                                    cursor: 'default',
+                                                    '@keyframes agingPulse': {
+                                                        '0%, 100%': { boxShadow: `0 0 0 0 ${aging.color}00` },
+                                                        '50%': { boxShadow: `0 0 8px 2px ${aging.color}35` },
+                                                    },
+                                                }}
                                             >
-                                                {overdue ? 'OVERDUE' : 'Due'} {formatDate(item.dueDate)}
-                                            </Typography>
-                                        </Box>
+                                                {formatAge(aging.ageDays)}
+                                            </Box>
+                                        </Tooltip>
                                     )}
                                 </TableCell>
                                 <TableCell>{item.customerName}</TableCell>

@@ -8,6 +8,7 @@ import {
   ThemeProvider,
   CssBaseline,
   useMediaQuery,
+  Skeleton,
 } from "@mui/material";
 import { lightTheme, darkTheme } from "./theme";
 import { AuthProvider, useAuth } from "./auth/AuthContext";
@@ -21,20 +22,61 @@ const AdminDashboard = lazy(() => import("./components/AdminDashboard.jsx"));
 const TrackJob = lazy(() => import("./components/TrackJob.jsx"));
 
 const LoadingFallback = () => (
-  <Box
-    sx={{
-      display: "flex",
-      flexDirection: "column",
-      justifyContent: "center",
-      alignItems: "center",
-      height: "100vh",
-      bgcolor: "background.default",
-    }}
-  >
-    <CircularProgress size={60} thickness={4} color="primary" />
-    <Typography variant="h6" sx={{ mt: 2, color: "text.secondary" }}>
-      Loading Application...
-    </Typography>
+  <Box sx={{ bgcolor: "background.default", minHeight: "100vh" }}>
+    {/* Skeleton Navbar */}
+    <Box
+      sx={{
+        display: "flex",
+        alignItems: "center",
+        justifyContent: "space-between",
+        px: 3,
+        py: 1.5,
+        borderBottom: "1px solid",
+        borderColor: "divider",
+      }}
+    >
+      <Box display="flex" alignItems="center" gap={1.5}>
+        <Skeleton variant="circular" width={32} height={32} animation="wave" />
+        <Skeleton variant="text" width={150} height={28} animation="wave" sx={{ borderRadius: 1 }} />
+      </Box>
+      <Box display="flex" gap={2}>
+        <Skeleton variant="rounded" width={70} height={28} animation="wave" sx={{ borderRadius: "8px" }} />
+        <Skeleton variant="rounded" width={70} height={28} animation="wave" sx={{ borderRadius: "8px" }} />
+        <Skeleton variant="rounded" width={70} height={28} animation="wave" sx={{ borderRadius: "8px" }} />
+      </Box>
+      <Box display="flex" alignItems="center" gap={1}>
+        <Skeleton variant="text" width={80} height={20} animation="wave" sx={{ borderRadius: 1 }} />
+        <Skeleton variant="circular" width={36} height={36} animation="wave" />
+      </Box>
+    </Box>
+
+    {/* Skeleton Content area */}
+    <Box sx={{ maxWidth: 1400, mx: "auto", px: { xs: 2, md: 4 }, pt: 4 }}>
+      {/* Title */}
+      <Skeleton variant="text" width={280} height={48} animation="wave" sx={{ borderRadius: 1, mb: 1 }} />
+      <Skeleton variant="text" width={220} height={18} animation="wave" sx={{ borderRadius: 1, mb: 4 }} />
+
+      {/* Stat cards grid */}
+      <Box sx={{ display: "grid", gridTemplateColumns: { xs: "repeat(2,1fr)", md: "repeat(5,1fr)" }, gap: 2, mb: 4 }}>
+        {Array.from({ length: 5 }).map((_, i) => (
+          <Skeleton key={i} variant="rounded" height={80} animation="wave" sx={{ borderRadius: "var(--radius, 16px)" }} />
+        ))}
+      </Box>
+
+      {/* Search bar */}
+      <Skeleton variant="rounded" height={52} animation="wave" sx={{ borderRadius: "var(--radius, 16px)", mb: 4 }} />
+
+      {/* Table rows */}
+      {Array.from({ length: 6 }).map((_, i) => (
+        <Skeleton
+          key={i}
+          variant="rounded"
+          height={52}
+          animation="wave"
+          sx={{ borderRadius: 1, mb: 1, opacity: 1 - i * 0.12 }}
+        />
+      ))}
+    </Box>
   </Box>
 );
 

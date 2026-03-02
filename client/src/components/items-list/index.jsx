@@ -1,4 +1,4 @@
-import React, { useEffect, useState, useCallback, useRef } from "react";
+import React, { useEffect, useState, useCallback, useRef, useMemo } from "react";
 import {
     Box,
     Pagination,
@@ -6,7 +6,6 @@ import {
     Alert,
     useMediaQuery,
     useTheme,
-    CircularProgress,
     Paper,
     Typography,
     Button,
@@ -29,6 +28,8 @@ import { useAuth } from "../../auth/AuthContext";
 
 import JobSheetPrintTemplate from "../JobSheetPrintTemplate";
 import MobileCard from "../MobileCard";
+import PullToRefresh from "../PullToRefresh";
+import KeyboardShortcutsDialog from "../KeyboardShortcutsDialog";
 
 import { generateWhatsAppMessage } from "../../utils/whatsapp";
 
@@ -38,6 +39,8 @@ import ItemsTable from "./ItemsTable";
 import EditJobDialog from "./EditJobDialog";
 import DeleteJobDialog from "./DeleteJobDialog";
 import { useNotifications } from "../../hooks/useNotifications";
+import { useKeyboardShortcuts } from "../../hooks/useKeyboardShortcuts";
+import { ItemsListSkeleton } from "../Skeletons";
 
 const ItemsList = () => {
     // ── Context / hooks that other state depends on — must come first ──────────
@@ -55,7 +58,8 @@ const ItemsList = () => {
         total: 0,
         inProgress: 0,
         ready: 0,
-        returned: 0
+        returned: 0,
+        agingSummary: { attention: 0, overdue: 0, critical: 0, total: 0 }
     });
     // Incrementing this counter causes the main fetchItems useEffect to re-run
     // without adding fetchItems to its deps — avoids fire-and-forget anti-pattern.
@@ -91,6 +95,11 @@ const ItemsList = () => {
     // Bulk selection — uses a Set for O(1) lookup
     const [selectedIds, setSelectedIds] = useState(new Set());
     const [bulkStatus, setBulkStatus] = useState("");
+
+    // Keyboard shortcuts state
+    const [shortcutsDialogOpen, setShortcutsDialogOpen] = useState(false);
+    const [focusedRowIndex, setFocusedRowIndex] = useState(-1);
+    const searchInputRef = useRef(null);
 
     const onSelectChange = useCallback((id, checked) => {
         setSelectedIds(prev => {
@@ -292,6 +301,95 @@ const ItemsList = () => {
         }
     }, [bulkStatus, selectedIds, clearSelection, refetch]);
 
+    // ── Keyboard Shortcuts ──────────────────────────────────────────────────
+    const shortcuts = useMemo(() => ({
+        // Navigation
+        "n": () => navigate("/"),
+        "s": () => searchInputRef.current?.focus(),
+        "/": () => searchInputRef.current?.focus(),
+        "a": () => isAdmin && navigate("/admin"),
+        "r": () => refetch(),
+
+        // Filters  (1-4 map to the stat cards)
+        "1": () => handleFilterChange("inProgress"),
+        "2": () => handleFilterChange("ready"),
+        "3": () => handleFilterChange("returned"),
+        "4": () => handleFilterChange("all"),
+        "f": () => {
+            setSearch("");
+            setTechnicianFilter("All");
+            handleFilterChange("all");
+        },
+
+        // Table row navigation
+        "ArrowDown": () => {
+            if (items.length === 0) return;
+            setFocusedRowIndex((prev) => Math.min(prev + 1, items.length - 1));
+        },
+        "ArrowUp": () => {
+            if (items.length === 0) return;
+            setFocusedRowIndex((prev) => Math.max(prev - 1, 0));
+        },
+        "Enter": () => {
+            if (focusedRowIndex >= 0 && focusedRowIndex < items.length) {
+                setEditItem(items[focusedRowIndex]);
+            }
+        },
+        " ": () => {
+            // Space — toggle selection on focused row
+            if (focusedRowIndex >= 0 && focusedRowIndex < items.length) {
+                const id = items[focusedRowIndex]._id;
+                onSelectChange(id, !selectedIds.has(id));
+            }
+        },
+
+        // Row actions on focused row
+        "e": () => {
+            if (focusedRowIndex >= 0 && focusedRowIndex < items.length) {
+                setEditItem(items[focusedRowIndex]);
+            }
+        },
+        "w": () => {
+            if (focusedRowIndex >= 0 && focusedRowIndex < items.length) {
+                handleWhatsApp(items[focusedRowIndex]);
+            }
+        },
+        "p": () => {
+            if (focusedRowIndex >= 0 && focusedRowIndex < items.length) {
+                setPrintItem(items[focusedRowIndex]);
+            }
+        },
+        "d": () => {
+            if (isAdmin && focusedRowIndex >= 0 && focusedRowIndex < items.length) {
+                handleDelete(items[focusedRowIndex]._id);
+            }
+        },
+
+        // Pagination
+        "ArrowLeft": () => page > 1 && setPage((p) => p - 1),
+        "[": () => page > 1 && setPage((p) => p - 1),
+        "ArrowRight": () => page < totalPages && setPage((p) => p + 1),
+        "]": () => page < totalPages && setPage((p) => p + 1),
+
+        // General
+        "Escape": () => {
+            if (shortcutsDialogOpen) { setShortcutsDialogOpen(false); return; }
+            if (editItem) { setEditItem(null); return; }
+            if (deleteConfirmId) { setDeleteConfirmId(null); return; }
+            if (selectedIds.size > 0) { clearSelection(); return; }
+            if (search) { setSearch(""); return; }
+            setFocusedRowIndex(-1);
+        },
+        "b": () => isAdmin && downloadBackup(),
+        "shift+?": () => setShortcutsDialogOpen(true),
+    }), [navigate, isAdmin, refetch, handleFilterChange, items, focusedRowIndex,
+        onSelectChange, selectedIds, handleWhatsApp, handleDelete, page, totalPages,
+        shortcutsDialogOpen, editItem, deleteConfirmId, clearSelection, search,
+        downloadBackup, setSearch, setTechnicianFilter]);
+
+    // Only enable shortcuts when no dialog is open (except Escape)
+    useKeyboardShortcuts(shortcuts, !isMobile);
+
     return (
         <Box sx={{ maxWidth: "1400px", margin: "0 auto", padding: isMobile ? 2 : 4, pb: 10 }}>
             {/* Hidden container for printing */}
@@ -312,13 +410,20 @@ const ItemsList = () => {
                 search={search}
                 setSearch={setSearch}
                 loading={loading}
+                searchInputRef={searchInputRef}
             />
 
             <AnimatePresence mode="wait">
                 {loading && items.length === 0 ? (
-                    <Box sx={{ display: 'flex', justifyContent: 'center', p: 8 }}>
-                        <CircularProgress sx={{ color: "var(--color-primary)" }} />
-                    </Box>
+                    <motion.div
+                        key="skeleton"
+                        initial={{ opacity: 0 }}
+                        animate={{ opacity: 1 }}
+                        exit={{ opacity: 0 }}
+                        transition={{ duration: 0.2 }}
+                    >
+                        <ItemsListSkeleton isMobile={isMobile} />
+                    </motion.div>
                 ) : items.length === 0 ? (
                     <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }}>
                         <Paper sx={{ p: 8, textAlign: "center", borderRadius: "var(--radius)", bgcolor: "var(--surface)" }}>
@@ -332,19 +437,27 @@ const ItemsList = () => {
                         </Paper>
                     </motion.div>
                 ) : isMobile ? (
-                    <Box sx={{ opacity: loading ? 0.6 : 1, transition: 'opacity 0.2s' }}>
-                        {items.map((item) => (
-                            <MobileCard
-                                key={item._id}
-                                item={item}
-                                onWhatsApp={handleWhatsApp}
-                                onPrint={setPrintItem}
-                                onEdit={setEditItem}
-                                onDelete={handleDelete}
-                                canDelete={true}
-                            />
-                        ))}
-                    </Box>
+                    <PullToRefresh onRefresh={async () => { refetch(); }} disabled={loading}>
+                        <Box sx={{ opacity: loading ? 0.6 : 1, transition: 'opacity 0.2s', px: 0.5 }}>
+                            {items.map((item, index) => (
+                                <motion.div
+                                    key={item._id}
+                                    initial={{ opacity: 0, y: 20 }}
+                                    animate={{ opacity: 1, y: 0 }}
+                                    transition={{ duration: 0.25, delay: Math.min(index * 0.04, 0.3) }}
+                                >
+                                    <MobileCard
+                                        item={item}
+                                        onWhatsApp={handleWhatsApp}
+                                        onPrint={setPrintItem}
+                                        onEdit={setEditItem}
+                                        onDelete={handleDelete}
+                                        canDelete={isAdmin}
+                                    />
+                                </motion.div>
+                            ))}
+                        </Box>
+                    </PullToRefresh>
                 ) : (
                     <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }}>
                         {/* Bulk action toolbar — appears when rows are selected */}
@@ -418,6 +531,7 @@ const ItemsList = () => {
                             selectedIds={selectedIds}
                             onSelectChange={onSelectChange}
                             isAdmin={isAdmin}
+                            focusedRowIndex={focusedRowIndex}
                         />
                     </motion.div>
                 )}
@@ -453,6 +567,11 @@ const ItemsList = () => {
                 confirmDelete={confirmDelete}
             />
 
+            <KeyboardShortcutsDialog
+                open={shortcutsDialogOpen}
+                onClose={() => setShortcutsDialogOpen(false)}
+            />
+
             <Snackbar
                 open={snackbar.open}
                 autoHideDuration={4000}
@@ -463,6 +582,33 @@ const ItemsList = () => {
                     {snackbar.message}
                 </Alert>
             </Snackbar>
+
+            {/* Keyboard hint — subtle, only on desktop */}
+            {!isMobile && (
+                <Tooltip title="Press ? to see all keyboard shortcuts" placement="left">
+                    <Chip
+                        label="? Shortcuts"
+                        size="small"
+                        onClick={() => setShortcutsDialogOpen(true)}
+                        sx={{
+                            position: 'fixed',
+                            bottom: 20,
+                            right: 20,
+                            fontWeight: 700,
+                            fontSize: '0.7rem',
+                            bgcolor: 'background.paper',
+                            border: '1px solid',
+                            borderColor: 'divider',
+                            boxShadow: 'var(--shadow-sm)',
+                            cursor: 'pointer',
+                            opacity: 0.7,
+                            transition: 'opacity 0.2s',
+                            '&:hover': { opacity: 1 },
+                            zIndex: 10,
+                        }}
+                    />
+                </Tooltip>
+            )}
         </Box>
     );
 };

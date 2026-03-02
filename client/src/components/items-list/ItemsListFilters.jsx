@@ -4,7 +4,8 @@ import {
     Build as BuildIcon,
     CheckCircle as CheckCircleIcon,
     HourglassEmpty as HourglassIcon,
-    GridView as AllJobsIcon
+    GridView as AllJobsIcon,
+    WarningAmber as WarningIcon
 } from '@mui/icons-material';
 import { AnimatePresence } from 'framer-motion';
 import StatCard from "../StatCard";
@@ -15,8 +16,11 @@ const ItemsListFilters = ({
     handleFilterChange,
     search,
     setSearch,
-    loading
+    loading,
+    searchInputRef
 }) => {
+    const agingCount = stats.agingSummary?.total || 0;
+
     return (
         <>
             <AnimatePresence>
@@ -24,7 +28,7 @@ const ItemsListFilters = ({
                     <Box
                         sx={{
                             display: "grid",
-                            gridTemplateColumns: { xs: "repeat(2, 1fr)", md: "repeat(4, 1fr)" },
+                            gridTemplateColumns: { xs: "repeat(2, 1fr)", sm: "repeat(3, 1fr)", md: "repeat(5, 1fr)" },
                             gap: { xs: 1.5, md: 2 },
                         }}
                     >
@@ -35,7 +39,6 @@ const ItemsListFilters = ({
                                 value: stats.inProgress,
                                 color: "#f59e0b",
                                 icon: <BuildIcon />,
-                                subtitle: "Received · Working · Waiting · Sent"
                             },
                             {
                                 key: "ready",
@@ -43,7 +46,6 @@ const ItemsListFilters = ({
                                 value: stats.ready,
                                 color: "#10b981",
                                 icon: <CheckCircleIcon />,
-                                subtitle: "Ready for pickup · Delivered"
                             },
                             {
                                 key: "returned",
@@ -51,7 +53,6 @@ const ItemsListFilters = ({
                                 value: stats.returned,
                                 color: "#a855f7",
                                 icon: <HourglassIcon />,
-                                subtitle: "Awaiting customer feedback"
                             },
                             {
                                 key: "all",
@@ -59,7 +60,6 @@ const ItemsListFilters = ({
                                 value: stats.total,
                                 color: "var(--color-primary)",
                                 icon: <AllJobsIcon />,
-                                subtitle: "Every job in the system"
                             },
                         ].map((stat) => (
                             <StatCard
@@ -72,7 +72,56 @@ const ItemsListFilters = ({
                                 onClick={() => handleFilterChange(stat.key)}
                             />
                         ))}
+                        {/* Aging / Needs Attention card — warm glow when count > 0 */}
+                        <Box
+                            sx={{
+                                position: 'relative',
+                                animation: agingCount > 0 ? 'agingCardGlow 3s ease-in-out infinite' : 'none',
+                                '@keyframes agingCardGlow': {
+                                    '0%, 100%': { filter: 'drop-shadow(0 0 0px transparent)' },
+                                    '50%': { filter: 'drop-shadow(0 0 8px rgba(249,115,22,0.3))' },
+                                },
+                            }}
+                        >
+                            <StatCard
+                                title="Needs Attention"
+                                value={agingCount}
+                                color={agingCount > 0 ? "#f97316" : "#94a3b8"}
+                                icon={<WarningIcon />}
+                                isActive={false}
+                                onClick={() => {/* informational only — no filter action */ }}
+                            />
+                        </Box>
                     </Box>
+                    {/* Aging breakdown tooltip */}
+                    {agingCount > 0 && (
+                        <Box sx={{ mt: 1, display: 'flex', alignItems: 'center', gap: 1, flexWrap: 'wrap' }}>
+                            <Typography variant="caption" color="text.secondary" sx={{ fontWeight: 600 }}>
+                                Aging breakdown:
+                            </Typography>
+                            {stats.agingSummary?.attention > 0 && (
+                                <Chip
+                                    label={`${stats.agingSummary.attention} approaching SLA`}
+                                    size="small"
+                                    sx={{ fontWeight: 700, fontSize: '0.65rem', height: 20, bgcolor: '#f59e0b18', color: '#f59e0b', border: '1px solid #f59e0b30' }}
+                                />
+                            )}
+                            {stats.agingSummary?.overdue > 0 && (
+                                <Chip
+                                    label={`${stats.agingSummary.overdue} overdue`}
+                                    size="small"
+                                    sx={{ fontWeight: 700, fontSize: '0.65rem', height: 20, bgcolor: '#f9731618', color: '#f97316', border: '1px solid #f9731630' }}
+                                />
+                            )}
+                            {stats.agingSummary?.critical > 0 && (
+                                <Chip
+                                    label={`${stats.agingSummary.critical} critical`}
+                                    size="small"
+                                    sx={{ fontWeight: 700, fontSize: '0.65rem', height: 20, bgcolor: '#ef444418', color: '#ef4444', border: '1px solid #ef444430' }}
+                                />
+                            )}
+                        </Box>
+                    )}
                     {activeFilter !== "all" && (
                         <Box sx={{ mt: 1.5, display: 'flex', alignItems: 'center', gap: 1 }}>
                             <Typography variant="caption" color="text.secondary">
@@ -102,6 +151,7 @@ const ItemsListFilters = ({
             >
                 <SearchIcon color="action" sx={{ fontSize: { xs: '1.25rem', md: '1.5rem' } }} />
                 <InputBase
+                    inputRef={searchInputRef}
                     sx={{
                         width: '100%',
                         fontSize: { xs: '0.9rem', md: '1rem' },
