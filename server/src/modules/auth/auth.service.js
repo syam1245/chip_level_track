@@ -44,6 +44,10 @@ class AuthService {
         return await AuthRepository.findAllUsers();
     }
 
+    async getTechnicianNames() {
+        return await AuthRepository.findAllTechnicianNames();
+    }
+
     /**
      * Verify credentials without creating a session.
      * @param {string} username

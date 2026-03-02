@@ -63,6 +63,11 @@ class AuthController {
         await AuthService.updatePassword(username, newPassword);
         res.json({ message: `Password updated for ${username}` });
     });
+
+    getTechnicianNames = asyncHandler(async (req, res) => {
+        const technicians = await AuthService.getTechnicianNames();
+        res.json(technicians);
+    });
 }
 
 export default new AuthController();

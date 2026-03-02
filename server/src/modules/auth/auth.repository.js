@@ -11,6 +11,10 @@ class AuthRepository {
         return await User.find({}, "username displayName role").sort({ username: 1 }).lean();
     }
 
+    async findAllTechnicianNames() {
+        return await User.find({}, "username displayName").sort({ username: 1 }).lean();
+    }
+
     async updatePassword(username, hashedPassword) {
         const pattern = new RegExp(`^${username.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}$`, 'i');
         return await User.findOneAndUpdate(

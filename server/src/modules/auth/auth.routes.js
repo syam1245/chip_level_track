@@ -16,6 +16,7 @@ const loginLimiter = rateLimit({
 
 // NOTE: attachAuth is applied globally in app.js — no need to repeat it here.
 router.get("/users", requireAuth, AuthController.getUsers);
+router.get("/technicians", AuthController.getTechnicianNames); // Public: for login dropdown
 router.post("/login", loginLimiter, AuthController.login);
 router.post("/logout", AuthController.logout);           // attachAuth already ran globally
 router.get("/session", requireAuth, AuthController.getSession);
