@@ -13,6 +13,7 @@ import {
 import { lightTheme, darkTheme } from "./theme";
 import { AuthProvider, useAuth } from "./auth/AuthContext";
 import ProtectedRoute from "./components/ProtectedRoute";
+import ErrorBoundary from "./components/ErrorBoundary";
 
 const Input = lazy(() => import("./components/InputForm"));
 const ItemsList = lazy(() => import("./components/items-list"));
@@ -141,7 +142,7 @@ const AuthAppContent = ({ mode, toggleTheme }) => {
   if (loadingSession) return <LoadingFallback />;
 
   return (
-    <>
+    <ErrorBoundary>
       <Suspense fallback={<LoadingFallback />}>
         <Navbar mode={mode} toggleTheme={toggleTheme} />
         <Routes>
@@ -181,7 +182,7 @@ const AuthAppContent = ({ mode, toggleTheme }) => {
           <Route path="*" element={<Navigate to="/" replace />} />
         </Routes>
       </Suspense>
-    </>
+    </ErrorBoundary>
   );
 };
 

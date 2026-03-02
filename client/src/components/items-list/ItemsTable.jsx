@@ -1,4 +1,5 @@
-import React, { useState } from 'react';
+import React, { useState, useRef, useEffect } from 'react';
+import { useVirtualizer } from '@tanstack/react-virtual';
 import {
     Table,
     TableBody,
@@ -30,6 +31,8 @@ import { STATUS_COLORS } from "../../constants/status";
 import { formatDate } from "../../utils/date";
 import { getAgingInfo, formatAge } from "../../utils/aging";
 
+const ROW_HEIGHT = 72; // estimated row height in px
+
 const ItemsTable = ({
     items,
     loading,
@@ -50,6 +53,7 @@ const ItemsTable = ({
     focusedRowIndex = -1
 }) => {
     const [techMenuAnchor, setTechMenuAnchor] = useState(null);
+    const scrollContainerRef = useRef(null);
 
     const allSelected = items.length > 0 && items.every(i => selectedIds.has(i._id));
     const someSelected = items.some(i => selectedIds.has(i._id)) && !allSelected;
@@ -62,22 +66,221 @@ const ItemsTable = ({
         }
     };
 
+    // ── Virtual row renderer ────────────────────────────────────────────────
+    const virtualizer = useVirtualizer({
+        count: items.length,
+        getScrollElement: () => scrollContainerRef.current,
+        estimateSize: () => ROW_HEIGHT,
+        overscan: 5, // render 5 extra rows above/below viewport for smooth scrolling
+    });
+
+    // Scroll focused row into view
+    useEffect(() => {
+        if (focusedRowIndex >= 0 && focusedRowIndex < items.length) {
+            virtualizer.scrollToIndex(focusedRowIndex, { align: 'auto', behavior: 'smooth' });
+        }
+    }, [focusedRowIndex, items.length, virtualizer]);
+
+    // Only virtualize when we have enough rows to benefit from it
+    const shouldVirtualize = items.length > 20;
+
+    // ── Render a single row (shared between virtualized and normal paths) ───
+    const renderRow = (item, rowIdx) => {
+        const aging = getAgingInfo(item);
+        const isFocused = rowIdx === focusedRowIndex;
+        return (
+            <TableRow
+                key={item._id}
+                hover
+                selected={selectedIds.has(item._id)}
+                sx={{
+                    '&:last-child td, &:last-child th': { border: 0 },
+                    bgcolor: aging.tier === 'critical'
+                        ? 'rgba(239,68,68,0.06)'
+                        : aging.tier === 'overdue'
+                            ? 'rgba(249,115,22,0.05)'
+                            : selectedIds.has(item._id)
+                                ? 'action.selected'
+                                : undefined,
+                    borderLeft: aging.isAging ? `3px solid ${aging.color}` : undefined,
+                    transition: 'background-color 0.3s ease, outline 0.15s ease',
+                    outline: isFocused ? '2px solid' : 'none',
+                    outlineColor: isFocused ? 'primary.main' : 'transparent',
+                    outlineOffset: '-2px',
+                    borderRadius: isFocused ? '4px' : undefined,
+                    position: isFocused ? 'relative' : undefined,
+                    zIndex: isFocused ? 1 : undefined,
+                }}>
+                <TableCell padding="checkbox">
+                    <Checkbox
+                        size="small"
+                        checked={selectedIds.has(item._id)}
+                        onChange={(e) => onSelectChange(item._id, e.target.checked)}
+                    />
+                </TableCell>
+                <TableCell align="left">
+                    <Typography fontWeight="600" color="primary">{item.jobNumber}</Typography>
+                    <Typography variant="caption" color="text.secondary">{formatDate(item.createdAt)}</Typography>
+                    {aging.isAging && (
+                        <Tooltip title={`${aging.label} — ${aging.ageDays} day${aging.ageDays !== 1 ? 's' : ''} since received`} arrow placement="right">
+                            <Box
+                                component="span"
+                                sx={{
+                                    display: 'inline-flex',
+                                    alignItems: 'center',
+                                    gap: 0.4,
+                                    ml: 0.8,
+                                    px: 0.8,
+                                    py: 0.1,
+                                    borderRadius: '6px',
+                                    fontSize: '0.6rem',
+                                    fontWeight: 800,
+                                    letterSpacing: '0.03em',
+                                    color: aging.color,
+                                    bgcolor: `${aging.color}18`,
+                                    border: `1px solid ${aging.color}30`,
+                                    animation: aging.tier === 'critical' ? 'agingPulse 2.5s ease-in-out infinite' : 'none',
+                                    verticalAlign: 'middle',
+                                    cursor: 'default',
+                                    '@keyframes agingPulse': {
+                                        '0%, 100%': { boxShadow: `0 0 0 0 ${aging.color}00` },
+                                        '50%': { boxShadow: `0 0 8px 2px ${aging.color}35` },
+                                    },
+                                }}
+                            >
+                                {formatAge(aging.ageDays)}
+                            </Box>
+                        </Tooltip>
+                    )}
+                </TableCell>
+                <TableCell>{item.customerName}</TableCell>
+                <TableCell>{item.brand}</TableCell>
+                <TableCell>
+                    <Typography variant="body2" fontWeight="600">{item.technicianName}</Typography>
+                </TableCell>
+                <TableCell>{item.phoneNumber}</TableCell>
+                <TableCell>
+                    {item.finalCost > 0 ? (
+                        <Box>
+                            <Typography variant="body2" fontWeight="700" color="success.main">
+                                ₹{item.finalCost}
+                            </Typography>
+                            <Typography variant="caption" sx={{ fontSize: '0.65rem', color: 'success.dark', bgcolor: 'success.light', px: 0.8, py: 0.2, borderRadius: 1 }}>
+                                FINAL
+                            </Typography>
+                        </Box>
+                    ) : (
+                        <Box>
+                            <Typography variant="body2" fontWeight="700" color="text.secondary">
+                                {item.cost ? `₹${item.cost}` : "—"}
+                            </Typography>
+                            <Typography variant="caption" sx={{ fontSize: '0.65rem', color: 'text.disabled' }}>
+                                Est.
+                            </Typography>
+                        </Box>
+                    )}
+                </TableCell>
+                <TableCell>
+                    <Chip
+                        label={item.status || "Received"}
+                        color={STATUS_COLORS[item.status] || "default"}
+                        size="small"
+                        sx={{ borderRadius: '6px', fontWeight: 600, fontSize: '0.75rem', height: '24px' }}
+                    />
+                </TableCell>
+                <TableCell sx={{ maxWidth: 220 }}>
+                    {item.repairNotes ? (
+                        <Box
+                            sx={{
+                                p: '6px 10px',
+                                bgcolor: 'action.hover',
+                                borderRadius: '6px',
+                                borderLeft: '3px solid var(--color-primary)',
+                                display: 'flex',
+                                gap: 0.75,
+                                alignItems: 'flex-start'
+                            }}
+                        >
+                            <NotesIcon sx={{ fontSize: '0.85rem', color: 'var(--color-primary)', mt: '2px', flexShrink: 0 }} />
+                            <Typography
+                                variant="caption"
+                                color="text.secondary"
+                                sx={{
+                                    lineHeight: 1.5,
+                                    display: '-webkit-box',
+                                    WebkitLineClamp: 2,
+                                    WebkitBoxOrient: 'vertical',
+                                    overflow: 'hidden',
+                                    fontStyle: 'italic'
+                                }}
+                            >
+                                {item.repairNotes}
+                            </Typography>
+                        </Box>
+                    ) : (
+                        <Typography variant="caption" color="text.disabled">—</Typography>
+                    )}
+                </TableCell>
+                <TableCell align="right">
+                    <Stack direction="row" justifyContent="flex-end" spacing={1}>
+                        <Tooltip title="WhatsApp">
+                            <IconButton size="small" onClick={() => handleWhatsApp(item)} sx={{ color: 'success.main', bgcolor: 'success.light', '&:hover': { bgcolor: 'success.main', color: 'success.contrastText' } }}>
+                                <WhatsAppIcon fontSize="small" />
+                            </IconButton>
+                        </Tooltip>
+                        <Tooltip title="Print">
+                            <IconButton size="small" onClick={() => setPrintItem(item)} sx={{ color: 'text.secondary', bgcolor: 'action.selected', '&:hover': { bgcolor: 'action.hover', color: 'text.primary' } }}>
+                                <PrintIcon fontSize="small" />
+                            </IconButton>
+                        </Tooltip>
+                        <Tooltip title="Edit">
+                            <IconButton size="small" onClick={() => setEditItem(item)} sx={{ color: 'primary.main', bgcolor: 'primary.light', '&:hover': { bgcolor: 'primary.main', color: 'primary.contrastText' } }}>
+                                <EditIcon fontSize="small" />
+                            </IconButton>
+                        </Tooltip>
+                        <Tooltip title="Delete">
+                            <IconButton size="small" onClick={() => handleDelete(item._id)} sx={{ color: 'error.main', bgcolor: 'error.light', '&:hover': { bgcolor: 'error.main', color: 'error.contrastText' } }}>
+                                <DeleteIcon fontSize="small" />
+                            </IconButton>
+                        </Tooltip>
+                    </Stack>
+                </TableCell>
+            </TableRow>
+        );
+    };
+
     return (
         <TableContainer
+            ref={scrollContainerRef}
             component={Paper}
             elevation={0}
             sx={{
                 border: "1px solid var(--border)",
                 borderRadius: "var(--radius)",
-                overflow: 'hidden',
+                overflow: 'auto',
                 opacity: loading ? 0.6 : 1,
-                transition: 'opacity 0.2s'
+                transition: 'opacity 0.2s',
+                // When virtualizing, set a fixed max height so the container scrolls
+                ...(shouldVirtualize && {
+                    maxHeight: 'calc(100vh - 320px)',
+                    minHeight: 400,
+                }),
             }}
         >
-            <Table>
-                <TableHead sx={{ bgcolor: "background.paper", borderBottom: "1px solid", borderColor: "divider" }}>
+            <Table sx={{ ...(shouldVirtualize && { tableLayout: 'fixed' }) }}>
+                <TableHead sx={{
+                    bgcolor: "background.paper",
+                    borderBottom: "1px solid",
+                    borderColor: "divider",
+                    // Sticky header when virtualizing
+                    ...(shouldVirtualize && {
+                        position: 'sticky',
+                        top: 0,
+                        zIndex: 2,
+                    }),
+                }}>
                     <TableRow>
-                        <TableCell padding="checkbox">
+                        <TableCell padding="checkbox" sx={{ width: 48 }}>
                             <Checkbox
                                 size="small"
                                 checked={allSelected}
@@ -85,7 +288,7 @@ const ItemsTable = ({
                                 onChange={handleSelectAll}
                             />
                         </TableCell>
-                        <TableCell>
+                        <TableCell sx={{ width: '18%' }}>
                             <TableSortLabel
                                 active={sortBy === 'createdAt'}
                                 direction={sortBy === 'createdAt' ? sortOrder : 'asc'}
@@ -94,7 +297,7 @@ const ItemsTable = ({
                                 <Typography variant="subtitle2" fontWeight="700" color="text.secondary">JOB NO</Typography>
                             </TableSortLabel>
                         </TableCell>
-                        <TableCell>
+                        <TableCell sx={{ width: '13%' }}>
                             <TableSortLabel
                                 active={sortBy === 'customerName'}
                                 direction={sortBy === 'customerName' ? sortOrder : 'asc'}
@@ -103,10 +306,10 @@ const ItemsTable = ({
                                 <Typography variant="subtitle2" fontWeight="700" color="text.secondary">CUSTOMER</Typography>
                             </TableSortLabel>
                         </TableCell>
-                        <TableCell>
+                        <TableCell sx={{ width: '8%' }}>
                             <Typography variant="subtitle2" fontWeight="700" color="text.secondary">DEVICE</Typography>
                         </TableCell>
-                        <TableCell>
+                        <TableCell sx={{ width: '12%' }}>
                             <Box
                                 sx={{ display: 'flex', alignItems: 'center', cursor: 'pointer' }}
                                 onClick={(e) => setTechMenuAnchor(e.currentTarget)}
@@ -156,10 +359,10 @@ const ItemsTable = ({
                                 ))}
                             </Menu>
                         </TableCell>
-                        <TableCell>
+                        <TableCell sx={{ width: '10%' }}>
                             <Typography variant="subtitle2" fontWeight="700" color="text.secondary">PHONE</Typography>
                         </TableCell>
-                        <TableCell>
+                        <TableCell sx={{ width: '9%' }}>
                             <TableSortLabel
                                 active={sortBy === 'cost'}
                                 direction={sortBy === 'cost' ? sortOrder : 'asc'}
@@ -168,7 +371,7 @@ const ItemsTable = ({
                                 <Typography variant="subtitle2" fontWeight="700" color="text.secondary">AMOUNT</Typography>
                             </TableSortLabel>
                         </TableCell>
-                        <TableCell>
+                        <TableCell sx={{ width: '8%' }}>
                             <TableSortLabel
                                 active={sortBy === 'status'}
                                 direction={sortBy === 'status' ? sortOrder : 'asc'}
@@ -177,180 +380,46 @@ const ItemsTable = ({
                                 <Typography variant="subtitle2" fontWeight="700" color="text.secondary">STATUS</Typography>
                             </TableSortLabel>
                         </TableCell>
-                        <TableCell>
+                        <TableCell sx={{ width: '12%' }}>
                             <Typography variant="subtitle2" fontWeight="700" color="text.secondary">NOTES</Typography>
                         </TableCell>
-                        <TableCell align="right">
+                        <TableCell align="right" sx={{ width: '10%' }}>
                             <Typography variant="subtitle2" fontWeight="700" color="text.secondary">ACTIONS</Typography>
                         </TableCell>
                     </TableRow>
                 </TableHead>
-                <TableBody>
-                    {items.map((item, rowIdx) => {
-                        const aging = getAgingInfo(item);
-                        const isFocused = rowIdx === focusedRowIndex;
-                        return (
-                            <TableRow
-                                key={item._id}
-                                hover
-                                selected={selectedIds.has(item._id)}
-                                ref={isFocused ? (el) => el?.scrollIntoView?.({ block: 'nearest', behavior: 'smooth' }) : undefined}
-                                sx={{
-                                    '&:last-child td, &:last-child th': { border: 0 },
-                                    bgcolor: aging.tier === 'critical'
-                                        ? 'rgba(239,68,68,0.06)'
-                                        : aging.tier === 'overdue'
-                                            ? 'rgba(249,115,22,0.05)'
-                                            : selectedIds.has(item._id)
-                                                ? 'action.selected'
-                                                : undefined,
-                                    borderLeft: aging.isAging ? `3px solid ${aging.color}` : undefined,
-                                    transition: 'background-color 0.3s ease, outline 0.15s ease',
-                                    outline: isFocused ? '2px solid' : 'none',
-                                    outlineColor: isFocused ? 'primary.main' : 'transparent',
-                                    outlineOffset: '-2px',
-                                    borderRadius: isFocused ? '4px' : undefined,
-                                    position: isFocused ? 'relative' : undefined,
-                                    zIndex: isFocused ? 1 : undefined,
-                                }}>
-                                <TableCell padding="checkbox">
-                                    <Checkbox
-                                        size="small"
-                                        checked={selectedIds.has(item._id)}
-                                        onChange={(e) => onSelectChange(item._id, e.target.checked)}
-                                    />
-                                </TableCell>
-                                <TableCell align="left">
-                                    <Typography fontWeight="600" color="primary">{item.jobNumber}</Typography>
-                                    <Typography variant="caption" color="text.secondary">{formatDate(item.createdAt)}</Typography>
-                                    {aging.isAging && (
-                                        <Tooltip title={`${aging.label} — ${aging.ageDays} day${aging.ageDays !== 1 ? 's' : ''} since received`} arrow placement="right">
-                                            <Box
-                                                component="span"
-                                                sx={{
-                                                    display: 'inline-flex',
-                                                    alignItems: 'center',
-                                                    gap: 0.4,
-                                                    ml: 0.8,
-                                                    px: 0.8,
-                                                    py: 0.1,
-                                                    borderRadius: '6px',
-                                                    fontSize: '0.6rem',
-                                                    fontWeight: 800,
-                                                    letterSpacing: '0.03em',
-                                                    color: aging.color,
-                                                    bgcolor: `${aging.color}18`,
-                                                    border: `1px solid ${aging.color}30`,
-                                                    animation: aging.tier === 'critical' ? 'agingPulse 2.5s ease-in-out infinite' : 'none',
-                                                    verticalAlign: 'middle',
-                                                    cursor: 'default',
-                                                    '@keyframes agingPulse': {
-                                                        '0%, 100%': { boxShadow: `0 0 0 0 ${aging.color}00` },
-                                                        '50%': { boxShadow: `0 0 8px 2px ${aging.color}35` },
-                                                    },
-                                                }}
-                                            >
-                                                {formatAge(aging.ageDays)}
-                                            </Box>
-                                        </Tooltip>
-                                    )}
-                                </TableCell>
-                                <TableCell>{item.customerName}</TableCell>
-                                <TableCell>{item.brand}</TableCell>
-                                <TableCell>
-                                    <Typography variant="body2" fontWeight="600">{item.technicianName}</Typography>
-                                </TableCell>
-                                <TableCell>{item.phoneNumber}</TableCell>
-                                <TableCell>
-                                    {item.finalCost > 0 ? (
-                                        <Box>
-                                            <Typography variant="body2" fontWeight="700" color="success.main">
-                                                ₹{item.finalCost}
-                                            </Typography>
-                                            <Typography variant="caption" sx={{ fontSize: '0.65rem', color: 'success.dark', bgcolor: 'success.light', px: 0.8, py: 0.2, borderRadius: 1 }}>
-                                                FINAL
-                                            </Typography>
-                                        </Box>
-                                    ) : (
-                                        <Box>
-                                            <Typography variant="body2" fontWeight="700" color="text.secondary">
-                                                {item.cost ? `₹${item.cost}` : "—"}
-                                            </Typography>
-                                            <Typography variant="caption" sx={{ fontSize: '0.65rem', color: 'text.disabled' }}>
-                                                Est.
-                                            </Typography>
-                                        </Box>
-                                    )}
-                                </TableCell>
-                                <TableCell>
-                                    <Chip
-                                        label={item.status || "Received"}
-                                        color={STATUS_COLORS[item.status] || "default"}
-                                        size="small"
-                                        sx={{ borderRadius: '6px', fontWeight: 600, fontSize: '0.75rem', height: '24px' }}
-                                    />
-                                </TableCell>
-                                <TableCell sx={{ maxWidth: 220 }}>
-                                    {item.repairNotes ? (
-                                        <Box
-                                            sx={{
-                                                p: '6px 10px',
-                                                bgcolor: 'action.hover',
-                                                borderRadius: '6px',
-                                                borderLeft: '3px solid var(--color-primary)',
-                                                display: 'flex',
-                                                gap: 0.75,
-                                                alignItems: 'flex-start'
-                                            }}
-                                        >
-                                            <NotesIcon sx={{ fontSize: '0.85rem', color: 'var(--color-primary)', mt: '2px', flexShrink: 0 }} />
-                                            <Typography
-                                                variant="caption"
-                                                color="text.secondary"
-                                                sx={{
-                                                    lineHeight: 1.5,
-                                                    display: '-webkit-box',
-                                                    WebkitLineClamp: 2,
-                                                    WebkitBoxOrient: 'vertical',
-                                                    overflow: 'hidden',
-                                                    fontStyle: 'italic'
-                                                }}
-                                            >
-                                                {item.repairNotes}
-                                            </Typography>
-                                        </Box>
-                                    ) : (
-                                        <Typography variant="caption" color="text.disabled">—</Typography>
-                                    )}
-                                </TableCell>
-                                <TableCell align="right">
-                                    <Stack direction="row" justifyContent="flex-end" spacing={1}>
-                                        <Tooltip title="WhatsApp">
-                                            <IconButton size="small" onClick={() => handleWhatsApp(item)} sx={{ color: 'success.main', bgcolor: 'success.light', '&:hover': { bgcolor: 'success.main', color: 'success.contrastText' } }}>
-                                                <WhatsAppIcon fontSize="small" />
-                                            </IconButton>
-                                        </Tooltip>
-                                        <Tooltip title="Print">
-                                            <IconButton size="small" onClick={() => setPrintItem(item)} sx={{ color: 'text.secondary', bgcolor: 'action.selected', '&:hover': { bgcolor: 'action.hover', color: 'text.primary' } }}>
-                                                <PrintIcon fontSize="small" />
-                                            </IconButton>
-                                        </Tooltip>
-                                        <Tooltip title="Edit">
-                                            <IconButton size="small" onClick={() => setEditItem(item)} sx={{ color: 'primary.main', bgcolor: 'primary.light', '&:hover': { bgcolor: 'primary.main', color: 'primary.contrastText' } }}>
-                                                <EditIcon fontSize="small" />
-                                            </IconButton>
-                                        </Tooltip>
-                                        <Tooltip title="Delete">
-                                            <IconButton size="small" onClick={() => handleDelete(item._id)} sx={{ color: 'error.main', bgcolor: 'error.light', '&:hover': { bgcolor: 'error.main', color: 'error.contrastText' } }}>
-                                                <DeleteIcon fontSize="small" />
-                                            </IconButton>
-                                        </Tooltip>
-                                    </Stack>
-                                </TableCell>
-                            </TableRow>
-                        );
-                    })}
-                </TableBody>
+
+                {shouldVirtualize ? (
+                    // ── VIRTUALIZED TABLE BODY ─────────────────────────────
+                    <TableBody>
+                        {/* Spacer row for items above the viewport */}
+                        {virtualizer.getVirtualItems().length > 0 && (
+                            <tr style={{ height: virtualizer.getVirtualItems()[0]?.start || 0 }} />
+                        )}
+
+                        {virtualizer.getVirtualItems().map((virtualRow) => {
+                            const item = items[virtualRow.index];
+                            if (!item) return null;
+                            return renderRow(item, virtualRow.index);
+                        })}
+
+                        {/* Spacer row for items below the viewport */}
+                        {virtualizer.getVirtualItems().length > 0 && (
+                            <tr
+                                style={{
+                                    height:
+                                        virtualizer.getTotalSize() -
+                                        (virtualizer.getVirtualItems()[virtualizer.getVirtualItems().length - 1]?.end || 0),
+                                }}
+                            />
+                        )}
+                    </TableBody>
+                ) : (
+                    // ── NORMAL TABLE BODY (≤20 items) ──────────────────────
+                    <TableBody>
+                        {items.map((item, rowIdx) => renderRow(item, rowIdx))}
+                    </TableBody>
+                )}
             </Table>
         </TableContainer>
     );

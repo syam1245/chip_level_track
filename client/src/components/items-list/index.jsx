@@ -68,7 +68,20 @@ const ItemsList = () => {
 
     const [page, setPage] = useState(1);
     const [totalPages, setTotalPages] = useState(1);
-    const LIMIT = 10;
+
+    // Page size — user can pick 10, 25, 50, or 100 rows.  Stored in localStorage.
+    const PAGE_SIZE_OPTIONS = [10, 25, 50, 100];
+    const [pageSize, setPageSize] = useState(() => {
+        try {
+            const saved = parseInt(localStorage.getItem('chip_page_size'), 10);
+            return PAGE_SIZE_OPTIONS.includes(saved) ? saved : 10;
+        } catch { return 10; }
+    });
+    const handlePageSizeChange = useCallback((newSize) => {
+        setPageSize(newSize);
+        setPage(1);
+        try { localStorage.setItem('chip_page_size', String(newSize)); } catch { }
+    }, []);
 
     const [search, setSearch] = useState("");
     const [debouncedSearch, setDebouncedSearch] = useState("");
@@ -162,7 +175,7 @@ const ItemsList = () => {
         const controller = new AbortController();
         setLoading(true);
 
-        let url = `/api/items?page=${page}&limit=${LIMIT}&sortBy=${debouncedSortBy}&sortOrder=${debouncedSortOrder}`;
+        let url = `/api/items?page=${page}&limit=${pageSize}&sortBy=${debouncedSortBy}&sortOrder=${debouncedSortOrder}`;
         if (isAdmin) {
             url += `&includeMetadata=true`;
         }
@@ -192,7 +205,7 @@ const ItemsList = () => {
             });
 
         return () => controller.abort();
-    }, [debouncedSearch, page, activeFilter, debouncedSortBy, debouncedSortOrder, technicianFilter, isAdmin]);
+    }, [debouncedSearch, page, activeFilter, debouncedSortBy, debouncedSortOrder, technicianFilter, isAdmin, pageSize]);
 
     useEffect(() => {
         const cancel = fetchItems();
@@ -538,7 +551,14 @@ const ItemsList = () => {
             </AnimatePresence>
 
             {totalPages > 1 && (
-                <Box sx={{ display: 'flex', justifyContent: 'center', mt: 4 }}>
+                <Box sx={{
+                    display: 'flex',
+                    justifyContent: 'center',
+                    alignItems: 'center',
+                    mt: 4,
+                    gap: 3,
+                    flexWrap: 'wrap',
+                }}>
                     <Pagination
                         count={totalPages}
                         page={page}
@@ -551,6 +571,36 @@ const ItemsList = () => {
                             '& .MuiPaginationItem-root': { borderRadius: '10px', fontWeight: 700 }
                         }}
                     />
+
+                    {/* Page size selector */}
+                    {!isMobile && (
+                        <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+                            <Typography variant="caption" color="text.secondary" fontWeight={600} sx={{ fontSize: '0.75rem' }}>
+                                Rows per page:
+                            </Typography>
+                            <Box sx={{ display: 'flex', gap: 0.5 }}>
+                                {PAGE_SIZE_OPTIONS.map(size => (
+                                    <Chip
+                                        key={size}
+                                        label={size}
+                                        size="small"
+                                        variant={pageSize === size ? "filled" : "outlined"}
+                                        color={pageSize === size ? "primary" : "default"}
+                                        onClick={() => handlePageSizeChange(size)}
+                                        sx={{
+                                            fontWeight: 700,
+                                            fontSize: '0.72rem',
+                                            height: 26,
+                                            borderRadius: '8px',
+                                            cursor: 'pointer',
+                                            minWidth: 38,
+                                            transition: 'all 0.15s',
+                                        }}
+                                    />
+                                ))}
+                            </Box>
+                        </Box>
+                    )}
                 </Box>
             )}
 
