@@ -6,7 +6,7 @@ import {
 import React, { useState, useEffect } from "react";
 import { Navigate, useNavigate } from "react-router-dom";
 import { useAuth } from "../auth/AuthContext";
-import API_BASE_URL from "../api";
+import { fetchTechnicianNames } from "../services/auth.api";
 
 const LoginPage = () => {
   const [username, setUsername] = useState("");
@@ -19,8 +19,7 @@ const LoginPage = () => {
   const { user, login } = useAuth();
 
   useEffect(() => {
-    fetch(`${API_BASE_URL}/api/auth/technicians`)
-      .then(res => res.json())
+    fetchTechnicianNames()
       .then(data => {
         if (Array.isArray(data)) {
           setTechnicians(data);

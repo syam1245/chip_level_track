@@ -18,7 +18,7 @@ import {
     AutoFixHigh as MagicIcon
 } from '@mui/icons-material';
 import Webcam from 'react-webcam';
-import { authFetch } from '../../api';
+import { extractFromImage } from '../../services/vision.api';
 
 const optimizeImage = (dataUrl, maxWidth = 1024) => {
     return new Promise((resolve) => {
@@ -74,17 +74,12 @@ const VisionScannerDialog = ({ open, onClose, onExtractSuccess, onExtractError }
         if (!capturedImage) return;
         setVisionLoading(true);
         try {
-            const res = await authFetch("/api/vision/extract", {
-                method: "POST",
-                body: JSON.stringify({ image: capturedImage }),
-            });
-            const data = await res.json();
-            if (res.ok && data.success) {
-                onExtractSuccess(data.data);
+            const result = await extractFromImage(capturedImage);
+            if (result.ok) {
+                onExtractSuccess(result.data);
                 setCapturedImage(null);
             } else {
-                const errorMsg = data.error || data.message || "Extraction failed.";
-                onExtractError(`❌ ${errorMsg}`);
+                onExtractError(`❌ ${result.error}`);
             }
         } catch (err) {
             onExtractError("Error connecting to vision service.");

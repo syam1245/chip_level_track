@@ -17,7 +17,7 @@ import {
     IconButton
 } from "@mui/material";
 import { History, Search, Devices, Language, AccountCircle, Visibility } from "@mui/icons-material";
-import { authFetch } from "../../api";
+import { searchItems } from "../../services/items.api";
 
 const AuditTrail = ({ initialLogs = [], onShowHistory }) => {
     const [auditLogs, setAuditLogs] = useState(initialLogs);
@@ -42,11 +42,8 @@ const AuditTrail = ({ initialLogs = [], onShowHistory }) => {
     const performSearch = async (query) => {
         setSearching(true);
         try {
-            const res = await authFetch(`/api/items?search=${encodeURIComponent(query)}&includeMetadata=true&limit=15`);
-            if (res.ok) {
-                const data = await res.json();
-                setAuditLogs(data.items);
-            }
+            const data = await searchItems(query, 15);
+            setAuditLogs(data.items);
         } catch (err) {
             console.error("Search failed", err);
         } finally {

@@ -14,7 +14,7 @@ import {
 import { motion, AnimatePresence } from 'framer-motion';
 import { STATUS_COLORS } from '../constants/status';
 import { formatDate } from '../utils/date';
-import API_BASE_URL from '../api';
+import { trackItem } from '../services/items.api';
 
 const TrackJob = () => {
     const [jobNumber, setJobNumber] = useState('');
@@ -36,13 +36,12 @@ const TrackJob = () => {
         setResult(null);
 
         try {
-            const res = await fetch(`${API_BASE_URL}/api/items/track?jobNumber=${encodeURIComponent(jobNumber)}&phoneNumber=${encodeURIComponent(phoneNumber)}`);
-            const data = await res.json();
+            const result = await trackItem(jobNumber, phoneNumber);
 
-            if (res.ok) {
-                setResult(data);
+            if (result.ok) {
+                setResult(result.data);
             } else {
-                setError(data.error || 'Failed to find repair job.');
+                setError(result.error);
             }
         } catch (err) {
             setError('Network error connecting to the server.');

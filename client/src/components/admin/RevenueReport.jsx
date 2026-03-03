@@ -15,7 +15,7 @@ import {
     Divider
 } from "@mui/material";
 import { TrendingUp, AccountBalanceWallet, People } from "@mui/icons-material";
-import { authFetch } from "../../api";
+import { fetchRevenue as fetchRevenueApi } from "../../services/stats.api";
 
 const RevenueReport = ({ startDate, endDate }) => {
     const [data, setData] = useState(null);
@@ -29,16 +29,11 @@ const RevenueReport = ({ startDate, endDate }) => {
     const fetchRevenue = async () => {
         setLoading(true);
         try {
-            const params = new URLSearchParams();
-            if (startDate) params.append("startDate", startDate);
-            if (endDate) params.append("endDate", endDate);
-
-            const res = await authFetch(`/api/stats/revenue?${params.toString()}`);
-            if (res.ok) {
-                const result = await res.json();
-                setData(result);
+            const result = await fetchRevenueApi(startDate, endDate);
+            if (result.ok) {
+                setData(result.data);
             } else {
-                setError("Failed to fetch revenue data");
+                setError(result.error);
             }
         } catch (err) {
             setError("Connection error");

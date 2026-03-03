@@ -1,5 +1,5 @@
 import React, { createContext, useCallback, useContext, useEffect, useMemo, useState } from "react";
-import { authFetch } from "../api";
+import * as authApi from "../services/auth.api";
 
 const AuthContext = createContext(null);
 
@@ -10,12 +10,11 @@ export const AuthProvider = ({ children }) => {
   useEffect(() => {
     const loadSession = async () => {
       try {
-        const res = await authFetch("/api/auth/session", { method: "GET" });
-        if (!res.ok) {
+        const { ok, user: session } = await authApi.getSession();
+        if (!ok) {
           setUser(null);
           return;
         }
-        const session = await res.json();
         setUser(session);
       } catch (_err) {
         setUser(null);
@@ -32,29 +31,18 @@ export const AuthProvider = ({ children }) => {
   // the useMemo context value would change needlessly, triggering
   // re-renders in every consumer of useAuth().
   const login = useCallback(async (username, password) => {
-    const res = await authFetch("/api/auth/login", {
-      method: "POST",
-      body: JSON.stringify({ username, password }),
-    });
-
-    const data = await res.json().catch(() => ({}));
-    if (!res.ok) {
-      throw new Error(data.error || "Login failed");
-    }
-
+    const data = await authApi.login(username, password);
     setUser(data);
     return data;
   }, []);
 
   const logout = useCallback(async () => {
-    await authFetch("/api/auth/logout", { method: "POST" });
+    await authApi.logout();
     setUser(null);
   }, []);
 
   const fetchTechnicians = useCallback(async () => {
-    const res = await authFetch("/api/auth/users");
-    if (!res.ok) throw new Error("Failed to load technicians");
-    return res.json();
+    return authApi.fetchUsers();
   }, []);
 
   // Now all deps are truly stable — context object only changes when

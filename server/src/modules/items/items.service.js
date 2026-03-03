@@ -1,122 +1,28 @@
 import ItemRepository from "./items.repository.js";
 import AppError from "../../core/errors/AppError.js";
 import NodeCache from "node-cache";
+import { enrichWithAging, computeAgingSummary } from "./items.aging.js";
+import { buildSearchQuery, buildSortOptions, STATUS_GROUPS } from "./items.query-builder.js";
 
 const statsCache = new NodeCache({ stdTTL: 300 }); // Cache for 5 minutes
-
-// ── Aging tier constants ───────────────────────────────────────────────────
-// Closed statuses are exempt from aging — the job is done.
-const CLOSED_STATUSES = new Set(["Delivered", "Return"]);
-const ACTIVE_STATUSES = ["Received", "In Progress", "Waiting for Parts", "Sent to Service", "Ready", "Pending"];
-
-// Tier thresholds (days) — must be in ascending order.
-const AGING_TIERS = [
-    { max: 3, tier: "fresh" },
-    { max: 5, tier: "normal" },
-    { max: 7, tier: "attention" },
-    { max: 14, tier: "overdue" },
-    { max: Infinity, tier: "critical" },
-];
-
-/** Classify a number of days into an aging tier string */
-function getAgingTier(days) {
-    for (const t of AGING_TIERS) {
-        if (days <= t.max) return t.tier;
-    }
-    return "critical";
-}
-
-/** Compute ageDays and agingTier for a single item (in-place mutation on lean doc) */
-function enrichWithAging(item, now) {
-    if (CLOSED_STATUSES.has(item.status)) {
-        item.ageDays = 0;
-        item.agingTier = "closed";
-    } else {
-        const created = new Date(item.createdAt).getTime();
-        item.ageDays = Math.max(0, Math.floor((now - created) / 86_400_000));
-        item.agingTier = getAgingTier(item.ageDays);
-    }
-    return item;
-}
 
 class ItemService {
     async getItems({ page, limit, search, statusGroup, userRole, includeMetadata, sortBy, sortOrder, technicianName }) {
         const skip = (page - 1) * limit;
-        const query = { isDeleted: false };
-
-        if (search) {
-            const isMultiWord = search.trim().includes(' ');
-
-            // To prevent a MongoDB issue combining $text and $regex in an $or array without full indexing,
-            // we conditionally use the $text index for complex/multi-word searches (faster),
-            // and fallback to $regex for single-word partial searches (handles substrings like partial phone #).
-            if (isMultiWord) {
-                query.$text = { $search: `"${search}"` }; // Wrap in quotes for exact phrase text matching if possible
-            } else {
-                query.$or = [
-                    { jobNumber: { $regex: search, $options: "i" } },
-                    { customerName: { $regex: search, $options: "i" } },
-                    { brand: { $regex: search, $options: "i" } },
-                    { phoneNumber: { $regex: search, $options: "i" } }
-                ];
-            }
-        }
-
-        if (technicianName && technicianName !== 'All') {
-            // If the technicianName contains "(Admin)", allow matching the base name as well
-            // for backwards compatibility with jobs created before they were admins.
-            const baseName = technicianName.replace(/\s*\(Admin\)\s*$/i, '');
-            if (baseName !== technicianName) {
-                query.technicianName = { $in: [technicianName, baseName] };
-            } else {
-                query.technicianName = technicianName;
-            }
-        }
-
-        if (statusGroup === "inProgress") {
-            query.status = { $in: ["Received", "In Progress", "Waiting for Parts", "Sent to Service"] };
-        } else if (statusGroup === "ready") {
-            query.status = { $in: ["Ready", "Delivered"] };
-        } else if (statusGroup === "returned") {
-            query.status = { $in: ["Pending", "Return"] };
-        }
-
-        let sortObject = { createdAt: -1 };
-        if (sortBy) {
-            const order = sortOrder === 'asc' ? 1 : -1;
-            sortObject = { [sortBy]: order };
-            // Add secondary sort by createdAt to keep things deterministic
-            if (sortBy !== 'createdAt') {
-                sortObject.createdAt = -1;
-            }
-        }
-
+        const query = buildSearchQuery({ search, statusGroup, technicianName });
+        const sortObject = buildSortOptions({ sortBy, sortOrder });
         const showMetadata = userRole === "admin" && includeMetadata === "true";
 
-        let inProgress = 0;
-        let ready = 0;
-        let returned = 0;
+        // ── Stat counts (cached) ───────────────────────────────────────
+        let { inProgress, ready, returned } = await this._getStatCounts();
 
-        const cachedStats = statsCache.get("itemStats");
-        if (cachedStats) {
-            inProgress = cachedStats.inProgress;
-            ready = cachedStats.ready;
-            returned = cachedStats.returned;
-        } else {
-            [inProgress, ready, returned] = await Promise.all([
-                ItemRepository.countDocuments({ isDeleted: false, status: { $in: ["Received", "In Progress", "Waiting for Parts", "Sent to Service"] } }),
-                ItemRepository.countDocuments({ isDeleted: false, status: { $in: ["Ready", "Delivered"] } }),
-                ItemRepository.countDocuments({ isDeleted: false, status: { $in: ["Pending", "Return"] } })
-            ]);
-            statsCache.set("itemStats", { inProgress, ready, returned });
-        }
-
+        // ── Fetch page of items + total count ──────────────────────────
         const [items, total] = await Promise.all([
             ItemRepository.findAll({ query, skip, limit, showMetadata, sort: sortObject }),
             ItemRepository.countDocuments({ isDeleted: false })
         ]);
 
-        // ── Enrich items with aging info (in-place, O(pageSize)) ──────────
+        // ── Enrich items with aging info (in-place, O(pageSize)) ───────
         const now = Date.now();
         for (const item of items) {
             enrichWithAging(item, now);
@@ -126,27 +32,25 @@ class ItemService {
             ? await ItemRepository.countDocuments(query)
             : total;
 
-        // ── Aging summary (cached — runs once every 5 min) ────────────────
+        // ── Aging summary (cached — runs once every 5 min) ─────────────
         let agingSummary = statsCache.get("agingSummary");
         if (!agingSummary) {
-            agingSummary = await this._computeAgingSummary();
+            agingSummary = await computeAgingSummary();
             statsCache.set("agingSummary", agingSummary);
         }
-
-        const stats = {
-            total: total || 0,
-            inProgress: inProgress || 0,
-            ready: ready || 0,
-            returned: returned || 0,
-            agingSummary,
-        };
 
         return {
             items,
             currentPage: page,
             totalPages: Math.ceil(filteredTotal / limit),
             totalItems: filteredTotal,
-            stats,
+            stats: {
+                total: total || 0,
+                inProgress: inProgress || 0,
+                ready: ready || 0,
+                returned: returned || 0,
+                agingSummary,
+            },
         };
     }
 
@@ -227,60 +131,21 @@ class ItemService {
         return await ItemRepository.findAllForBackup();
     }
 
-    /**
-     * Compute aging summary counts using a single MongoDB aggregation.
-     * Uses $dateDiff (MongoDB 5+) for server-side date math — avoids
-     * pulling every document into Node memory.
-     *
-     * Returns: { attention: N, overdue: N, critical: N, total: N }
-     */
-    async _computeAgingSummary() {
-        const now = new Date();
-        try {
-            const pipeline = [
-                { $match: { isDeleted: false, status: { $in: ACTIVE_STATUSES } } },
-                {
-                    $addFields: {
-                        ageDays: {
-                            $dateDiff: { startDate: "$createdAt", endDate: now, unit: "day" }
-                        }
-                    }
-                },
-                {
-                    $group: {
-                        _id: null,
-                        attention: { $sum: { $cond: [{ $and: [{ $gte: ["$ageDays", 6] }, { $lte: ["$ageDays", 7] }] }, 1, 0] } },
-                        overdue: { $sum: { $cond: [{ $and: [{ $gte: ["$ageDays", 8] }, { $lte: ["$ageDays", 14] }] }, 1, 0] } },
-                        critical: { $sum: { $cond: [{ $gte: ["$ageDays", 15] }, 1, 0] } },
-                    }
-                }
-            ];
+    // ── Private helpers ────────────────────────────────────────────────
 
-            const [result] = await ItemRepository.aggregate(pipeline);
-            const summary = {
-                attention: result?.attention || 0,
-                overdue: result?.overdue || 0,
-                critical: result?.critical || 0,
-            };
-            summary.total = summary.attention + summary.overdue + summary.critical;
-            return summary;
-        } catch (err) {
-            // Fallback for MongoDB < 5.0 (no $dateDiff)
-            // Use a date threshold approach instead
-            const sixDaysAgo = new Date(now.getTime() - 6 * 86_400_000);
-            const eightDaysAgo = new Date(now.getTime() - 8 * 86_400_000);
-            const fifteenDaysAgo = new Date(now.getTime() - 15 * 86_400_000);
+    async _getStatCounts() {
+        const cached = statsCache.get("itemStats");
+        if (cached) return cached;
 
-            const baseQuery = { isDeleted: false, status: { $in: ACTIVE_STATUSES } };
+        const [inProgress, ready, returned] = await Promise.all([
+            ItemRepository.countDocuments({ isDeleted: false, status: { $in: STATUS_GROUPS.inProgress } }),
+            ItemRepository.countDocuments({ isDeleted: false, status: { $in: STATUS_GROUPS.ready } }),
+            ItemRepository.countDocuments({ isDeleted: false, status: { $in: STATUS_GROUPS.returned } }),
+        ]);
 
-            const [attention, overdue, critical] = await Promise.all([
-                ItemRepository.countDocuments({ ...baseQuery, createdAt: { $lte: sixDaysAgo, $gt: eightDaysAgo } }),
-                ItemRepository.countDocuments({ ...baseQuery, createdAt: { $lte: eightDaysAgo, $gt: fifteenDaysAgo } }),
-                ItemRepository.countDocuments({ ...baseQuery, createdAt: { $lte: fifteenDaysAgo } }),
-            ]);
-
-            return { attention, overdue, critical, total: attention + overdue + critical };
-        }
+        const stats = { inProgress, ready, returned };
+        statsCache.set("itemStats", stats);
+        return stats;
     }
 }
 

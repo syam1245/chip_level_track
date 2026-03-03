@@ -11,7 +11,7 @@ import {
 } from "@mui/material";
 import { CalendarMonth, RestartAlt } from "@mui/icons-material";
 import { format, startOfMonth } from "date-fns";
-import { authFetch } from "../api";
+import { searchItems } from "../services/items.api";
 import { useAuth } from "../auth/AuthContext";
 
 // Modular Components
@@ -43,16 +43,13 @@ const AdminDashboard = () => {
     const loadBaseData = async () => {
         setLoading(true);
         try {
-            const [techs, itemsRes] = await Promise.all([
+            const [techs, itemsData] = await Promise.all([
                 fetchTechnicians(),
-                authFetch("/api/items?limit=5&includeMetadata=true")
+                searchItems("", 5)
             ]);
 
             setTechnicians(techs);
-            if (itemsRes.ok) {
-                const data = await itemsRes.json();
-                setAuditLogs(data.items);
-            }
+            setAuditLogs(itemsData.items || []);
         } catch (err) {
             setMessage({ text: "Failed to load admin data", type: "error" });
         } finally {

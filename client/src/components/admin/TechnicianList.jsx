@@ -16,7 +16,7 @@ import {
     Alert
 } from "@mui/material";
 import { Engineering, VpnKey } from "@mui/icons-material";
-import { authFetch } from "../../api";
+import { resetPassword } from "../../services/auth.api";
 import { useAuth } from "../../auth/AuthContext";
 
 const TechnicianList = ({ technicians, onUpdate }) => {
@@ -39,14 +39,9 @@ const TechnicianList = ({ technicians, onUpdate }) => {
                 bodyData.overridePassword = overridePassword;
             }
 
-            const res = await authFetch(`/api/auth/users/${resetUser.username}/password`, {
-                method: "PUT",
-                body: JSON.stringify(bodyData)
-            });
+            const result = await resetPassword(resetUser.username, bodyData);
 
-            const data = await res.json();
-
-            if (res.ok) {
+            if (result.ok) {
                 setMessage({ text: `Password reset for ${resetUser.displayName}`, type: "success" });
                 setResetUser(null);
                 setNewPassword("");
@@ -54,7 +49,7 @@ const TechnicianList = ({ technicians, onUpdate }) => {
                 setOverridePassword("");
                 if (onUpdate) onUpdate();
             } else {
-                setMessage({ text: data.error || "Reset failed", type: "error" });
+                setMessage({ text: result.error || "Reset failed", type: "error" });
             }
         } catch (err) {
             setMessage({ text: "Failed to reset password. Connection error.", type: "error" });
