@@ -67,7 +67,7 @@ const ItemsTableRow = ({
                 )}
             </TableCell>
 
-            <TableCell>{item.customerName}</TableCell>
+            <TableCell><Typography fontWeight="bold">{item.customerName}</Typography></TableCell>
             <TableCell>{item.brand}</TableCell>
             <TableCell><Typography variant="body2" fontWeight="600">{item.technicianName}</Typography></TableCell>
             <TableCell>{item.phoneNumber}</TableCell>
