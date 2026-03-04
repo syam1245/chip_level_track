@@ -151,12 +151,9 @@ const TrackJob = () => {
                                             </Typography>
                                             <Chip
                                                 label={result.status || 'Received'}
-                                                sx={{
-                                                    bgcolor: STATUS_COLORS[result.status] ? `${STATUS_COLORS[result.status]}.light` : 'default',
-                                                    color: STATUS_COLORS[result.status] ? `${STATUS_COLORS[result.status]}.dark` : 'default',
-                                                    fontWeight: 800,
-                                                    borderRadius: '8px'
-                                                }}
+                                                color={STATUS_COLORS[result.status] || 'default'}
+                                                size="small"
+                                                sx={{ fontWeight: 800, borderRadius: '8px' }}
                                             />
                                         </Box>
 

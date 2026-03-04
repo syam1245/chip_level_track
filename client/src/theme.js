@@ -107,7 +107,13 @@ const getDesignTokens = (mode) => ({
                 elevation1: {
                     boxShadow: mode === "dark"
                         ? "0 4px 6px -1px rgba(0, 0, 0, 0.5), 0 2px 4px -1px rgba(0, 0, 0, 0.3)"
-                        : "0 4px 6px -1px rgba(0, 0, 0, 0.05), 0 2px 4px -1px rgba(0, 0, 0, 0.03)",
+                        // Light mode: stronger shadow so paper is visibly lifted off the page
+                        : "0 2px 8px rgba(0, 0, 0, 0.08), 0 1px 3px rgba(0, 0, 0, 0.05)",
+                },
+                elevation4: {
+                    boxShadow: mode === "dark"
+                        ? "0 10px 25px rgba(0, 0, 0, 0.5)"
+                        : "0 4px 20px rgba(0, 0, 0, 0.1), 0 1px 4px rgba(0, 0, 0, 0.06)",
                 },
             },
         },
@@ -119,7 +125,8 @@ const getDesignTokens = (mode) => ({
                     border: `1px solid ${mode === "dark" ? "#334155" : "#e2e8f0"}`,
                     boxShadow: mode === "dark"
                         ? "0 10px 15px -3px rgba(0, 0, 0, 0.5), 0 4px 6px -2px rgba(0, 0, 0, 0.3)"
-                        : "0 10px 15px -3px rgba(0, 0, 0, 0.05), 0 4px 6px -2px rgba(0, 0, 0, 0.025)",
+                        // More visible shadow in light mode
+                        : "0 2px 8px rgba(0, 0, 0, 0.06), 0 1px 3px rgba(0, 0, 0, 0.04)",
                     transition: "transform 0.2s ease-in-out, box-shadow 0.2s ease-in-out",
                 },
             },
@@ -131,7 +138,8 @@ const getDesignTokens = (mode) => ({
                 },
                 head: {
                     fontWeight: 700,
-                    backgroundColor: mode === "dark" ? "#0f172a" : "#f8fafc",
+                    backgroundColor: mode === "dark" ? "#0f172a" : "#f1f5f9",
+                    color: mode === "dark" ? "#94a3b8" : "#475569",
                 },
             },
         },
@@ -170,6 +178,17 @@ const getDesignTokens = (mode) => ({
                 root: {
                     borderRadius: 8,
                     fontWeight: 600,
+                },
+            },
+        },
+        MuiInputBase: {
+            styleOverrides: {
+                root: {
+                    "& input::placeholder": {
+                        // Ensure placeholders are visible in both light and dark modes
+                        color: mode === "dark" ? "rgba(203, 213, 225, 0.6)" : "rgba(71, 85, 105, 0.55)",
+                        opacity: 1,
+                    },
                 },
             },
         },

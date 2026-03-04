@@ -22,28 +22,26 @@ const ItemsTableRow = ({
 
     return (
         <TableRow
-            hover
             selected={isSelected}
             sx={{
                 "&:last-child td, &:last-child th": { border: 0 },
                 bgcolor: aging.tier === "critical" ? "rgba(239,68,68,0.06)"
                     : aging.tier === "overdue" ? "rgba(249,115,22,0.05)"
-                        : isSelected ? "action.selected" : undefined,
+                        : isSelected ? "action.selected" : "background.paper",
                 borderLeft: aging.isAging ? `3px solid ${aging.color}` : "3px solid transparent",
                 transition: "all 0.2s ease-in-out",
                 outline: isFocused ? "2px solid" : "none",
                 outlineColor: isFocused ? "primary.main" : "transparent",
                 outlineOffset: "-2px",
-                borderRadius: isFocused ? "4px" : undefined,
                 position: "relative",
                 zIndex: isFocused ? 1 : 0,
                 "&:hover": {
                     transform: "translateY(-1px)",
-                    boxShadow: "0 4px 12px rgba(0,0,0,0.05)",
+                    boxShadow: "0 4px 14px rgba(0,0,0,0.08)",
                     zIndex: 2,
-                    bgcolor: aging.tier === "critical" ? "rgba(239,68,68,0.1)"
-                        : aging.tier === "overdue" ? "rgba(249,115,22,0.08)"
-                            : "action.hover",
+                    bgcolor: aging.tier === "critical" ? "rgba(239,68,68,0.12)"
+                        : aging.tier === "overdue" ? "rgba(249,115,22,0.1)"
+                            : isSelected ? "action.selected" : "action.hover",
                 }
             }}
         >
