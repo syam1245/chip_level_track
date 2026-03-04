@@ -22,6 +22,7 @@ const Navbar = lazy(() => import("./components/Navbar.jsx"));
 const AdminDashboard = lazy(() => import("./components/AdminDashboard.jsx"));
 const TrackJob = lazy(() => import("./components/TrackJob.jsx"));
 import CommandPalette from "./components/CommandPalette";
+import API_BASE_URL from "./api";
 
 const LoadingFallback = () => (
   <Box sx={{ bgcolor: "background.default", minHeight: "100vh" }}>
@@ -201,6 +202,7 @@ const AuthAppContent = ({ mode, toggleTheme }) => {
           onClose={() => setPaletteOpen(false)}
           toggleTheme={toggleTheme}
           mode={mode}
+          onDownloadBackup={() => window.open(`${API_BASE_URL}/api/items/backup`, "_blank")}
         />
       </Suspense>
     </ErrorBoundary>

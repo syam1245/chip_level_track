@@ -8,11 +8,16 @@ const handleCastErrorDB = (err) => {
 
 const handleDuplicateFieldsDB = (err) => {
     let value = "Unknown";
-    if (err.keyValue) {
-        value = Object.values(err.keyValue).join(", ");
+    if (err.keyValue && typeof err.keyValue === "object") {
+        // Modern MongoDB driver — keyValue is always an object like { jobNumber: "JOB-123" }
+        const entries = Object.entries(err.keyValue);
+        value = entries.map(([k, v]) => `${k}: ${v}`).join(", ");
     } else if (err.errmsg) {
-        const match = err.errmsg.match(/(["'])(?:(?!\1)[^\\]|\\.)*\1/);
-        value = match ? match[0] : "Unknown";
+        // Legacy fallback — parse the quoted value from errmsg string
+        try {
+            const match = err.errmsg.match(/(["'])(?:(?!\1)[^\\]|\\.)*\1/);
+            value = match ? match[0] : "Unknown";
+        } catch { /* regex failed, keep "Unknown" */ }
     }
     const message = `Duplicate field value: ${value}. Please use another value!`;
     return { message, statusCode: 400 };

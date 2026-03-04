@@ -29,13 +29,14 @@ import {
     Menu as MenuIcon,
     Brightness4,
     Brightness7,
-    Person as PersonIcon
+    Person as PersonIcon,
+    Search as SearchIcon
 } from "@mui/icons-material";
 import { useNavigate, useLocation } from "react-router-dom";
 import { useAuth } from "../auth/AuthContext";
 import { motion, AnimatePresence } from "framer-motion";
 
-const Navbar = ({ toggleTheme, mode }) => {
+const Navbar = ({ toggleTheme, mode, onOpenPalette }) => {
     const { user, logout } = useAuth();
     const navigate = useNavigate();
     const location = useLocation();
@@ -182,6 +183,19 @@ const Navbar = ({ toggleTheme, mode }) => {
                                 }}
                             >
                                 {mode === "dark" ? <Brightness7 fontSize="small" /> : <Brightness4 fontSize="small" />}
+                            </IconButton>
+                        </Tooltip>
+
+                        <Tooltip title="Search & Commands (Ctrl+K)">
+                            <IconButton
+                                onClick={onOpenPalette}
+                                sx={{
+                                    bgcolor: 'action.hover',
+                                    borderRadius: "12px",
+                                    p: 1.2
+                                }}
+                            >
+                                <SearchIcon fontSize="small" />
                             </IconButton>
                         </Tooltip>
 

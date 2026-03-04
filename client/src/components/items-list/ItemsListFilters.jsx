@@ -5,7 +5,8 @@ import {
     CheckCircle as CheckCircleIcon,
     HourglassEmpty as HourglassIcon,
     GridView as AllJobsIcon,
-    WarningAmber as WarningIcon
+    WarningAmber as WarningIcon,
+    Close as CloseIcon
 } from '@mui/icons-material';
 import { AnimatePresence } from 'framer-motion';
 import StatCard from "../StatCard";
@@ -164,6 +165,17 @@ const ItemsListFilters = ({
                     value={search}
                     onChange={(e) => setSearch(e.target.value)}
                 />
+                {search && (
+                    <Chip
+                        label="Searching all jobs"
+                        size="small"
+                        color="primary"
+                        variant="outlined"
+                        onDelete={() => setSearch("")}
+                        deleteIcon={<CloseIcon sx={{ fontSize: '0.85rem !important' }} />}
+                        sx={{ fontWeight: 700, fontSize: '0.68rem', height: 24, flexShrink: 0, mr: 0.5 }}
+                    />
+                )}
                 {loading && <CircularProgress size={20} />}
             </Paper>
         </>
