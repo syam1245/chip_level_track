@@ -53,7 +53,7 @@ const AuditTrail = ({ initialLogs = [], onShowHistory }) => {
 
     return (
         <Paper elevation={0} className="glass-panel" sx={{ p: 3 }}>
-            <Stack direction={{ xs: 'column', sm: 'row' }} justifyContent="space-between" alignItems="center" spacing={2} mb={3}>
+            <Stack direction={{ xs: 'column', sm: 'row' }} justifyContent="space-between" alignItems={{ xs: 'stretch', sm: 'center' }} spacing={2} mb={3}>
                 <Typography variant="h6" fontWeight={800} sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
                     <History color="primary" /> Job Audit & Search
                 </Typography>

@@ -44,7 +44,7 @@ const RevenueChart = ({ breakdown }) => {
                                 variant="body2"
                                 fontWeight={700}
                                 sx={{
-                                    width: labelWidth,
+                                    width: { xs: 80, sm: labelWidth },
                                     flexShrink: 0,
                                     overflow: "hidden",
                                     textOverflow: "ellipsis",
@@ -106,7 +106,7 @@ const RevenueChart = ({ breakdown }) => {
                                 variant="body2"
                                 fontWeight={800}
                                 sx={{
-                                    width: valueWidth,
+                                    width: { xs: 65, sm: valueWidth },
                                     flexShrink: 0,
                                     textAlign: "right",
                                     color: color,

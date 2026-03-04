@@ -72,8 +72,8 @@ const TechnicianList = ({ technicians, onUpdate }) => {
                 {technicians.map((tech) => (
                     <Card key={tech.username} variant="outlined" sx={{ borderRadius: 3 }}>
                         <CardContent sx={{ p: 2, "&:last-child": { pb: 2 } }}>
-                            <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-                                <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5 }}>
+                            <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexDirection: { xs: 'column', sm: 'row' }, gap: { xs: 2, sm: 0 }, width: '100%' }}>
+                                <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5, width: '100%' }}>
                                     <Avatar sx={{ bgcolor: tech.role === 'admin' ? 'primary.main' : 'secondary.main' }}>
                                         {tech.username[0]}
                                     </Avatar>
@@ -87,7 +87,7 @@ const TechnicianList = ({ technicians, onUpdate }) => {
                                     variant="soft"
                                     startIcon={<VpnKey fontSize="small" />}
                                     onClick={() => setResetUser(tech)}
-                                    sx={{ textTransform: 'none', borderRadius: 2 }}
+                                    sx={{ textTransform: 'none', borderRadius: 2, width: { xs: '100%', sm: 'auto' } }}
                                 >
                                     Reset
                                 </Button>

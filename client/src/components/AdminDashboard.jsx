@@ -73,12 +73,15 @@ const AdminDashboard = () => {
                     Administrative Management
                 </Typography>
 
-                <Stack direction="row" spacing={2} alignItems="center" className="glass-panel" sx={{ px: 2, py: 1 }}>
-                    <CalendarMonth color="action" />
+                <Stack direction={{ xs: 'column', sm: 'row' }} spacing={2} alignItems={{ xs: 'stretch', sm: 'center' }} className="glass-panel" sx={{ px: { xs: 2, md: 3 }, py: { xs: 2, md: 1.5 }, width: { xs: '100%', md: 'auto' } }}>
+                    <Box sx={{ display: { xs: 'none', sm: 'block' } }}>
+                        <CalendarMonth color="action" />
+                    </Box>
                     <TextField
                         type="date"
                         size="small"
                         label="From"
+                        fullWidth
                         value={dates.start}
                         onChange={(e) => setDates({ ...dates, start: e.target.value })}
                         InputLabelProps={{ shrink: true }}
@@ -87,11 +90,12 @@ const AdminDashboard = () => {
                         type="date"
                         size="small"
                         label="To"
+                        fullWidth
                         value={dates.end}
                         onChange={(e) => setDates({ ...dates, end: e.target.value })}
                         InputLabelProps={{ shrink: true }}
                     />
-                    <Button size="small" onClick={handleResetDates} startIcon={<RestartAlt />}>Reset</Button>
+                    <Button size="small" onClick={handleResetDates} startIcon={<RestartAlt />} sx={{ minWidth: { sm: 100 } }}>Reset</Button>
                 </Stack>
             </Box>
 
