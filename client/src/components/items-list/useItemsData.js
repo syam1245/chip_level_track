@@ -45,7 +45,6 @@ export default function useItemsData({ isAdmin, user }) {
     const [debouncedSearch, setDebouncedSearch] = useState("");
     const [activeFilter, setActiveFilter] = useState("inProgress");
 
-    // Use startTransition so filter switches don't block urgent renders
     const handleFilterChange = useCallback((filter) => {
         startTransition(() => {
             setActiveFilter(filter);
