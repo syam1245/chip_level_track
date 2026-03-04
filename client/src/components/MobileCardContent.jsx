@@ -74,7 +74,7 @@ const MobileCardContent = ({ item, aging, onWhatsApp, onPrint, onEdit }) => {
 
             {/* ── Row 3: Info chips — phone, tech, date, cost ──── */}
             <Box sx={{ display: "flex", flexWrap: "wrap", gap: 0.75, mb: item.repairNotes ? 1.5 : 0 }}>
-                <Box sx={{ display: "inline-flex", alignItems: "center", gap: 0.5, bgcolor: "action.hover", borderRadius: "8px", px: 1, py: 0.5, minHeight: 32 }}>
+                <Box component="a" href={`tel:${item.phoneNumber}`} sx={{ textDecoration: "none", color: "inherit", display: "inline-flex", alignItems: "center", gap: 0.5, bgcolor: "action.hover", borderRadius: "8px", px: 1, py: 0.5, minHeight: 32, cursor: "pointer", '&:hover': { bgcolor: 'action.selected' } }}>
                     <PhoneIcon sx={{ fontSize: 14, color: "text.secondary" }} />
                     <Typography variant="caption" fontWeight="700" sx={{ fontSize: "0.78rem" }}>{item.phoneNumber}</Typography>
                 </Box>

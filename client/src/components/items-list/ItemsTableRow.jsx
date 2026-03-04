@@ -76,7 +76,11 @@ const ItemsTableRow = ({
             <TableCell><Typography fontWeight="bold">{item.customerName}</Typography></TableCell>
             <TableCell>{item.brand}</TableCell>
             <TableCell><Typography variant="body2" fontWeight="600">{item.technicianName}</Typography></TableCell>
-            <TableCell>{item.phoneNumber}</TableCell>
+            <TableCell>
+                <Box component="a" href={`tel:${item.phoneNumber}`} sx={{ textDecoration: "none", color: "inherit", '&:hover': { color: 'primary.main', textDecoration: 'underline' } }}>
+                    {item.phoneNumber}
+                </Box>
+            </TableCell>
 
             {/* Cost / Final cost */}
             <TableCell>
