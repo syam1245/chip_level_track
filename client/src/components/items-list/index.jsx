@@ -112,13 +112,32 @@ const ItemsList = () => {
                         <ItemsListSkeleton isMobile={isMobile} />
                     </motion.div>
                 ) : data.items.length === 0 ? (
-                    <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }}>
-                        <Paper sx={{ p: 8, textAlign: "center", borderRadius: "var(--radius)", bgcolor: "var(--surface)" }}>
-                            <Typography variant="h5" fontWeight="bold" gutterBottom>No Jobs Found</Typography>
-                            <Typography color="text.secondary">Try adjusting your search filters or add a new job.</Typography>
-                            <Button sx={{ mt: 3 }} variant="contained" onClick={() => {
-                                data.setSearch(""); data.setTechnicianFilter("All"); data.setActiveFilter("all");
-                            }}>Clear Filters</Button>
+                    <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.5, ease: "easeOut" }}>
+                        <Paper className="glass-panel" sx={{
+                            p: { xs: 5, md: 8 },
+                            textAlign: "center",
+                            borderRadius: "var(--radius)",
+                            bgcolor: "var(--surface)",
+                            position: "relative",
+                            overflow: "hidden"
+                        }}>
+                            <Box sx={{
+                                position: "absolute", top: -80, left: "50%", transform: "translateX(-50%)",
+                                width: 200, height: 200,
+                                backgroundImage: "radial-gradient(circle, var(--color-primary-light) 0%, transparent 70%)",
+                                opacity: 0.15, zIndex: 0, borderRadius: "50%", pointerEvents: "none"
+                            }} />
+                            <Box sx={{ position: "relative", zIndex: 1, display: "flex", flexDirection: "column", alignItems: "center" }}>
+                                <Typography variant="h4" fontWeight="900" gutterBottom className="text-gradient">No Jobs Found</Typography>
+                                <Typography color="text.secondary" sx={{ maxWidth: 400, mb: 4, lineHeight: 1.6 }}>Try adjusting your search filters, or there might not be any jobs matching this criteria yet.</Typography>
+                                <Button
+                                    size="large" variant="contained"
+                                    onClick={() => { data.setSearch(""); data.setTechnicianFilter("All"); data.setActiveFilter("all"); }}
+                                    sx={{ borderRadius: "12px", px: 4, py: 1.2, fontWeight: 700, boxShadow: "var(--shadow-md)" }}
+                                >
+                                    Clear All Filters
+                                </Button>
+                            </Box>
                         </Paper>
                     </motion.div>
                 ) : isMobile ? (

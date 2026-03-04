@@ -63,42 +63,32 @@ const ItemsTable = ({
                     shouldVirtualize={shouldVirtualize}
                 />
 
-                {shouldVirtualize ? (
-                    <TableBody>
-                        {virtualizer.getVirtualItems().length > 0 && (
-                            <tr style={{ height: virtualizer.getVirtualItems()[0]?.start || 0 }} />
-                        )}
-                        {virtualizer.getVirtualItems().map((virtualRow) => {
-                            const item = items[virtualRow.index];
-                            if (!item) return null;
-                            return (
-                                <ItemsTableRow
-                                    key={item._id} item={item} rowIdx={virtualRow.index}
-                                    focusedRowIndex={focusedRowIndex} selectedIds={selectedIds}
-                                    onSelectChange={onSelectChange} handleWhatsApp={handleWhatsApp}
-                                    setPrintItem={setPrintItem} setEditItem={setEditItem} handleDelete={handleDelete}
-                                />
-                            );
-                        })}
-                        {virtualizer.getVirtualItems().length > 0 && (
-                            <tr style={{
-                                height: virtualizer.getTotalSize() -
-                                    (virtualizer.getVirtualItems()[virtualizer.getVirtualItems().length - 1]?.end || 0)
-                            }} />
-                        )}
-                    </TableBody>
-                ) : (
-                    <TableBody>
-                        {items.map((item, rowIdx) => (
+                <TableBody>
+                    {shouldVirtualize && virtualizer.getVirtualItems().length > 0 && (
+                        <tr style={{ height: virtualizer.getVirtualItems()[0]?.start || 0 }} />
+                    )}
+
+                    {(shouldVirtualize ? virtualizer.getVirtualItems() : items.map((_, i) => ({ index: i }))).map((rowOrVirtual) => {
+                        const rowIdx = rowOrVirtual.index;
+                        const item = items[rowIdx];
+                        if (!item) return null;
+                        return (
                             <ItemsTableRow
                                 key={item._id} item={item} rowIdx={rowIdx}
                                 focusedRowIndex={focusedRowIndex} selectedIds={selectedIds}
                                 onSelectChange={onSelectChange} handleWhatsApp={handleWhatsApp}
                                 setPrintItem={setPrintItem} setEditItem={setEditItem} handleDelete={handleDelete}
                             />
-                        ))}
-                    </TableBody>
-                )}
+                        );
+                    })}
+
+                    {shouldVirtualize && virtualizer.getVirtualItems().length > 0 && (
+                        <tr style={{
+                            height: virtualizer.getTotalSize() -
+                                (virtualizer.getVirtualItems()[virtualizer.getVirtualItems().length - 1]?.end || 0)
+                        }} />
+                    )}
+                </TableBody>
             </Table>
         </TableContainer>
     );

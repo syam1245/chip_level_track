@@ -90,9 +90,14 @@ export default function useItemsActions({ items, setItems, setSnackbar, refetch,
 
     // ── WhatsApp ───────────────────────────────────────────────────────
     const handleWhatsApp = useCallback((item) => {
-        const cleanNumber = item.phoneNumber.replace(/\D/g, "");
+        // Strip everything but digits
+        let cleanNumber = String(item.phoneNumber || "").replace(/\D/g, "");
+        // If the number doesn't start with 91 and looks like a standard 10-digit Indian mobile, append it
+        if (cleanNumber.length === 10 && !cleanNumber.startsWith("91")) {
+            cleanNumber = `91${cleanNumber}`;
+        }
         const message = generateWhatsAppMessage(item);
-        window.open(`https://wa.me/91${cleanNumber}?text=${encodeURIComponent(message)}`, "_blank");
+        window.open(`https://wa.me/${cleanNumber}?text=${encodeURIComponent(message)}`, "_blank");
     }, []);
 
     // ── Backup ─────────────────────────────────────────────────────────

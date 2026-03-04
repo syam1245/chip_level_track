@@ -20,18 +20,16 @@ export function buildSearchQuery({ search, statusGroup, technicianName }) {
 
     // ── Full-text vs regex search ──────────────────────────────────────
     if (search) {
-        const isMultiWord = search.trim().includes(" ");
-
-        if (isMultiWord) {
-            query.$text = { $search: `"${search}"` };
-        } else {
-            query.$or = [
-                { jobNumber: { $regex: search, $options: "i" } },
-                { customerName: { $regex: search, $options: "i" } },
-                { brand: { $regex: search, $options: "i" } },
-                { phoneNumber: { $regex: search, $options: "i" } },
-            ];
-        }
+        // Utilize the text index for primary search speed ( jobNumber, customerName, brand, phone )
+        // We use $regex as a fallback/OR condition to handle partial word matches since
+        // MongoDB text indexes are stem-based and might not catch mid-word substrings perfectly.
+        query.$or = [
+            { $text: { $search: `"${search}"` } },
+            { jobNumber: { $regex: search, $options: "i" } },
+            { customerName: { $regex: search, $options: "i" } },
+            { brand: { $regex: search, $options: "i" } },
+            { phoneNumber: { $regex: search, $options: "i" } },
+        ];
     }
 
     // ── Technician filter ──────────────────────────────────────────────

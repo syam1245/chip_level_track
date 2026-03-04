@@ -29,17 +29,25 @@ const ItemsTableRow = ({
                 bgcolor: aging.tier === "critical" ? "rgba(239,68,68,0.06)"
                     : aging.tier === "overdue" ? "rgba(249,115,22,0.05)"
                         : isSelected ? "action.selected" : undefined,
-                borderLeft: aging.isAging ? `3px solid ${aging.color}` : undefined,
-                transition: "background-color 0.3s ease, outline 0.15s ease",
+                borderLeft: aging.isAging ? `3px solid ${aging.color}` : "3px solid transparent",
+                transition: "all 0.2s ease-in-out",
                 outline: isFocused ? "2px solid" : "none",
                 outlineColor: isFocused ? "primary.main" : "transparent",
                 outlineOffset: "-2px",
                 borderRadius: isFocused ? "4px" : undefined,
-                position: isFocused ? "relative" : undefined,
-                zIndex: isFocused ? 1 : undefined,
+                position: "relative",
+                zIndex: isFocused ? 1 : 0,
+                "&:hover": {
+                    transform: "translateY(-1px)",
+                    boxShadow: "0 4px 12px rgba(0,0,0,0.05)",
+                    zIndex: 2,
+                    bgcolor: aging.tier === "critical" ? "rgba(239,68,68,0.1)"
+                        : aging.tier === "overdue" ? "rgba(249,115,22,0.08)"
+                            : "action.hover",
+                }
             }}
         >
-            <TableCell padding="checkbox">
+            <TableCell padding="checkbox" sx={{ pl: 2 }}>
                 <Checkbox size="small" checked={isSelected} onChange={(e) => onSelectChange(item._id, e.target.checked)} />
             </TableCell>
 
