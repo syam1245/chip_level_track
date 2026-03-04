@@ -3,6 +3,7 @@ import AppError from "../../core/errors/AppError.js";
 import NodeCache from "node-cache";
 import { enrichWithAging, computeAgingSummary } from "./items.aging.js";
 import { buildSearchQuery, buildSortOptions, STATUS_GROUPS } from "./items.query-builder.js";
+import { broadcast } from "./items.events.js";
 
 const statsCache = new NodeCache({ stdTTL: 300 }); // Cache for 5 minutes
 
@@ -66,7 +67,9 @@ class ItemService {
         };
 
         statsCache.del("itemStats");
-        return await ItemRepository.create(itemData);
+        const newItem = await ItemRepository.create(itemData);
+        broadcast("job:created", { jobNumber: newItem.jobNumber });
+        return newItem;
     }
 
     async updateItem(id, data) {
@@ -97,7 +100,9 @@ class ItemService {
         const savedItem = await item.save();
         if (data.status) {
             statsCache.del("itemStats");
+            statsCache.del("agingSummary"); // status change may affect aging buckets
         }
+        broadcast("job:updated", { id });
         return savedItem;
     }
 
@@ -107,19 +112,27 @@ class ItemService {
             throw new AppError("Item not found", 404);
         }
         statsCache.del("itemStats");
-        return await ItemRepository.softDelete(id);
+        statsCache.del("agingSummary");
+        const deleted = await ItemRepository.softDelete(id);
+        broadcast("job:deleted", { id });
+        return deleted;
     }
 
     async bulkUpdateStatus(ids, newStatus) {
         if (!Array.isArray(ids) || ids.length === 0) {
             throw new AppError("ids must be a non-empty array", 400);
         }
-        if (!newStatus) {
-            throw new AppError("newStatus is required", 400);
+
+        // Validate against schema enum before hitting the DB
+        const ALLOWED_STATUSES = ["Received", "Sent to Service", "In Progress", "Waiting for Parts", "Ready", "Delivered", "Return", "Pending"];
+        if (!newStatus || !ALLOWED_STATUSES.includes(newStatus)) {
+            throw new AppError(`Invalid status: "${newStatus}". Must be one of: ${ALLOWED_STATUSES.join(", ")}`, 400);
         }
 
         const result = await ItemRepository.bulkUpdateStatus(ids, newStatus);
         statsCache.del("itemStats");
+        statsCache.del("agingSummary");
+        broadcast("job:bulk-updated", { count: ids.length, status: newStatus });
         return result;
     }
 

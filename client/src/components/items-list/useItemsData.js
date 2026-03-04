@@ -1,8 +1,8 @@
 /**
  * useItemsData — manages item list state, data fetching, filtering,
- * sorting, pagination, and debounced search.
+ * sorting, pagination, debounced search, and SSE live updates.
  */
-import { useEffect, useState, useCallback, useRef } from "react";
+import { useEffect, useState, useCallback, useRef, startTransition } from "react";
 import { fetchItems as fetchItemsApi } from "../../services/items.api";
 import { fetchUsers } from "../../services/auth.api";
 
@@ -11,6 +11,7 @@ const PAGE_SIZE_OPTIONS = [10, 25, 50, 100];
 export default function useItemsData({ isAdmin, user }) {
     // ── Core data ──────────────────────────────────────────────────────
     const [items, setItems] = useState([]);
+    const [staleItems, setStaleItems] = useState([]); // last-good dataset for stale-while-revalidate
     const [loading, setLoading] = useState(true);
     const [stats, setStats] = useState({
         total: 0, inProgress: 0, ready: 0, returned: 0,
@@ -44,9 +45,12 @@ export default function useItemsData({ isAdmin, user }) {
     const [debouncedSearch, setDebouncedSearch] = useState("");
     const [activeFilter, setActiveFilter] = useState("inProgress");
 
+    // Use startTransition so filter switches don't block urgent renders
     const handleFilterChange = useCallback((filter) => {
-        setActiveFilter(filter);
-        setPage(1);
+        startTransition(() => {
+            setActiveFilter(filter);
+            setPage(1);
+        });
     }, []);
 
     const [technicianFilter, setTechnicianFilter] = useState(() =>
@@ -81,7 +85,12 @@ export default function useItemsData({ isAdmin, user }) {
     }, []);
 
     useEffect(() => {
-        const timer = setTimeout(() => { setDebouncedSearch(search); setPage(1); }, 300);
+        const timer = setTimeout(() => {
+            startTransition(() => {
+                setDebouncedSearch(search);
+                setPage(1);
+            });
+        }, 300);
         return () => clearTimeout(timer);
     }, [search]);
 
@@ -92,6 +101,23 @@ export default function useItemsData({ isAdmin, user }) {
         }, 150);
         return () => clearTimeout(timer);
     }, [sortBy, sortOrder]);
+
+    // ── SSE Live Updates ───────────────────────────────────────────────
+    useEffect(() => {
+        if (!user) return;
+
+        // The same token mechanism used by the API — cookies are sent automatically
+        const API_BASE = import.meta.env.VITE_API_URL ?? "http://localhost:5000/api";
+        const es = new EventSource(`${API_BASE}/items/events`, { withCredentials: true });
+
+        const handleEvent = () => refetch();
+        es.addEventListener("job:created", handleEvent);
+        es.addEventListener("job:updated", handleEvent);
+        es.addEventListener("job:deleted", handleEvent);
+        es.addEventListener("job:bulk-updated", handleEvent);
+
+        return () => es.close();
+    }, [user, refetch]);
 
     // ── Main fetch ─────────────────────────────────────────────────────
     const fetchItems = useCallback(() => {
@@ -108,7 +134,10 @@ export default function useItemsData({ isAdmin, user }) {
             signal: controller.signal,
         })
             .then((data) => {
-                setItems(data.items || []);
+                const newItems = data.items || [];
+                setItems(newItems);
+                // Persist as stale for stale-while-revalidate UX
+                if (newItems.length > 0) setStaleItems(newItems);
                 setTotalPages(data.totalPages || 1);
                 if (data.stats) setStats(data.stats);
                 setLoading(false);
@@ -129,9 +158,12 @@ export default function useItemsData({ isAdmin, user }) {
         // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [fetchItems, dataVersion]);
 
+    // Stale-while-revalidate: display stale items at reduced opacity while loading
+    const displayItems = loading && staleItems.length > 0 ? staleItems : items;
+
     return {
-        // Data
-        items, setItems, loading, stats,
+        // Data (prefer stale while reloading to avoid blank flash)
+        items: displayItems, setItems, loading, stats,
         // Pagination
         page, setPage, totalPages, pageSize, PAGE_SIZE_OPTIONS, handlePageSizeChange, handlePageChange,
         // Filters

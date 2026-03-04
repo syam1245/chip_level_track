@@ -21,6 +21,7 @@ const LoginPage = lazy(() => import("./components/LoginPage.jsx"));
 const Navbar = lazy(() => import("./components/Navbar.jsx"));
 const AdminDashboard = lazy(() => import("./components/AdminDashboard.jsx"));
 const TrackJob = lazy(() => import("./components/TrackJob.jsx"));
+import CommandPalette from "./components/CommandPalette";
 
 const LoadingFallback = () => (
   <Box sx={{ bgcolor: "background.default", minHeight: "100vh" }}>
@@ -138,13 +139,26 @@ function App() {
 
 const AuthAppContent = ({ mode, toggleTheme }) => {
   const { user, loadingSession } = useAuth();
+  const [paletteOpen, setPaletteOpen] = useState(false);
+
+  // Global Ctrl+K / Cmd+K handler
+  useEffect(() => {
+    const handleKeyDown = (e) => {
+      if ((e.ctrlKey || e.metaKey) && e.key === "k") {
+        e.preventDefault();
+        if (user) setPaletteOpen((v) => !v);
+      }
+    };
+    window.addEventListener("keydown", handleKeyDown);
+    return () => window.removeEventListener("keydown", handleKeyDown);
+  }, [user]);
 
   if (loadingSession) return <LoadingFallback />;
 
   return (
     <ErrorBoundary>
       <Suspense fallback={<LoadingFallback />}>
-        <Navbar mode={mode} toggleTheme={toggleTheme} />
+        <Navbar mode={mode} toggleTheme={toggleTheme} onOpenPalette={() => setPaletteOpen(true)} />
         <Routes>
           <Route path="/login" element={<LoginPage />} />
           <Route path="/track" element={<TrackJob />} />
@@ -181,6 +195,13 @@ const AuthAppContent = ({ mode, toggleTheme }) => {
 
           <Route path="*" element={<Navigate to="/" replace />} />
         </Routes>
+
+        <CommandPalette
+          open={paletteOpen}
+          onClose={() => setPaletteOpen(false)}
+          toggleTheme={toggleTheme}
+          mode={mode}
+        />
       </Suspense>
     </ErrorBoundary>
   );
