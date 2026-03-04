@@ -5,8 +5,8 @@ import { UAParser } from "ua-parser-js";
 
 class ItemController {
     getAllItems = asyncHandler(async (req, res) => {
-        const page = Number.parseInt(req.query.page, 10) || 1;
-        const limit = Number.parseInt(req.query.limit, 10) || 10;
+        const page = Math.max(Number.parseInt(req.query.page, 10) || 1, 1);
+        const limit = Math.min(Math.max(Number.parseInt(req.query.limit, 10) || 10, 1), 100);
         const search = req.query.search ? String(req.query.search).trim() : "";
         const statusGroup = req.query.statusGroup ? String(req.query.statusGroup).trim() : "";
         const includeMetadata = req.query.includeMetadata;

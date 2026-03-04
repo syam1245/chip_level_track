@@ -26,6 +26,13 @@ export const AuthProvider = ({ children }) => {
     loadSession();
   }, []);
 
+  // Global session expiration handler (triggered by api.js on 401 responses)
+  useEffect(() => {
+    const handleSessionExpired = () => setUser(null);
+    window.addEventListener("session:expired", handleSessionExpired);
+    return () => window.removeEventListener("session:expired", handleSessionExpired);
+  }, []);
+
   // useCallback gives each function a stable identity across renders.
   // Without this, the functions would be recreated on every render and
   // the useMemo context value would change needlessly, triggering

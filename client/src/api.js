@@ -24,12 +24,18 @@ export const authFetch = async (path, options = {}) => {
     }
   }
 
-  return fetch(`${API_BASE_URL}${path}`, {
+  const response = await fetch(`${API_BASE_URL}${path}`, {
     ...options,
     method,
     headers,
     credentials: "include",
   });
+
+  if (response.status === 401 && !path.includes("/auth/login") && !path.includes("/auth/session")) {
+    window.dispatchEvent(new Event("session:expired"));
+  }
+
+  return response;
 };
 
 export default API_BASE_URL;

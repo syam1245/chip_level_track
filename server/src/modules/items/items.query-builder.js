@@ -18,18 +18,28 @@ const STATUS_GROUPS = {
 export function buildSearchQuery({ search, statusGroup, technicianName }) {
     const query = { isDeleted: false };
 
-    // ── Full-text vs regex search ──────────────────────────────────────
+    // ── Robust Tokenized Fuzzy Search ──────────────────────────────────
     if (search) {
-        // Utilize the text index for primary search speed ( jobNumber, customerName, brand, phone )
-        // We use $regex as a fallback/OR condition to handle partial word matches since
-        // MongoDB text indexes are stem-based and might not catch mid-word substrings perfectly.
-        query.$or = [
-            { $text: { $search: `"${search}"` } },
-            { jobNumber: { $regex: search, $options: "i" } },
-            { customerName: { $regex: search, $options: "i" } },
-            { brand: { $regex: search, $options: "i" } },
-            { phoneNumber: { $regex: search, $options: "i" } },
-        ];
+        // Industry-standard multi-term search: split by spaces and ensure EVERY term matches
+        // at least one of the fields. E.g., searching "John 123" matches a "John" with job "JOB-123".
+        const searchTerms = search.trim().split(/\s+/).filter(Boolean);
+
+        if (searchTerms.length > 0) {
+            query.$and = searchTerms.map(term => {
+                // Escape special regex chars to prevent ReDoS and invalid patterns
+                const safeTerm = term.replace(/[-[\]{}()*+?.,\\^$|#\s]/g, '\\$&');
+                const regex = new RegExp(safeTerm, 'i');
+
+                return {
+                    $or: [
+                        { jobNumber: regex },
+                        { customerName: regex },
+                        { brand: regex },
+                        { phoneNumber: regex },
+                    ]
+                };
+            });
+        }
     }
 
     // ── Technician filter ──────────────────────────────────────────────
