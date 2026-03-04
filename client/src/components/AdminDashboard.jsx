@@ -69,7 +69,7 @@ const AdminDashboard = () => {
     return (
         <Box sx={{ maxWidth: "1600px", margin: "0 auto", p: { xs: 2, md: 4 } }}>
             <Box sx={{ mb: 4, display: 'flex', flexDirection: { xs: 'column', md: 'row' }, justifyContent: 'space-between', alignItems: 'center', gap: 2 }}>
-                <Typography variant="h3" fontWeight={900} className="text-gradient" sx={{ fontSize: { xs: '2rem', md: '3rem' } }}>
+                <Typography variant="h3" fontWeight={900} className="text-gradient" sx={{ fontSize: { xs: '1.75rem', md: '3rem' }, lineHeight: 1.2 }}>
                     Administrative Management
                 </Typography>
 

@@ -36,7 +36,7 @@ const RevenueChart = ({ breakdown }) => {
                                 display: "flex",
                                 alignItems: "center",
                                 mb: `${gap}px`,
-                                gap: 1.5,
+                                gap: { xs: 1, sm: 1.5 },
                             }}
                         >
                             {/* Technician label */}
@@ -44,13 +44,13 @@ const RevenueChart = ({ breakdown }) => {
                                 variant="body2"
                                 fontWeight={700}
                                 sx={{
-                                    width: { xs: 80, sm: labelWidth },
+                                    width: { xs: '35%', sm: labelWidth },
                                     flexShrink: 0,
                                     overflow: "hidden",
                                     textOverflow: "ellipsis",
                                     whiteSpace: "nowrap",
                                     color: "text.primary",
-                                    fontSize: "0.8rem",
+                                    fontSize: { xs: "0.75rem", sm: "0.8rem" },
                                 }}
                             >
                                 {row._id}
@@ -65,7 +65,7 @@ const RevenueChart = ({ breakdown }) => {
                                     bgcolor: isDark ? "rgba(255,255,255,0.05)" : "rgba(0,0,0,0.04)",
                                     position: "relative",
                                     overflow: "hidden",
-                                    minWidth: 80,
+                                    minWidth: { xs: 50, sm: 80 },
                                 }}
                             >
                                 <motion.div
@@ -106,11 +106,13 @@ const RevenueChart = ({ breakdown }) => {
                                 variant="body2"
                                 fontWeight={800}
                                 sx={{
-                                    width: { xs: 65, sm: valueWidth },
+                                    width: { xs: 'fit-content', sm: valueWidth },
+                                    minWidth: { xs: '45px', sm: 'auto' },
                                     flexShrink: 0,
                                     textAlign: "right",
                                     color: color,
-                                    fontSize: "0.85rem",
+                                    fontSize: { xs: "0.75rem", sm: "0.85rem" },
+                                    whiteSpace: "nowrap",
                                 }}
                             >
                                 ₹{row.totalRevenue.toLocaleString()}
