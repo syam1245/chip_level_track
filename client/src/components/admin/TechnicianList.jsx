@@ -17,8 +17,8 @@ import {
     useMediaQuery
 } from "@mui/material";
 import { useTheme } from "@mui/material/styles";
-import { Engineering, VpnKey, PersonOff, PersonAdd, Add as AddIcon } from "@mui/icons-material";
-import { resetPassword, toggleUserActive, createUser } from "../../services/auth.api";
+import { Engineering, VpnKey, PersonOff, PersonAdd, Add as AddIcon, DeleteForever as DeleteIcon, Edit as EditIcon } from "@mui/icons-material";
+import { resetPassword, toggleUserActive, createUser, deleteUser, updateUser } from "../../services/auth.api";
 import { useAuth } from "../../auth/AuthContext";
 
 const TechnicianList = ({ technicians, onUpdate }) => {
@@ -35,6 +35,14 @@ const TechnicianList = ({ technicians, onUpdate }) => {
     // Add User State
     const [addUserOpen, setAddUserOpen] = useState(false);
     const [newUserState, setNewUserState] = useState({ username: "", displayName: "", password: "" });
+
+    // Delete User State
+    const [deleteUserObj, setDeleteUserObj] = useState(null);
+    const [deleteAdminPassword, setDeleteAdminPassword] = useState("");
+
+    // Edit User State
+    const [editUserObj, setEditUserObj] = useState(null);
+    const [editUserState, setEditUserState] = useState({ username: "", displayName: "" });
 
     const [message, setMessage] = useState({ text: "", type: "success" });
 
@@ -93,6 +101,42 @@ const TechnicianList = ({ technicians, onUpdate }) => {
                 if (onUpdate) onUpdate();
             } else {
                 setMessage({ text: result.error || "Failed to create user.", type: "error" });
+            }
+        } catch (err) {
+            setMessage({ text: "Failed to connect to server.", type: "error" });
+        }
+    };
+
+    const handleDeleteUser = async (e) => {
+        e.preventDefault();
+        try {
+            const result = await deleteUser(deleteUserObj.username, deleteAdminPassword);
+            if (result.ok) {
+                setMessage({ text: `Technician ${deleteUserObj.displayName} permanently deleted.`, type: "success" });
+                setDeleteUserObj(null);
+                setDeleteAdminPassword("");
+                if (onUpdate) onUpdate();
+            } else {
+                setMessage({ text: result.error || "Failed to delete user.", type: "error" });
+            }
+        } catch (err) {
+            setMessage({ text: "Failed to connect to server.", type: "error" });
+        }
+    };
+
+    const handleUpdateUser = async (e) => {
+        e.preventDefault();
+        try {
+            const result = await updateUser(editUserObj.username, {
+                newUsername: editUserState.username,
+                displayName: editUserState.displayName
+            });
+            if (result.ok) {
+                setMessage({ text: `Technician updated successfully!`, type: "success" });
+                setEditUserObj(null);
+                if (onUpdate) onUpdate();
+            } else {
+                setMessage({ text: result.error || "Failed to update user.", type: "error" });
             }
         } catch (err) {
             setMessage({ text: "Failed to connect to server.", type: "error" });
@@ -216,6 +260,40 @@ const TechnicianList = ({ technicians, onUpdate }) => {
                                         }}
                                     >
                                         {tech.isActive !== false ? "Deactivate" : "Reactivate"}
+                                    </Button>
+                                )}
+                                {isAdmin && (
+                                    <Button
+                                        size="small"
+                                        variant="outlined"
+                                        color="primary"
+                                        onClick={() => {
+                                            setEditUserObj(tech);
+                                            setEditUserState({ username: tech.username, displayName: tech.displayName });
+                                        }}
+                                        sx={{
+                                            minWidth: 'auto',
+                                            p: 1,
+                                            ml: 0.5,
+                                            borderRadius: 2
+                                        }}
+                                    >
+                                        <EditIcon fontSize="small" />
+                                    </Button>
+                                )}
+                                {isAdmin && tech.username !== user?.username && (
+                                    <Button
+                                        size="small"
+                                        color="error"
+                                        onClick={() => setDeleteUserObj(tech)}
+                                        sx={{
+                                            minWidth: 'auto',
+                                            p: 1,
+                                            ml: 0.5,
+                                            borderRadius: 2
+                                        }}
+                                    >
+                                        <DeleteIcon fontSize="small" />
                                     </Button>
                                 )}
                             </Box>
@@ -379,6 +457,127 @@ const TechnicianList = ({ technicians, onUpdate }) => {
                             size={isMobile ? "small" : "medium"}
                         >
                             Create Employee
+                        </Button>
+                    </DialogActions>
+                </form>
+            </Dialog>
+
+            {/* Hard Delete Technician Dialog */}
+            <Dialog
+                open={!!deleteUserObj}
+                onClose={() => { setDeleteUserObj(null); setDeleteAdminPassword(""); }}
+                maxWidth="xs"
+                fullWidth
+                PaperProps={{
+                    sx: { borderRadius: { xs: 3, sm: 4 }, p: { xs: 0.5, sm: 1 }, mx: { xs: 1.5, sm: 3 }, border: '1px solid', borderColor: 'error.main' }
+                }}
+            >
+                <DialogTitle sx={{ fontWeight: 800, fontSize: { xs: '1rem', sm: '1.25rem' }, pb: 1, color: 'error.main', display: 'flex', alignItems: 'center', gap: 1 }}>
+                    <DeleteIcon /> Delete Employee
+                </DialogTitle>
+                <form onSubmit={handleDeleteUser}>
+                    <DialogContent>
+                        <Box sx={{ p: { xs: 1.5, sm: 2 }, bgcolor: 'error.soft', borderRadius: 2, mb: 3 }}>
+                            <Typography variant="subtitle2" color="error.main" fontWeight={800} mb={1} sx={{ fontSize: { xs: '0.8rem', sm: '0.9rem' } }}>
+                                WARNING: Permanent Action
+                            </Typography>
+                            <Typography variant="caption" color="error.main" display="block" sx={{ fontSize: { xs: '0.7rem', sm: '0.8rem' } }}>
+                                You are about to permanently delete <strong>{deleteUserObj?.displayName}</strong>. This cannot be undone.
+                                Their historical data on old repair jobs will be preserved, but their account will be eradicated.
+                            </Typography>
+                        </Box>
+
+                        <TextField
+                            label="Enter Admin Password to Confirm"
+                            required
+                            type="password"
+                            fullWidth
+                            variant="outlined"
+                            autoFocus
+                            size={isMobile ? "small" : "medium"}
+                            value={deleteAdminPassword}
+                            onChange={(e) => setDeleteAdminPassword(e.target.value)}
+                        />
+                    </DialogContent>
+                    <DialogActions sx={{ p: { xs: 1.5, sm: 2 }, gap: 1 }}>
+                        <Button
+                            onClick={() => {
+                                setDeleteUserObj(null);
+                                setDeleteAdminPassword("");
+                            }}
+                            size={isMobile ? "small" : "medium"}
+                            type="button"
+                        >
+                            Cancel
+                        </Button>
+                        <Button
+                            variant="contained"
+                            color="error"
+                            type="submit"
+                            disabled={!deleteAdminPassword}
+                            size={isMobile ? "small" : "medium"}
+                        >
+                            Permanently Delete
+                        </Button>
+                    </DialogActions>
+                </form>
+            </Dialog>
+
+            {/* Edit Technician Dialog */}
+            <Dialog
+                open={!!editUserObj}
+                onClose={() => setEditUserObj(null)}
+                maxWidth="xs"
+                fullWidth
+                PaperProps={{
+                    sx: { borderRadius: { xs: 3, sm: 4 }, p: { xs: 0.5, sm: 1 }, mx: { xs: 1.5, sm: 3 } }
+                }}
+            >
+                <DialogTitle sx={{ fontWeight: 800, fontSize: { xs: '1rem', sm: '1.25rem' }, pb: 1 }}>
+                    Edit Technician Profile
+                </DialogTitle>
+                <form onSubmit={handleUpdateUser}>
+                    <DialogContent>
+                        <Typography variant="body2" color="text.secondary" mb={2} sx={{ fontSize: { xs: '0.8rem', sm: '0.875rem' } }}>
+                            Update identification for <strong>{editUserObj?.displayName}</strong>.
+                        </Typography>
+                        <Stack spacing={2} sx={{ mt: 1 }}>
+                            <TextField
+                                label="Login Username"
+                                required
+                                fullWidth
+                                variant="outlined"
+                                size={isMobile ? "small" : "medium"}
+                                value={editUserState.username}
+                                onChange={(e) => setEditUserState({ ...editUserState, username: e.target.value })}
+                                helperText="Users will be logged out if username changes"
+                            />
+                            <TextField
+                                label="Display Name"
+                                required
+                                fullWidth
+                                variant="outlined"
+                                size={isMobile ? "small" : "medium"}
+                                value={editUserState.displayName}
+                                onChange={(e) => setEditUserState({ ...editUserState, displayName: e.target.value })}
+                            />
+                        </Stack>
+                    </DialogContent>
+                    <DialogActions sx={{ p: { xs: 1.5, sm: 2 }, gap: 1 }}>
+                        <Button
+                            onClick={() => setEditUserObj(null)}
+                            size={isMobile ? "small" : "medium"}
+                            type="button"
+                        >
+                            Cancel
+                        </Button>
+                        <Button
+                            variant="contained"
+                            type="submit"
+                            disabled={!editUserState.username || !editUserState.displayName}
+                            size={isMobile ? "small" : "medium"}
+                        >
+                            Save Changes
                         </Button>
                     </DialogActions>
                 </form>

@@ -28,4 +28,10 @@ router.put("/users/:username/password", requireAuth, AuthController.updatePasswo
 // ADMIN: Toggle technician active status
 router.put("/users/:username/active", requireAuth, AuthController.toggleActive);
 
+// ADMIN: Hard Delete User (requires Admin Password verification)
+router.delete("/users/:username", requireAuth, AuthController.deleteUser);
+
+// ADMIN: Update user profile (username/display name)
+router.put("/users/:username", requireAuth, AuthController.updateUser);
+
 export default router;

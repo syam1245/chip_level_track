@@ -109,6 +109,50 @@ class AuthController {
         const user = await AuthService.toggleActive(username, isActive);
         res.json({ message: `User ${username} is now ${isActive ? 'active' : 'inactive'}.` });
     });
+
+    deleteUser = asyncHandler(async (req, res) => {
+        const { username } = req.params;
+        const { adminPassword } = req.body;
+
+        if (req.user.role !== "admin") {
+            return res.status(403).json({ error: "Only admins can completely delete users." });
+        }
+        if (!adminPassword) {
+            return res.status(400).json({ error: "Admin password is required to confirm deletion." });
+        }
+        if (username === req.user.username) {
+            return res.status(400).json({ error: "You cannot delete your own account." });
+        }
+
+        // Verify the admin's password
+        const isAdminValid = await AuthService.verifyCredentials(req.user.username, adminPassword, "admin");
+        if (!isAdminValid) {
+            return res.status(403).json({ error: "Invalid admin password." });
+        }
+
+        await AuthService.deleteUser(username);
+        res.json({ message: `User ${username} has been permanently deleted.` });
+    });
+
+    updateUser = asyncHandler(async (req, res) => {
+        const { username } = req.params;
+        const { newUsername, displayName } = req.body;
+
+        if (req.user.role !== "admin") {
+            return res.status(403).json({ error: "Only admins can edit users." });
+        }
+
+        if (!newUsername && !displayName) {
+            return res.status(400).json({ error: "Username or display name is required." });
+        }
+
+        const updates = {};
+        if (newUsername) updates.username = newUsername.trim();
+        if (displayName) updates.displayName = displayName.trim();
+
+        await AuthService.updateUser(username, updates);
+        res.json({ message: `User ${username} updated successfully.` });
+    });
 }
 
 export default new AuthController();

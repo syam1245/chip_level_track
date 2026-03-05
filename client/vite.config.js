@@ -51,7 +51,7 @@ export default defineConfig({
           vendor: ['react', 'react-dom', 'react-router-dom'],
           mui: ['@mui/material', '@mui/icons-material', '@emotion/react', '@emotion/styled'],
           framer: ['framer-motion'],
-          utils: ['date-fns', 'axios']
+          utils: ['date-fns']
         }
       }
     }

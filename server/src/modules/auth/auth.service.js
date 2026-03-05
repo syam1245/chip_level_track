@@ -102,6 +102,30 @@ class AuthService {
         }
         return await AuthRepository.toggleActive(username, isActive);
     }
+
+    async deleteUser(username) {
+        const user = await AuthRepository.findByUsername(username);
+        if (!user) {
+            throw new AppError("User not found", 404);
+        }
+        return await AuthRepository.deleteUser(username);
+    }
+
+    async updateUser(oldUsername, updates) {
+        const user = await AuthRepository.findByUsername(oldUsername);
+        if (!user) {
+            throw new AppError("User not found", 404);
+        }
+
+        if (updates.username && updates.username.toLowerCase() !== oldUsername.toLowerCase()) {
+            const collision = await AuthRepository.findByUsername(updates.username);
+            if (collision) {
+                throw new AppError(`Username '${updates.username}' is already taken.`, 400);
+            }
+        }
+
+        return await AuthRepository.updateUser(oldUsername, updates);
+    }
 }
 
 export default new AuthService();

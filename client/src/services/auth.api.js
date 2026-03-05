@@ -98,3 +98,33 @@ export async function createUser(payload) {
     const data = await res.json().catch(() => ({}));
     return { ok: res.ok, data, error: data.error || data.message || "Failed to create user" };
 }
+
+/**
+ * Permanently delete a user (Admin only, requires password check).
+ * @param {string} username
+ * @param {string} adminPassword
+ * @returns {Promise<{ok: boolean, data: object, error?: string}>}
+ */
+export async function deleteUser(username, adminPassword) {
+    const res = await authFetch(`/api/auth/users/${username}`, {
+        method: "DELETE",
+        body: JSON.stringify({ adminPassword }),
+    });
+    const data = await res.json().catch(() => ({}));
+    return { ok: res.ok, data, error: data.error || data.message || "Failed to delete user" };
+}
+
+/**
+ * Update user profile (Admin only).
+ * @param {string} oldUsername
+ * @param {object} payload - { newUsername?, displayName? }
+ * @returns {Promise<{ok: boolean, data: object, error?: string}>}
+ */
+export async function updateUser(oldUsername, payload) {
+    const res = await authFetch(`/api/auth/users/${oldUsername}`, {
+        method: "PUT",
+        body: JSON.stringify(payload),
+    });
+    const data = await res.json().catch(() => ({}));
+    return { ok: res.ok, data, error: data.error || data.message || "Failed to update user" };
+}
