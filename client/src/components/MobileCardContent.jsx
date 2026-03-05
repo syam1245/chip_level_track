@@ -87,18 +87,16 @@ const MobileCardContent = ({ item, aging, onWhatsApp, onPrint, onEdit }) => {
                     <Typography variant="caption" color="text.secondary" fontWeight="600" sx={{ fontSize: "0.72rem" }}>{formatDate(item.createdAt)}</Typography>
                 </Box>
 
-                {(item.finalCost > 0 || item.cost > 0) && (
+                {item.finalCost > 0 && (
                     <Box sx={{
                         display: "inline-flex", alignItems: "center", gap: 0.3,
-                        bgcolor: item.finalCost > 0 ? "success.light" : "action.hover",
+                        bgcolor: "success.light",
                         borderRadius: "8px", px: 1, py: 0.5, minHeight: 32
                     }}>
-                        <Typography variant="caption" fontWeight="900" sx={{ fontSize: "0.8rem", color: item.finalCost > 0 ? "success.main" : "text.secondary" }}>
-                            ₹{item.finalCost > 0 ? item.finalCost : item.cost}
+                        <Typography variant="caption" fontWeight="900" sx={{ fontSize: "0.8rem", color: "success.main" }}>
+                            ₹{item.finalCost}
                         </Typography>
-                        {item.finalCost > 0 && (
-                            <Typography variant="caption" sx={{ fontSize: "0.55rem", color: "success.dark", fontWeight: 700 }}>FINAL</Typography>
-                        )}
+                        <Typography variant="caption" sx={{ fontSize: "0.55rem", color: "success.dark", fontWeight: 700 }}>FINAL</Typography>
                     </Box>
                 )}
             </Box>

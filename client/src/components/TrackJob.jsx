@@ -168,22 +168,13 @@ const TrackJob = () => {
                                             </Typography>
                                         </Box>
 
-                                        {result.finalCost > 0 ? (
+                                        {result.finalCost > 0 && (
                                             <Box mt={1}>
                                                 <Typography variant="caption" color="text.secondary" fontWeight={700} display="block">
                                                     FINAL AMOUNT
                                                 </Typography>
                                                 <Typography variant="h5" color="success.main" fontWeight={900}>
                                                     ₹{result.finalCost}
-                                                </Typography>
-                                            </Box>
-                                        ) : (
-                                            <Box mt={1}>
-                                                <Typography variant="caption" color="text.secondary" fontWeight={700} display="block">
-                                                    ESTIMATED COST
-                                                </Typography>
-                                                <Typography variant="h6" fontWeight={800} color="text.primary">
-                                                    {result.cost > 0 ? `₹${result.cost}` : 'TBD'}
                                                 </Typography>
                                             </Box>
                                         )}

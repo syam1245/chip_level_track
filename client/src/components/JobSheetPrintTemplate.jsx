@@ -178,7 +178,7 @@ const JobSheetPrintTemplate = forwardRef(({ item }, ref) => {
                   </Typography>
                 </TableCell>
                 <TableCell align="right" sx={{ py: 3, verticalAlign: 'top', borderBottom: '1px solid #e2e8f0', fontSize: '16px', fontWeight: 600 }}>
-                  {item.finalCost ? `₹${item.finalCost}` : (item.cost ? `₹${item.cost}` : 'TBD')}
+                  {item.finalCost ? `₹${item.finalCost}` : 'TBD'}
                 </TableCell>
               </TableRow>
             </TableBody>
@@ -189,10 +189,10 @@ const JobSheetPrintTemplate = forwardRef(({ item }, ref) => {
             <Box sx={{ width: '250px' }}>
               <Box sx={{ display: 'flex', justifyContent: 'space-between', mb: 1 }}>
                 <Typography sx={{ fontSize: '15px', color: '#475569' }}>
-                  {item.finalCost ? 'Subtotal:' : 'Est. Subtotal:'}
+                  Subtotal:
                 </Typography>
                 <Typography sx={{ fontSize: '15px', color: '#0f172a' }}>
-                  {item.finalCost ? `₹${item.finalCost}` : (item.cost ? `₹${item.cost}` : '—')}
+                  {item.finalCost ? `₹${item.finalCost}` : '—'}
                 </Typography>
               </Box>
               <Box sx={{ display: 'flex', justifyContent: 'space-between', mb: 2 }}>
@@ -202,10 +202,10 @@ const JobSheetPrintTemplate = forwardRef(({ item }, ref) => {
               <Divider sx={{ mb: 1, borderColor: '#cbd5e1' }} />
               <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
                 <Typography sx={{ fontSize: '18px', fontWeight: 800, color: '#0f172a' }}>
-                  {item.finalCost ? 'FINAL TOTAL:' : 'EST. TOTAL:'}
+                  TOTAL:
                 </Typography>
                 <Typography sx={{ fontSize: '20px', fontWeight: 800, color: accentColor }}>
-                  {item.finalCost ? `₹${item.finalCost}` : (item.cost ? `₹${item.cost}` : 'TBD')}
+                  {item.finalCost ? `₹${item.finalCost}` : 'TBD'}
                 </Typography>
               </Box>
             </Box>

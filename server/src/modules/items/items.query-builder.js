@@ -18,27 +18,11 @@ const STATUS_GROUPS = {
 export function buildSearchQuery({ search, statusGroup, technicianName }) {
     const query = { isDeleted: false };
 
-    // ── Robust Tokenized Fuzzy Search ──────────────────────────────────
+    // ── Scalable Full-Text Search ──────────────────────────────────────
     if (search) {
-        // Industry-standard multi-term search: split by spaces and ensure EVERY term matches
-        // at least one of the fields. E.g., searching "John 123" matches a "John" with job "JOB-123".
-        const searchTerms = search.trim().split(/\s+/).filter(Boolean);
-
-        if (searchTerms.length > 0) {
-            query.$and = searchTerms.map(term => {
-                // Escape special regex chars to prevent ReDoS and invalid patterns
-                const safeTerm = term.replace(/[-[\]{}()*+?.,\\^$|#\s]/g, '\\$&');
-                const regex = new RegExp(safeTerm, 'i');
-
-                return {
-                    $or: [
-                        { jobNumber: regex },
-                        { customerName: regex },
-                        { brand: regex },
-                        { phoneNumber: regex },
-                    ]
-                };
-            });
+        const trimmedSearch = search.trim();
+        if (trimmedSearch) {
+            query.$text = { $search: trimmedSearch };
         }
     }
 

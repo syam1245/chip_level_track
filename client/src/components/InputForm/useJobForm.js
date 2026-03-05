@@ -7,7 +7,7 @@ export default function useJobForm() {
 
     const [form, setForm] = useState({
         jobNumber: "", customerName: "", brand: "",
-        phoneNumber: "", issue: "", cost: "",
+        phoneNumber: "", issue: "",
     });
     const [loading, setLoading] = useState(false);
     const [snackbar, setSnackbar] = useState({ open: false, message: "", severity: "success" });
@@ -41,7 +41,7 @@ export default function useJobForm() {
         try {
             await createItem(form);
             setSnackbar({ open: true, message: "✅ Job created! Redirecting...", severity: "success" });
-            setForm({ jobNumber: "", customerName: "", brand: "", phoneNumber: "", issue: "", cost: "" });
+            setForm({ jobNumber: "", customerName: "", brand: "", phoneNumber: "", issue: "" });
             setTimeout(() => navigate("/items"), 1500);
         } catch (err) {
             setSnackbar({ open: true, message: err.message || "Failed to save data.", severity: "error" });
@@ -58,7 +58,6 @@ export default function useJobForm() {
             brand: extracted.brand || prev.brand,
             phoneNumber: extracted.phoneNumber || prev.phoneNumber,
             issue: extracted.issue || prev.issue,
-            cost: extracted.cost || prev.cost,
         }));
         setSnackbar({ open: true, message: "✨ Data extracted successfully!", severity: "success" });
         setVisionOpen(false);

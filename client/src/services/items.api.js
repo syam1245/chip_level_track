@@ -54,8 +54,8 @@ export async function fetchItems({
 
 /**
  * Create a new item.
- * @param {object} itemData - { jobNumber, customerName, brand, phoneNumber, issue, cost }
- * @returns {Promise<object>} The created item
+ * @param {object} itemData - { jobNumber, customerName, brand, phoneNumber, issue }
+ * @returns {Promise<object>} Created item data
  */
 export async function createItem(itemData) {
     const res = await authFetch("/api/items", {

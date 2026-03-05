@@ -5,6 +5,7 @@
 import { useEffect, useState, useCallback, useRef, startTransition } from "react";
 import { fetchItems as fetchItemsApi } from "../../services/items.api";
 import { fetchUsers } from "../../services/auth.api";
+import API_BASE_URL from "../../api";
 
 const PAGE_SIZE_OPTIONS = [10, 25, 50, 100];
 
@@ -106,8 +107,7 @@ export default function useItemsData({ isAdmin, user }) {
         if (!user) return;
 
         // The same token mechanism used by the API — cookies are sent automatically
-        const API_BASE = import.meta.env.VITE_API_URL ?? "http://localhost:5000/api";
-        const es = new EventSource(`${API_BASE}/items/events`, { withCredentials: true });
+        const es = new EventSource(`${API_BASE_URL}/api/items/events`, { withCredentials: true });
 
         const handleEvent = () => refetch();
         es.addEventListener("job:created", handleEvent);

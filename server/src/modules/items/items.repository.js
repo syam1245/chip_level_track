@@ -59,13 +59,22 @@ class ItemRepository {
         );
     }
 
+    async bulkSetRevenueRealized(ids) {
+        return await Item.updateMany(
+            { _id: { $in: ids }, isDeleted: false, revenueRealizedAt: null },
+            {
+                $set: { revenueRealizedAt: new Date() },
+            }
+        );
+    }
+
     async findByTrackingDetails(jobNumber, phoneNumber) {
         return await Item.findOne({
             jobNumber,
             phoneNumber,
             isDeleted: false
         })
-            .select("-metadata -isDeleted -createdAt -updatedAt")
+            .select("-metadata -isDeleted -createdAt")
             .lean();
     }
 }

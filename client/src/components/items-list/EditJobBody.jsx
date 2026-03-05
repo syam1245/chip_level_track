@@ -101,13 +101,9 @@ const EditJobBody = ({ editItem, setEditItem, isAdmin, isMobile, isDark, theme, 
                     </Grid>
                 </EditJobSection>
 
-                {/* ── Financials ── */}
                 <EditJobSection icon={<ReceiptIcon sx={{ fontSize: "1.1rem" }} />} title="Financials" accent="#10b981">
                     <Grid container spacing={2}>
-                        <Grid size={{ xs: 12, sm: 6 }}>
-                            <TextField label="Estimated Cost (₹)" type="number" value={editItem.cost || ""} onChange={(e) => setEditItem({ ...editItem, cost: e.target.value })} fullWidth size="small" sx={inputSx(theme)} slotProps={{ input: { startAdornment: <InputAdornment position="start"><Typography sx={{ fontWeight: 800, fontSize: "1rem", color: "text.disabled" }}>₹</Typography></InputAdornment> } }} />
-                        </Grid>
-                        <Grid size={{ xs: 12, sm: 6 }}>
+                        <Grid size={{ xs: 12, sm: 12 }}>
                             <TextField
                                 label="Final Cost (₹)" type="number" value={editItem.finalCost || ""}
                                 onChange={(e) => setEditItem({ ...editItem, finalCost: e.target.value })} fullWidth size="small" color="success" focused={!!editItem.finalCost} placeholder="Leave blank if pending"
@@ -115,25 +111,6 @@ const EditJobBody = ({ editItem, setEditItem, isAdmin, isMobile, isDark, theme, 
                                 slotProps={{ input: { startAdornment: <InputAdornment position="start"><Typography sx={{ fontWeight: 800, fontSize: "1rem", color: editItem.finalCost ? "#10b981" : "text.disabled" }}>₹</Typography></InputAdornment> } }}
                             />
                         </Grid>
-                        {((editItem.cost > 0) || (editItem.finalCost > 0)) && (
-                            <Grid size={12}>
-                                <Box sx={{ display: "flex", alignItems: "center", gap: 2, px: 2, py: 1.2, borderRadius: "10px", bgcolor: isDark ? "rgba(255,255,255,0.03)" : "rgba(0,0,0,0.02)" }}>
-                                    {editItem.cost > 0 && (
-                                        <Box>
-                                            <Typography variant="caption" color="text.disabled" sx={{ fontSize: "0.65rem", fontWeight: 700, textTransform: "uppercase" }}>Estimated</Typography>
-                                            <Typography variant="body2" fontWeight={700} color="text.secondary">₹{editItem.cost}</Typography>
-                                        </Box>
-                                    )}
-                                    {editItem.cost > 0 && editItem.finalCost > 0 && <Typography color="text.disabled" sx={{ fontSize: "1.2rem" }}>→</Typography>}
-                                    {editItem.finalCost > 0 && (
-                                        <Box>
-                                            <Typography variant="caption" sx={{ fontSize: "0.65rem", fontWeight: 700, textTransform: "uppercase", color: "#10b981" }}>Final</Typography>
-                                            <Typography variant="body2" fontWeight={800} sx={{ color: "#10b981" }}>₹{editItem.finalCost}</Typography>
-                                        </Box>
-                                    )}
-                                </Box>
-                            </Grid>
-                        )}
                     </Grid>
                 </EditJobSection>
 

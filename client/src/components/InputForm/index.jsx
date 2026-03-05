@@ -70,7 +70,7 @@ const Input = () => {
                             />
 
                             <Grid container spacing={2}>
-                                <Grid size={{ xs: 12, sm: 8 }}>
+                                <Grid size={{ xs: 12, sm: 12 }}>
                                     <Autocomplete
                                         freeSolo options={FAULT_OPTIONS} value={form.issue}
                                         onChange={(_event, newValue) => setForm((prev) => ({ ...prev, issue: (newValue || "").toUpperCase() }))}
@@ -79,9 +79,6 @@ const Input = () => {
                                             <TextField {...params} name="issue" label="Fault / Issue" onChange={handleChange} fullWidth variant="outlined" placeholder="E.g. Power-Section, Broken screen..." />
                                         )}
                                     />
-                                </Grid>
-                                <Grid size={{ xs: 12, sm: 4 }}>
-                                    <TextField name="cost" label="Est. Cost (₹)" type="number" value={form.cost} onChange={handleChange} fullWidth variant="outlined" />
                                 </Grid>
                             </Grid>
 

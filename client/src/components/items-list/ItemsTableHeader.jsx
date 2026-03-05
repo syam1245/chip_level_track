@@ -64,7 +64,7 @@ const ItemsTableHeader = ({
                     <Typography variant="subtitle2" fontWeight="700" color="text.secondary">PHONE</Typography>
                 </TableCell>
                 <TableCell sx={{ width: "9%" }}>
-                    <TableSortLabel active={sortBy === "cost"} direction={sortBy === "cost" ? sortOrder : "asc"} onClick={() => handleSort("cost")}>
+                    <TableSortLabel active={sortBy === "finalCost"} direction={sortBy === "finalCost" ? sortOrder : "asc"} onClick={() => handleSort("finalCost")}>
                         <Typography variant="subtitle2" fontWeight="700" color="text.secondary">AMOUNT</Typography>
                     </TableSortLabel>
                 </TableCell>

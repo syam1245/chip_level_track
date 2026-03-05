@@ -29,7 +29,7 @@ class ItemService {
             enrichWithAging(item, now);
         }
 
-        const filteredTotal = (search || statusGroup)
+        const filteredTotal = (search || statusGroup || (technicianName && technicianName !== "All"))
             ? await ItemRepository.countDocuments(query)
             : total;
 
@@ -66,7 +66,7 @@ class ItemService {
             technicianName: user.displayName,
         };
 
-        statsCache.del("itemStats");
+        this._invalidateCache();
         const newItem = await ItemRepository.create(itemData);
         broadcast("job:created", { jobNumber: newItem.jobNumber });
         return newItem;
@@ -83,24 +83,36 @@ class ItemService {
         if (data.phoneNumber) item.phoneNumber = String(data.phoneNumber).trim();
         if (data.repairNotes !== undefined) item.repairNotes = String(data.repairNotes).trim();
         if (data.issue !== undefined) item.issue = String(data.issue).trim();
-        if (data.cost !== undefined) item.cost = Number(data.cost) || 0;
         if (data.finalCost !== undefined) item.finalCost = Number(data.finalCost) || 0;
         if (data.technicianName !== undefined) item.technicianName = String(data.technicianName).trim();
         if (data.dueDate !== undefined) item.dueDate = data.dueDate ? new Date(data.dueDate) : null;
 
         if (data.status && data.status !== item.status) {
+            // Validation for Delivered status
+            if (data.status === "Delivered" && !item.finalCost) {
+                throw new AppError("A final amount must be provided before marking the job as Delivered.", 400);
+            }
+
             item.status = data.status;
             item.statusHistory.push({
                 status: data.status,
                 note: data.repairNotes ? String(data.repairNotes).trim() : "",
                 changedAt: new Date(),
             });
+
+            // Set revenueRealizedAt when the repair finishes (if not already set)
+            if ((data.status === "Ready" || data.status === "Delivered") && !item.revenueRealizedAt) {
+                item.revenueRealizedAt = new Date();
+            }
+
+            if (data.status === "Delivered") {
+                item.dueDate = new Date();
+            }
         }
 
         const savedItem = await item.save();
         if (data.status) {
-            statsCache.del("itemStats");
-            statsCache.del("agingSummary"); // status change may affect aging buckets
+            this._invalidateCache(); // status change may affect aging buckets
         }
         broadcast("job:updated", { id });
         return savedItem;
@@ -111,8 +123,7 @@ class ItemService {
         if (!item) {
             throw new AppError("Item not found", 404);
         }
-        statsCache.del("itemStats");
-        statsCache.del("agingSummary");
+        this._invalidateCache();
         const deleted = await ItemRepository.softDelete(id);
         broadcast("job:deleted", { id });
         return deleted;
@@ -129,9 +140,20 @@ class ItemService {
             throw new AppError(`Invalid status: "${newStatus}". Must be one of: ${ALLOWED_STATUSES.join(", ")}`, 400);
         }
 
+        if (newStatus === "Delivered") {
+            // Bulk update to Delivered is restricted to ensure final cost is verified.
+            // Technicians should transition items individually to supply the final amount.
+            throw new AppError('Cannot bulk update to "Delivered". Please update items individually to provide the final amount.', 400);
+        }
+
         const result = await ItemRepository.bulkUpdateStatus(ids, newStatus);
-        statsCache.del("itemStats");
-        statsCache.del("agingSummary");
+
+        if (newStatus === "Ready") {
+            // Bulk set revenueRealizedAt where it is not yet set
+            await ItemRepository.bulkSetRevenueRealized(ids);
+        }
+
+        this._invalidateCache();
         broadcast("job:bulk-updated", { count: ids.length, status: newStatus });
         return result;
     }
@@ -159,6 +181,11 @@ class ItemService {
         const stats = { inProgress, ready, returned };
         statsCache.set("itemStats", stats);
         return stats;
+    }
+
+    _invalidateCache() {
+        statsCache.del("itemStats");
+        statsCache.del("agingSummary");
     }
 }
 

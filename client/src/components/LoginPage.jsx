@@ -63,41 +63,45 @@ const LoginPage = () => {
 
         <Box component="form" onSubmit={onSubmit}>
           <Stack spacing={3}>
-            <TextField
-              select
-              label="Technician"
-              value={username}
-              onChange={(e) => setUsername(e.target.value)}
-              required
-              fullWidth
-              autoFocus
-              helperText="Select your technician account"
-              disabled={loadingTechs}
-              InputProps={{
-                startAdornment: loadingTechs ? (
-                  <CircularProgress size={18} sx={{ mr: 1 }} />
-                ) : null,
-              }}
-            >
-              {technicians.map((tech) => (
-                <MenuItem key={tech.username} value={tech.username}>
-                  <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5 }}>
-                    <Avatar
-                      sx={{
-                        width: 28,
-                        height: 28,
-                        fontSize: '0.8rem',
-                        fontWeight: 800,
-                        bgcolor: 'var(--color-primary)',
-                      }}
-                    >
-                      {tech.displayName?.[0] || tech.username[0]}
-                    </Avatar>
-                    <Typography fontWeight={600}>{tech.displayName}</Typography>
-                  </Box>
-                </MenuItem>
-              ))}
-            </TextField>
+            {technicians.length > 0 || loadingTechs ? (
+              <TextField
+                select
+                label="Technician"
+                value={username}
+                onChange={(e) => setUsername(e.target.value)}
+                required
+                fullWidth
+                autoFocus
+                helperText="Select your technician account"
+                disabled={loadingTechs}
+                InputProps={{
+                  startAdornment: loadingTechs ? (
+                    <CircularProgress size={18} sx={{ mr: 1 }} />
+                  ) : null,
+                }}
+              >
+                {technicians.map((tech) => (
+                  <MenuItem key={tech.username} value={tech.username}>
+                    <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5 }}>
+                      <Avatar sx={{ width: 28, height: 28, fontSize: '0.8rem', fontWeight: 800, bgcolor: 'var(--color-primary)' }}>
+                        {tech.displayName?.[0] || tech.username[0]}
+                      </Avatar>
+                      <Typography fontWeight={600}>{tech.displayName}</Typography>
+                    </Box>
+                  </MenuItem>
+                ))}
+              </TextField>
+            ) : (
+              <TextField
+                label="Username / Technician"
+                value={username}
+                onChange={(e) => setUsername(e.target.value)}
+                required
+                fullWidth
+                autoFocus
+                helperText="Enter your technician username"
+              />
+            )}
 
             <TextField
               label="Password"

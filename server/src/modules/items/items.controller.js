@@ -31,7 +31,7 @@ class ItemController {
 
     createItem = asyncHandler(async (req, res) => {
         ItemValidator.validateCreate(req.body);
-        const { jobNumber, customerName, brand, phoneNumber, issue, cost } = req.body;
+        const { jobNumber, customerName, brand, phoneNumber, issue } = req.body;
 
         const parser = new UAParser(req.headers["user-agent"]);
         const deviceResult = parser.getResult();
@@ -42,7 +42,6 @@ class ItemController {
             brand: String(brand).trim(),
             phoneNumber: String(phoneNumber).trim(),
             issue: issue ? String(issue).trim() : "",
-            cost: cost ? Number(cost) : 0,
             metadata: {
                 ip: req.ip || req.socket?.remoteAddress || "unknown",
                 browser: deviceResult.browser.name || "Unknown",

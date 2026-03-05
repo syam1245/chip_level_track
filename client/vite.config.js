@@ -44,6 +44,17 @@ export default defineConfig({
   ],
   build: {
     outDir: 'build',
+    chunkSizeWarningLimit: 600,
+    rollupOptions: {
+      output: {
+        manualChunks: {
+          vendor: ['react', 'react-dom', 'react-router-dom'],
+          mui: ['@mui/material', '@mui/icons-material', '@emotion/react', '@emotion/styled'],
+          framer: ['framer-motion'],
+          utils: ['date-fns', 'axios']
+        }
+      }
+    }
   },
   server: {
     port: 3000,

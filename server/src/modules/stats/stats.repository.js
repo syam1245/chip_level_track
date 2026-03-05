@@ -8,16 +8,19 @@ class StatsRepository {
 
         const matchStage = {
             isDeleted: false,
-            createdAt: { $gte: new Date(startDate), $lte: endOfDay },
-            // Include items that have either an estimated OR final cost
-            $or: [{ cost: { $gt: 0 } }, { finalCost: { $gt: 0 } }],
+            $or: [
+                { revenueRealizedAt: { $gte: new Date(startDate), $lte: endOfDay } },
+                { revenueRealizedAt: { $exists: false }, createdAt: { $gte: new Date(startDate), $lte: endOfDay } },
+                { revenueRealizedAt: null, createdAt: { $gte: new Date(startDate), $lte: endOfDay } }
+            ],
+            // Include items that have a final cost
+            $and: [
+                { finalCost: { $gt: 0 } }
+            ]
         };
 
-        // Use finalCost when it has been set (> 0), otherwise fall back to cost.
-        // This ensures we report the actual charged amount, not the estimate.
-        const revenueExpr = {
-            $cond: [{ $gt: ["$finalCost", 0] }, "$finalCost", "$cost"],
-        };
+        // Use finalCost as revenue
+        const revenueExpr = "$finalCost";
 
         // Single round-trip to MongoDB using $facet
         const [result] = await Item.aggregate([

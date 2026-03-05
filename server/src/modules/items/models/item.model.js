@@ -14,7 +14,6 @@ const itemSchema = new mongoose.Schema(
         },
         repairNotes: { type: String },
         issue: { type: String, uppercase: true },
-        cost: { type: Number, default: 0 },
         finalCost: { type: Number, default: 0 },
         statusHistory: [
             {
@@ -26,6 +25,8 @@ const itemSchema = new mongoose.Schema(
         isDeleted: { type: Boolean, default: false, index: true },
         technicianName: { type: String, default: "Unknown" },
         dueDate: { type: Date, default: null, index: true }, // Expected completion deadline
+        revenueRealizedAt: { type: Date, default: null, index: true }, // When revenue is earned (Ready/Delivered)
+        formattedDate: { type: String, default: "" }, // Explicit DD/MM/YY database storage
         metadata: {
             type: Object,
             select: false,
@@ -33,6 +34,17 @@ const itemSchema = new mongoose.Schema(
     },
     { timestamps: true }
 );
+
+itemSchema.pre("save", function (next) {
+    if (this.createdAt) {
+        const d = new Date(this.createdAt);
+        const day = String(d.getDate()).padStart(2, '0');
+        const month = String(d.getMonth() + 1).padStart(2, '0');
+        const year = String(d.getFullYear()).slice(-2);
+        this.formattedDate = `${day}/${month}/${year}`;
+    }
+    next();
+});
 
 itemSchema.index({
     customerName: "text",
@@ -44,8 +56,8 @@ itemSchema.index({
 itemSchema.index({ isDeleted: 1, createdAt: -1 });
 itemSchema.index({ isDeleted: 1, status: 1 });
 itemSchema.index({ isDeleted: 1, status: 1, createdAt: -1 });
-itemSchema.index({ isDeleted: 1, cost: 1, createdAt: -1 });
 itemSchema.index({ isDeleted: 1, technicianName: 1, createdAt: -1 }); // Technician filter
 itemSchema.index({ isDeleted: 1, dueDate: 1, status: 1 });             // Overdue queries
+itemSchema.index({ isDeleted: 1, revenueRealizedAt: 1 });              // Revenue tracking
 
 export default mongoose.model("Item", itemSchema);
