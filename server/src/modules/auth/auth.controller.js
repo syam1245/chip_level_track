@@ -31,8 +31,31 @@ class AuthController {
     });
 
     getUsers = asyncHandler(async (req, res) => {
+        if (req.user.role !== "admin") {
+            return res.status(403).json({ error: "Only admins can view all users." });
+        }
         const users = await AuthService.getUsers();
         res.json(users);
+    });
+
+    createUser = asyncHandler(async (req, res) => {
+        if (req.user.role !== "admin") {
+            return res.status(403).json({ error: "Only admins can create users." });
+        }
+
+        const { username, password, displayName } = req.body;
+        if (!username || !password || !displayName) {
+            return res.status(400).json({ error: "Username, password, and display name are required." });
+        }
+        if (password.length < 4) {
+            return res.status(400).json({ error: "Password must be at least 4 characters long." });
+        }
+
+        const newUser = await AuthService.createUser(username, password, displayName, "user");
+        res.status(201).json({
+            message: "User created successfully",
+            user: { username: newUser.username, displayName: newUser.displayName, role: newUser.role }
+        });
     });
 
     updatePassword = asyncHandler(async (req, res) => {
@@ -67,6 +90,24 @@ class AuthController {
     getTechnicianNames = asyncHandler(async (req, res) => {
         const technicians = await AuthService.getTechnicianNames();
         res.json(technicians);
+    });
+
+    toggleActive = asyncHandler(async (req, res) => {
+        const { isActive } = req.body;
+        const { username } = req.params;
+
+        if (req.user.role !== "admin") {
+            return res.status(403).json({ error: "Only admins can deactivate users." });
+        }
+        if (typeof isActive !== "boolean") {
+            return res.status(400).json({ error: "isActive must be a boolean." });
+        }
+        if (username === req.user.username) {
+            return res.status(400).json({ error: "You cannot deactivate your own account." });
+        }
+
+        const user = await AuthService.toggleActive(username, isActive);
+        res.json({ message: `User ${username} is now ${isActive ? 'active' : 'inactive'}.` });
     });
 }
 

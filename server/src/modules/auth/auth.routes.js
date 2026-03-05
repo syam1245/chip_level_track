@@ -16,6 +16,7 @@ const loginLimiter = rateLimit({
 
 // NOTE: attachAuth is applied globally in app.js — no need to repeat it here.
 router.get("/users", requireAuth, AuthController.getUsers);
+router.post("/users", requireAuth, AuthController.createUser); // ADMIN ONLY (enforced in controller)
 router.get("/technicians", AuthController.getTechnicianNames); // Public: for login dropdown
 router.post("/login", loginLimiter, AuthController.login);
 router.post("/logout", AuthController.logout);           // attachAuth already ran globally
@@ -23,5 +24,8 @@ router.get("/session", requireAuth, AuthController.getSession);
 
 // ADMIN: Update technician password (any authenticated user, controller enforces role)
 router.put("/users/:username/password", requireAuth, AuthController.updatePassword);
+
+// ADMIN: Toggle technician active status
+router.put("/users/:username/active", requireAuth, AuthController.toggleActive);
 
 export default router;

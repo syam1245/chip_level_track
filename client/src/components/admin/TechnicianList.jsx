@@ -17,8 +17,8 @@ import {
     useMediaQuery
 } from "@mui/material";
 import { useTheme } from "@mui/material/styles";
-import { Engineering, VpnKey } from "@mui/icons-material";
-import { resetPassword } from "../../services/auth.api";
+import { Engineering, VpnKey, PersonOff, PersonAdd, Add as AddIcon } from "@mui/icons-material";
+import { resetPassword, toggleUserActive, createUser } from "../../services/auth.api";
 import { useAuth } from "../../auth/AuthContext";
 
 const TechnicianList = ({ technicians, onUpdate }) => {
@@ -31,6 +31,11 @@ const TechnicianList = ({ technicians, onUpdate }) => {
     const [newPassword, setNewPassword] = useState("");
     const [overrideUsername, setOverrideUsername] = useState("");
     const [overridePassword, setOverridePassword] = useState("");
+
+    // Add User State
+    const [addUserOpen, setAddUserOpen] = useState(false);
+    const [newUserState, setNewUserState] = useState({ username: "", displayName: "", password: "" });
+
     const [message, setMessage] = useState({ text: "", type: "success" });
 
     const handleResetPassword = async () => {
@@ -60,21 +65,67 @@ const TechnicianList = ({ technicians, onUpdate }) => {
         }
     };
 
+    const handleToggleActive = async (tech) => {
+        if (!isAdmin) return;
+
+        try {
+            const newStatus = tech.isActive !== false ? false : true;
+            const result = await toggleUserActive(tech.username, newStatus);
+            if (result.ok) {
+                setMessage({ text: result.data.message || `User ${newStatus ? 'reactivated' : 'deactivated'}`, type: "success" });
+                if (onUpdate) onUpdate();
+            } else {
+                setMessage({ text: result.error || "Failed to update status", type: "error" });
+            }
+        } catch (err) {
+            setMessage({ text: "Connection error.", type: "error" });
+        }
+    };
+
+    const handleAddUser = async (e) => {
+        e.preventDefault();
+        try {
+            const result = await createUser(newUserState);
+            if (result.ok) {
+                setMessage({ text: `Technician ${newUserState.displayName} added successfully!`, type: "success" });
+                setAddUserOpen(false);
+                setNewUserState({ username: "", displayName: "", password: "" });
+                if (onUpdate) onUpdate();
+            } else {
+                setMessage({ text: result.error || "Failed to create user.", type: "error" });
+            }
+        } catch (err) {
+            setMessage({ text: "Failed to connect to server.", type: "error" });
+        }
+    };
+
     return (
         <Paper elevation={0} className="glass-panel" sx={{ p: { xs: 2, sm: 3 }, height: '100%' }}>
-            <Typography
-                variant="h6"
-                fontWeight={800}
-                mb={{ xs: 2, sm: 3 }}
-                sx={{
-                    display: 'flex',
-                    alignItems: 'center',
-                    gap: 1,
-                    fontSize: { xs: '1rem', sm: '1.25rem' }
-                }}
-            >
-                <Engineering color="primary" /> Technicians
-            </Typography>
+            <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: { xs: 2, sm: 3 } }}>
+                <Typography
+                    variant="h6"
+                    fontWeight={800}
+                    sx={{
+                        display: 'flex',
+                        alignItems: 'center',
+                        gap: 1,
+                        fontSize: { xs: '1rem', sm: '1.25rem' }
+                    }}
+                >
+                    <Engineering color="primary" /> Technicians
+                </Typography>
+                {isAdmin && (
+                    <Button
+                        variant="contained"
+                        size="small"
+                        startIcon={<AddIcon />}
+                        onClick={() => setAddUserOpen(true)}
+                        sx={{ borderRadius: 2, textTransform: 'none', fontWeight: 700 }}
+                    >
+                        Add Tech
+                    </Button>
+                )}
+            </Box>
 
             {message.text && (
                 <Alert severity={message.type} sx={{ mb: 2 }} onClose={() => setMessage({ text: "", type: "success" })}>
@@ -128,6 +179,7 @@ const TechnicianList = ({ technicians, onUpdate }) => {
                                             sx={{ fontSize: { xs: '0.65rem', sm: '0.75rem' } }}
                                         >
                                             {tech.role.toUpperCase()}
+                                            {tech.isActive === false && " • INACTIVE"}
                                         </Typography>
                                     </Box>
                                 </Box>
@@ -147,6 +199,25 @@ const TechnicianList = ({ technicians, onUpdate }) => {
                                 >
                                     Reset
                                 </Button>
+                                {isAdmin && (
+                                    <Button
+                                        size="small"
+                                        variant="outlined"
+                                        color={tech.isActive !== false ? "error" : "success"}
+                                        startIcon={tech.isActive !== false ? <PersonOff fontSize="small" /> : <PersonAdd fontSize="small" />}
+                                        onClick={() => handleToggleActive(tech)}
+                                        sx={{
+                                            textTransform: 'none',
+                                            borderRadius: 2,
+                                            flexShrink: 0,
+                                            minWidth: 'auto',
+                                            px: { xs: 1.5, sm: 2 },
+                                            fontSize: { xs: '0.7rem', sm: '0.8125rem' }
+                                        }}
+                                    >
+                                        {tech.isActive !== false ? "Deactivate" : "Reactivate"}
+                                    </Button>
+                                )}
                             </Box>
                         </CardContent>
                     </Card>
@@ -236,6 +307,81 @@ const TechnicianList = ({ technicians, onUpdate }) => {
                         Update Password
                     </Button>
                 </DialogActions>
+            </Dialog>
+
+            {/* Add Technician Dialog */}
+            <Dialog
+                open={addUserOpen}
+                onClose={() => setAddUserOpen(false)}
+                maxWidth="xs"
+                fullWidth
+                PaperProps={{
+                    sx: { borderRadius: { xs: 3, sm: 4 }, p: { xs: 0.5, sm: 1 }, mx: { xs: 1.5, sm: 3 } }
+                }}
+            >
+                <DialogTitle sx={{ fontWeight: 800, fontSize: { xs: '1rem', sm: '1.25rem' }, pb: 1 }}>
+                    Add New Technician
+                </DialogTitle>
+                <form onSubmit={handleAddUser}>
+                    <DialogContent>
+                        <Typography variant="body2" color="text.secondary" mb={2} sx={{ fontSize: { xs: '0.8rem', sm: '0.875rem' } }}>
+                            Create a new employee account. They will instantly be able to log in.
+                        </Typography>
+                        <Stack spacing={2} sx={{ mt: 1 }}>
+                            <TextField
+                                label="Login Username"
+                                required
+                                fullWidth
+                                variant="outlined"
+                                size={isMobile ? "small" : "medium"}
+                                value={newUserState.username}
+                                onChange={(e) => setNewUserState({ ...newUserState, username: e.target.value })}
+                                helperText="e.g. vineeth (no spaces)"
+                            />
+                            <TextField
+                                label="Display Name"
+                                required
+                                fullWidth
+                                variant="outlined"
+                                size={isMobile ? "small" : "medium"}
+                                value={newUserState.displayName}
+                                onChange={(e) => setNewUserState({ ...newUserState, displayName: e.target.value })}
+                                helperText="e.g. Vineeth"
+                            />
+                            <TextField
+                                label="Initial Password"
+                                required
+                                type="password"
+                                fullWidth
+                                variant="outlined"
+                                size={isMobile ? "small" : "medium"}
+                                value={newUserState.password}
+                                onChange={(e) => setNewUserState({ ...newUserState, password: e.target.value })}
+                                helperText="Must be at least 4 characters"
+                            />
+                        </Stack>
+                    </DialogContent>
+                    <DialogActions sx={{ p: { xs: 1.5, sm: 2 }, gap: 1 }}>
+                        <Button
+                            onClick={() => {
+                                setAddUserOpen(false);
+                                setNewUserState({ username: "", displayName: "", password: "" });
+                            }}
+                            size={isMobile ? "small" : "medium"}
+                            type="button"
+                        >
+                            Cancel
+                        </Button>
+                        <Button
+                            variant="contained"
+                            type="submit"
+                            disabled={!newUserState.username || !newUserState.displayName || newUserState.password.length < 4}
+                            size={isMobile ? "small" : "medium"}
+                        >
+                            Create Employee
+                        </Button>
+                    </DialogActions>
+                </form>
             </Dialog>
         </Paper>
     );

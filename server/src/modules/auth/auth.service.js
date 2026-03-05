@@ -19,6 +19,9 @@ class AuthService {
         if (!user || !(await this.verifyPassword(password, user.password))) {
             throw new AppError("Invalid credentials", 401);
         }
+        if (user.isActive === false) {
+            throw new AppError("Account is deactivated", 403);
+        }
 
         const csrfToken = crypto.randomBytes(24).toString("hex");
         const token = createAuthToken({
@@ -40,6 +43,21 @@ class AuthService {
         };
     }
 
+    async createUser(username, password, displayName, role = "user") {
+        const existingUser = await AuthRepository.findByUsername(username);
+        if (existingUser) {
+            throw new AppError(`Username '${username}' is already taken.`, 400);
+        }
+
+        const hashedPassword = await this.hashPassword(password);
+        return await AuthRepository.createUser({
+            username: username.trim(),
+            password: hashedPassword,
+            displayName: displayName.trim(),
+            role
+        });
+    }
+
     async getUsers() {
         return await AuthRepository.findAllUsers();
     }
@@ -57,7 +75,7 @@ class AuthService {
      */
     async verifyCredentials(username, password, requiredRole = null) {
         const user = await AuthRepository.findByUsername(username);
-        if (!user) return false;
+        if (!user || user.isActive === false) return false;
 
         const passwordOk = await this.verifyPassword(password, user.password);
         if (!passwordOk) return false;
@@ -75,6 +93,14 @@ class AuthService {
 
         const hashedPassword = await this.hashPassword(newPassword);
         return await AuthRepository.updatePassword(username, hashedPassword);
+    }
+
+    async toggleActive(username, isActive) {
+        const user = await AuthRepository.findByUsername(username);
+        if (!user) {
+            throw new AppError("User not found", 404);
+        }
+        return await AuthRepository.toggleActive(username, isActive);
     }
 }
 

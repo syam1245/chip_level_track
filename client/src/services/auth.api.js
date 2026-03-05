@@ -69,3 +69,32 @@ export async function resetPassword(username, payload) {
     const data = await res.json();
     return { ok: res.ok, data, error: data.error };
 }
+
+/**
+ * Toggle a user's active status (Admin only).
+ * @param {string} username
+ * @param {boolean} isActive
+ * @returns {Promise<{ok: boolean, data: object, error?: string}>}
+ */
+export async function toggleUserActive(username, isActive) {
+    const res = await authFetch(`/api/auth/users/${username}/active`, {
+        method: "PUT",
+        body: JSON.stringify({ isActive }),
+    });
+    const data = await res.json();
+    return { ok: res.ok, data, error: data.error };
+}
+
+/**
+ * Add a new technician (Admin only).
+ * @param {object} payload - { username, displayName, password }
+ * @returns {Promise<{ok: boolean, data: object, error?: string}>}
+ */
+export async function createUser(payload) {
+    const res = await authFetch("/api/auth/users", {
+        method: "POST",
+        body: JSON.stringify(payload),
+    });
+    const data = await res.json().catch(() => ({}));
+    return { ok: res.ok, data, error: data.error || data.message || "Failed to create user" };
+}
