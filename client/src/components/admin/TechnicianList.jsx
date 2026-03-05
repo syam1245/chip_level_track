@@ -14,12 +14,192 @@ import {
     DialogActions,
     TextField,
     Alert,
-    useMediaQuery
+    useMediaQuery,
+    Chip,
+    Tooltip,
+    IconButton,
+    Menu,
+    MenuItem
 } from "@mui/material";
 import { useTheme } from "@mui/material/styles";
-import { Engineering, VpnKey, PersonOff, PersonAdd, Add as AddIcon, DeleteForever as DeleteIcon, Edit as EditIcon } from "@mui/icons-material";
+import { Engineering, VpnKey, PersonOff, PersonAdd, Add as AddIcon, DeleteForever as DeleteIcon, Edit as EditIcon, MoreVert, AdminPanelSettings, Person } from "@mui/icons-material";
 import { resetPassword, toggleUserActive, createUser, deleteUser, updateUser } from "../../services/auth.api";
 import { useAuth } from "../../auth/AuthContext";
+
+const TechnicianCard = ({ tech, isAdmin, currentUser, onReset, onEdit, onToggleActive, onDelete }) => {
+    const theme = useTheme();
+    const isMobile = useMediaQuery(theme.breakpoints.down("sm"));
+    const [anchorEl, setAnchorEl] = useState(null);
+    const open = Boolean(anchorEl);
+
+    const handleMenuOpen = (event) => setAnchorEl(event.currentTarget);
+    const handleMenuClose = () => setAnchorEl(null);
+
+    return (
+        <Card variant="outlined" sx={{
+            borderRadius: { xs: 2, sm: 3 },
+            transition: 'all 0.2s',
+            '&:hover': {
+                borderColor: 'primary.main',
+                boxShadow: '0 4px 12px rgba(0,0,0,0.05)',
+                transform: 'translateY(-2px)'
+            },
+            position: 'relative',
+            overflow: 'visible'
+        }}>
+            <CardContent sx={{ p: { xs: 1.5, sm: 2 }, "&:last-child": { pb: { xs: 1.5, sm: 2 } } }}>
+                <Box sx={{
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'space-between',
+                    gap: { xs: 1, sm: 2 }
+                }}>
+                    {/* Left: Avatar and Names */}
+                    <Box sx={{ display: 'flex', alignItems: 'center', gap: { xs: 1.5, sm: 2 }, minWidth: 0, flex: 1 }}>
+                        <Avatar
+                            sx={{
+                                bgcolor: tech.role === 'admin' ? 'primary.main' : 'secondary.main',
+                                width: { xs: 40, sm: 48 },
+                                height: { xs: 40, sm: 48 },
+                                boxShadow: '0 2px 4px rgba(0,0,0,0.1)'
+                            }}
+                        >
+                            {tech.role === 'admin' ? <AdminPanelSettings sx={{ fontSize: { xs: 20, sm: 24 } }} /> : <Person sx={{ fontSize: { xs: 20, sm: 24 } }} />}
+                        </Avatar>
+
+                        <Box sx={{ minWidth: 0 }}>
+                            <Tooltip title={tech.displayName} arrow placement="top-start">
+                                <Typography
+                                    variant="subtitle1"
+                                    fontWeight={800}
+                                    sx={{
+                                        lineHeight: 1.2,
+                                        fontSize: { xs: '0.9rem', sm: '1rem' },
+                                        overflow: 'hidden',
+                                        textOverflow: 'ellipsis',
+                                        whiteSpace: 'nowrap'
+                                    }}
+                                >
+                                    {tech.displayName}
+                                </Typography>
+                            </Tooltip>
+
+                            <Stack direction="row" spacing={1} alignItems="center" mt={0.5}>
+                                <Chip
+                                    label={tech.username}
+                                    size="small"
+                                    variant="outlined"
+                                    sx={{
+                                        height: 20,
+                                        fontSize: '0.65rem',
+                                        fontWeight: 600,
+                                        maxWidth: { xs: 80, sm: 120 },
+                                        '& .MuiChip-label': { px: 1 }
+                                    }}
+                                />
+                                {tech.isActive === false && (
+                                    <Chip
+                                        label="INACTIVE"
+                                        size="small"
+                                        color="error"
+                                        sx={{ height: 20, fontSize: '0.6rem', fontWeight: 900 }}
+                                    />
+                                )}
+                                {tech.role === 'admin' && (
+                                    <Chip
+                                        label="ADMIN"
+                                        size="small"
+                                        color="primary"
+                                        variant="soft"
+                                        sx={{ height: 20, fontSize: '0.6rem', fontWeight: 900 }}
+                                    />
+                                )}
+                            </Stack>
+                        </Box>
+                    </Box>
+
+                    {/* Right: Actions */}
+                    <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5 }}>
+                        {!isMobile && (
+                            <>
+                                <Tooltip title="Edit Profile">
+                                    <IconButton size="small" color="primary" onClick={onEdit} sx={{ borderRadius: 2 }}>
+                                        <EditIcon fontSize="small" />
+                                    </IconButton>
+                                </Tooltip>
+                                <Tooltip title="Reset Password">
+                                    <IconButton size="small" color="secondary" onClick={onReset} sx={{ borderRadius: 2 }}>
+                                        <VpnKey fontSize="small" />
+                                    </IconButton>
+                                </Tooltip>
+                                {isAdmin && (
+                                    <Tooltip title={tech.isActive !== false ? "Deactivate" : "Reactivate"}>
+                                        <IconButton
+                                            size="small"
+                                            color={tech.isActive !== false ? "error" : "success"}
+                                            onClick={onToggleActive}
+                                            sx={{ borderRadius: 2 }}
+                                        >
+                                            {tech.isActive !== false ? <PersonOff fontSize="small" /> : <PersonAdd fontSize="small" />}
+                                        </IconButton>
+                                    </Tooltip>
+                                )}
+                                {isAdmin && tech.username !== currentUser?.username && (
+                                    <Tooltip title="Delete Permanently">
+                                        <IconButton size="small" color="error" onClick={onDelete} sx={{ borderRadius: 2 }}>
+                                            <DeleteIcon fontSize="small" />
+                                        </IconButton>
+                                    </Tooltip>
+                                )}
+                            </>
+                        )}
+
+                        {isMobile && (
+                            <>
+                                <IconButton size="small" onClick={handleMenuOpen}>
+                                    <MoreVert fontSize="small" />
+                                </IconButton>
+                                <Menu
+                                    anchorEl={anchorEl}
+                                    open={open}
+                                    onClose={handleMenuClose}
+                                    PaperProps={{
+                                        sx: {
+                                            borderRadius: 2,
+                                            minWidth: 150,
+                                            boxShadow: '0 4px 20px rgba(0,0,0,0.1)'
+                                        }
+                                    }}
+                                >
+                                    <MenuItem onClick={() => { onEdit(); handleMenuClose(); }}>
+                                        <EditIcon fontSize="small" sx={{ mr: 1.5, color: 'primary.main' }} /> Edit Profile
+                                    </MenuItem>
+                                    <MenuItem onClick={() => { onReset(); handleMenuClose(); }}>
+                                        <VpnKey fontSize="small" sx={{ mr: 1.5, color: 'secondary.main' }} /> Reset Password
+                                    </MenuItem>
+                                    {isAdmin && (
+                                        <MenuItem onClick={() => { onToggleActive(); handleMenuClose(); }}>
+                                            {tech.isActive !== false ? (
+                                                <><PersonOff fontSize="small" sx={{ mr: 1.5, color: 'error.main' }} /> Deactivate</>
+                                            ) : (
+                                                <><PersonAdd fontSize="small" sx={{ mr: 1.5, color: 'success.main' }} /> Reactivate</>
+                                            )}
+                                        </MenuItem>
+                                    )}
+                                    {isAdmin && tech.username !== currentUser?.username && (
+                                        <MenuItem onClick={() => { onDelete(); handleMenuClose(); }} sx={{ color: 'error.main' }}>
+                                            <DeleteIcon fontSize="small" sx={{ mr: 1.5 }} /> Delete Employee
+                                        </MenuItem>
+                                    )}
+                                </Menu>
+                            </>
+                        )}
+                    </Box>
+                </Box>
+            </CardContent>
+        </Card>
+    );
+};
 
 const TechnicianList = ({ technicians, onUpdate }) => {
     const theme = useTheme();
@@ -179,126 +359,19 @@ const TechnicianList = ({ technicians, onUpdate }) => {
 
             <Stack spacing={{ xs: 1.5, sm: 2 }}>
                 {technicians.map((tech) => (
-                    <Card key={tech.username} variant="outlined" sx={{ borderRadius: { xs: 2, sm: 3 } }}>
-                        <CardContent sx={{ p: { xs: 1.5, sm: 2 }, "&:last-child": { pb: { xs: 1.5, sm: 2 } } }}>
-                            <Box sx={{
-                                display: 'flex',
-                                alignItems: 'center',
-                                justifyContent: 'space-between',
-                                gap: { xs: 1, sm: 1.5 },
-                                width: '100%'
-                            }}>
-                                <Box sx={{
-                                    display: 'flex',
-                                    alignItems: 'center',
-                                    gap: { xs: 1, sm: 1.5 },
-                                    minWidth: 0,
-                                    flex: 1
-                                }}>
-                                    <Avatar
-                                        sx={{
-                                            bgcolor: tech.role === 'admin' ? 'primary.main' : 'secondary.main',
-                                            width: { xs: 36, sm: 40 },
-                                            height: { xs: 36, sm: 40 },
-                                            fontSize: { xs: '0.875rem', sm: '1rem' }
-                                        }}
-                                    >
-                                        {tech.username[0].toUpperCase()}
-                                    </Avatar>
-                                    <Box sx={{ minWidth: 0 }}>
-                                        <Typography
-                                            fontWeight={700}
-                                            sx={{
-                                                fontSize: { xs: '0.85rem', sm: '0.95rem' },
-                                                overflow: 'hidden',
-                                                textOverflow: 'ellipsis',
-                                                whiteSpace: 'nowrap'
-                                            }}
-                                        >
-                                            {tech.displayName}
-                                        </Typography>
-                                        <Typography
-                                            variant="caption"
-                                            color="text.secondary"
-                                            sx={{ fontSize: { xs: '0.65rem', sm: '0.75rem' } }}
-                                        >
-                                            {tech.role.toUpperCase()}
-                                            {tech.isActive === false && " • INACTIVE"}
-                                        </Typography>
-                                    </Box>
-                                </Box>
-                                <Button
-                                    size="small"
-                                    variant="soft"
-                                    startIcon={<VpnKey fontSize="small" />}
-                                    onClick={() => setResetUser(tech)}
-                                    sx={{
-                                        textTransform: 'none',
-                                        borderRadius: 2,
-                                        flexShrink: 0,
-                                        minWidth: 'auto',
-                                        px: { xs: 1.5, sm: 2 },
-                                        fontSize: { xs: '0.7rem', sm: '0.8125rem' }
-                                    }}
-                                >
-                                    Reset
-                                </Button>
-                                {isAdmin && (
-                                    <Button
-                                        size="small"
-                                        variant="outlined"
-                                        color={tech.isActive !== false ? "error" : "success"}
-                                        startIcon={tech.isActive !== false ? <PersonOff fontSize="small" /> : <PersonAdd fontSize="small" />}
-                                        onClick={() => handleToggleActive(tech)}
-                                        sx={{
-                                            textTransform: 'none',
-                                            borderRadius: 2,
-                                            flexShrink: 0,
-                                            minWidth: 'auto',
-                                            px: { xs: 1.5, sm: 2 },
-                                            fontSize: { xs: '0.7rem', sm: '0.8125rem' }
-                                        }}
-                                    >
-                                        {tech.isActive !== false ? "Deactivate" : "Reactivate"}
-                                    </Button>
-                                )}
-                                {isAdmin && (
-                                    <Button
-                                        size="small"
-                                        variant="outlined"
-                                        color="primary"
-                                        onClick={() => {
-                                            setEditUserObj(tech);
-                                            setEditUserState({ username: tech.username, displayName: tech.displayName });
-                                        }}
-                                        sx={{
-                                            minWidth: 'auto',
-                                            p: 1,
-                                            ml: 0.5,
-                                            borderRadius: 2
-                                        }}
-                                    >
-                                        <EditIcon fontSize="small" />
-                                    </Button>
-                                )}
-                                {isAdmin && tech.username !== user?.username && (
-                                    <Button
-                                        size="small"
-                                        color="error"
-                                        onClick={() => setDeleteUserObj(tech)}
-                                        sx={{
-                                            minWidth: 'auto',
-                                            p: 1,
-                                            ml: 0.5,
-                                            borderRadius: 2
-                                        }}
-                                    >
-                                        <DeleteIcon fontSize="small" />
-                                    </Button>
-                                )}
-                            </Box>
-                        </CardContent>
-                    </Card>
+                    <TechnicianCard
+                        key={tech.username}
+                        tech={tech}
+                        isAdmin={isAdmin}
+                        currentUser={user}
+                        onReset={() => setResetUser(tech)}
+                        onEdit={() => {
+                            setEditUserObj(tech);
+                            setEditUserState({ username: tech.username, displayName: tech.displayName });
+                        }}
+                        onToggleActive={() => handleToggleActive(tech)}
+                        onDelete={() => setDeleteUserObj(tech)}
+                    />
                 ))}
             </Stack>
 
