@@ -13,13 +13,17 @@ import {
     DialogContent,
     DialogActions,
     TextField,
-    Alert
+    Alert,
+    useMediaQuery
 } from "@mui/material";
+import { useTheme } from "@mui/material/styles";
 import { Engineering, VpnKey } from "@mui/icons-material";
 import { resetPassword } from "../../services/auth.api";
 import { useAuth } from "../../auth/AuthContext";
 
 const TechnicianList = ({ technicians, onUpdate }) => {
+    const theme = useTheme();
+    const isMobile = useMediaQuery(theme.breakpoints.down("sm"));
     const { user } = useAuth();
     const isAdmin = user?.role === "admin";
 
@@ -57,8 +61,18 @@ const TechnicianList = ({ technicians, onUpdate }) => {
     };
 
     return (
-        <Paper elevation={0} className="glass-panel" sx={{ p: 3, height: '100%' }}>
-            <Typography variant="h6" fontWeight={800} mb={3} sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+        <Paper elevation={0} className="glass-panel" sx={{ p: { xs: 2, sm: 3 }, height: '100%' }}>
+            <Typography
+                variant="h6"
+                fontWeight={800}
+                mb={{ xs: 2, sm: 3 }}
+                sx={{
+                    display: 'flex',
+                    alignItems: 'center',
+                    gap: 1,
+                    fontSize: { xs: '1rem', sm: '1.25rem' }
+                }}
+            >
                 <Engineering color="primary" /> Technicians
             </Typography>
 
@@ -68,18 +82,53 @@ const TechnicianList = ({ technicians, onUpdate }) => {
                 </Alert>
             )}
 
-            <Stack spacing={2}>
+            <Stack spacing={{ xs: 1.5, sm: 2 }}>
                 {technicians.map((tech) => (
-                    <Card key={tech.username} variant="outlined" sx={{ borderRadius: 3 }}>
-                        <CardContent sx={{ p: 2, "&:last-child": { pb: 2 } }}>
-                            <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexDirection: { xs: 'column', sm: 'row' }, gap: { xs: 2, sm: 0 }, width: '100%' }}>
-                                <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5, width: '100%' }}>
-                                    <Avatar sx={{ bgcolor: tech.role === 'admin' ? 'primary.main' : 'secondary.main' }}>
-                                        {tech.username[0]}
+                    <Card key={tech.username} variant="outlined" sx={{ borderRadius: { xs: 2, sm: 3 } }}>
+                        <CardContent sx={{ p: { xs: 1.5, sm: 2 }, "&:last-child": { pb: { xs: 1.5, sm: 2 } } }}>
+                            <Box sx={{
+                                display: 'flex',
+                                alignItems: 'center',
+                                justifyContent: 'space-between',
+                                gap: { xs: 1, sm: 1.5 },
+                                width: '100%'
+                            }}>
+                                <Box sx={{
+                                    display: 'flex',
+                                    alignItems: 'center',
+                                    gap: { xs: 1, sm: 1.5 },
+                                    minWidth: 0,
+                                    flex: 1
+                                }}>
+                                    <Avatar
+                                        sx={{
+                                            bgcolor: tech.role === 'admin' ? 'primary.main' : 'secondary.main',
+                                            width: { xs: 36, sm: 40 },
+                                            height: { xs: 36, sm: 40 },
+                                            fontSize: { xs: '0.875rem', sm: '1rem' }
+                                        }}
+                                    >
+                                        {tech.username[0].toUpperCase()}
                                     </Avatar>
-                                    <Box>
-                                        <Typography fontWeight={700}>{tech.displayName}</Typography>
-                                        <Typography variant="caption" color="text.secondary">{tech.role.toUpperCase()}</Typography>
+                                    <Box sx={{ minWidth: 0 }}>
+                                        <Typography
+                                            fontWeight={700}
+                                            sx={{
+                                                fontSize: { xs: '0.85rem', sm: '0.95rem' },
+                                                overflow: 'hidden',
+                                                textOverflow: 'ellipsis',
+                                                whiteSpace: 'nowrap'
+                                            }}
+                                        >
+                                            {tech.displayName}
+                                        </Typography>
+                                        <Typography
+                                            variant="caption"
+                                            color="text.secondary"
+                                            sx={{ fontSize: { xs: '0.65rem', sm: '0.75rem' } }}
+                                        >
+                                            {tech.role.toUpperCase()}
+                                        </Typography>
                                     </Box>
                                 </Box>
                                 <Button
@@ -87,7 +136,14 @@ const TechnicianList = ({ technicians, onUpdate }) => {
                                     variant="soft"
                                     startIcon={<VpnKey fontSize="small" />}
                                     onClick={() => setResetUser(tech)}
-                                    sx={{ textTransform: 'none', borderRadius: 2, width: { xs: '100%', sm: 'auto' } }}
+                                    sx={{
+                                        textTransform: 'none',
+                                        borderRadius: 2,
+                                        flexShrink: 0,
+                                        minWidth: 'auto',
+                                        px: { xs: 1.5, sm: 2 },
+                                        fontSize: { xs: '0.7rem', sm: '0.8125rem' }
+                                    }}
                                 >
                                     Reset
                                 </Button>
@@ -98,10 +154,24 @@ const TechnicianList = ({ technicians, onUpdate }) => {
             </Stack>
 
             {/* Reset Password Dialog */}
-            <Dialog open={!!resetUser} onClose={() => setResetUser(null)} PaperProps={{ sx: { borderRadius: 4, p: 1 } }}>
-                <DialogTitle sx={{ fontWeight: 800 }}>Reset Technician Password</DialogTitle>
+            <Dialog
+                open={!!resetUser}
+                onClose={() => setResetUser(null)}
+                maxWidth="xs"
+                fullWidth
+                PaperProps={{
+                    sx: {
+                        borderRadius: { xs: 3, sm: 4 },
+                        p: { xs: 0.5, sm: 1 },
+                        mx: { xs: 1.5, sm: 3 }
+                    }
+                }}
+            >
+                <DialogTitle sx={{ fontWeight: 800, fontSize: { xs: '1rem', sm: '1.25rem' }, pb: 1 }}>
+                    Reset Technician Password
+                </DialogTitle>
                 <DialogContent>
-                    <Typography variant="body2" color="text.secondary" mb={3}>
+                    <Typography variant="body2" color="text.secondary" mb={2} sx={{ fontSize: { xs: '0.8rem', sm: '0.875rem' } }}>
                         Updating password for <strong>{resetUser?.displayName}</strong>.
                     </Typography>
 
@@ -111,17 +181,18 @@ const TechnicianList = ({ technicians, onUpdate }) => {
                         type="password"
                         fullWidth
                         variant="outlined"
+                        size={isMobile ? "small" : "medium"}
                         value={newPassword}
                         onChange={(e) => setNewPassword(e.target.value)}
                         sx={{ mt: 1, mb: 2 }}
                     />
 
                     {!isAdmin && (
-                        <Box sx={{ p: 2, bgcolor: 'error.soft', borderRadius: 2, border: '1px solid', borderColor: 'error.main' }}>
-                            <Typography variant="subtitle2" color="error.main" fontWeight={800} mb={1}>
+                        <Box sx={{ p: { xs: 1.5, sm: 2 }, bgcolor: 'error.soft', borderRadius: 2, border: '1px solid', borderColor: 'error.main' }}>
+                            <Typography variant="subtitle2" color="error.main" fontWeight={800} mb={1} sx={{ fontSize: { xs: '0.75rem', sm: '0.875rem' } }}>
                                 Admin Override Required
                             </Typography>
-                            <Typography variant="caption" color="error.main" display="block" mb={2}>
+                            <Typography variant="caption" color="error.main" display="block" mb={2} sx={{ fontSize: { xs: '0.65rem', sm: '0.75rem' } }}>
                                 You are not an administrator. An admin must provide their credentials below to authorize this password reset.
                             </Typography>
                             <TextField
@@ -145,16 +216,22 @@ const TechnicianList = ({ technicians, onUpdate }) => {
                         </Box>
                     )}
                 </DialogContent>
-                <DialogActions sx={{ p: 2 }}>
-                    <Button onClick={() => {
-                        setResetUser(null);
-                        setOverrideUsername("");
-                        setOverridePassword("");
-                    }}>Cancel</Button>
+                <DialogActions sx={{ p: { xs: 1.5, sm: 2 }, gap: 1 }}>
+                    <Button
+                        onClick={() => {
+                            setResetUser(null);
+                            setOverrideUsername("");
+                            setOverridePassword("");
+                        }}
+                        size={isMobile ? "small" : "medium"}
+                    >
+                        Cancel
+                    </Button>
                     <Button
                         variant="contained"
                         onClick={handleResetPassword}
                         disabled={!newPassword || (!isAdmin && (!overrideUsername || !overridePassword))}
+                        size={isMobile ? "small" : "medium"}
                     >
                         Update Password
                     </Button>

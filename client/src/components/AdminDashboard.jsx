@@ -7,8 +7,10 @@ import {
     TextField,
     CircularProgress,
     Alert,
-    Button
+    Button,
+    useMediaQuery
 } from "@mui/material";
+import { useTheme } from "@mui/material/styles";
 import { CalendarMonth, RestartAlt } from "@mui/icons-material";
 import { format, startOfMonth } from "date-fns";
 import { searchItems } from "../services/items.api";
@@ -21,6 +23,8 @@ import RevenueReport from "./admin/RevenueReport";
 import ServiceHistoryDialog from "./admin/ServiceHistoryDialog";
 
 const AdminDashboard = () => {
+    const theme = useTheme();
+    const isMobile = useMediaQuery(theme.breakpoints.down("sm"));
     const { fetchTechnicians } = useAuth();
     const [technicians, setTechnicians] = useState([]);
     const [auditLogs, setAuditLogs] = useState([]);
@@ -67,56 +71,117 @@ const AdminDashboard = () => {
     if (loading) return <Box sx={{ display: 'flex', justifyContent: 'center', p: 10 }}><CircularProgress /></Box>;
 
     return (
-        <Box sx={{ maxWidth: "1600px", margin: "0 auto", p: { xs: 2, md: 4 } }}>
-            <Box sx={{ mb: 4, display: 'flex', flexDirection: { xs: 'column', md: 'row' }, justifyContent: 'space-between', alignItems: 'center', gap: 2 }}>
-                <Typography variant="h3" fontWeight={900} className="text-gradient" sx={{ fontSize: { xs: '1.75rem', md: '3rem' }, lineHeight: 1.2 }}>
+        <Box sx={{ maxWidth: "1600px", margin: "0 auto", p: { xs: 1.5, sm: 2, md: 4 } }}>
+            {/* Header Section - fully responsive */}
+            <Box sx={{
+                mb: { xs: 2.5, md: 4 },
+                display: 'flex',
+                flexDirection: 'column',
+                gap: { xs: 1.5, md: 2 }
+            }}>
+                <Typography
+                    variant="h3"
+                    fontWeight={900}
+                    className="text-gradient"
+                    sx={{
+                        fontSize: { xs: '1.5rem', sm: '1.75rem', md: '3rem' },
+                        lineHeight: 1.2,
+                        textAlign: { xs: 'left', md: 'left' }
+                    }}
+                >
                     Administrative Management
                 </Typography>
 
-                <Stack direction={{ xs: 'column', sm: 'row' }} spacing={2} alignItems={{ xs: 'stretch', sm: 'center' }} className="glass-panel" sx={{ px: { xs: 2, md: 3 }, py: { xs: 2, md: 1.5 }, width: { xs: '100%', md: 'auto' } }}>
-                    <Box sx={{ display: { xs: 'none', sm: 'block' } }}>
-                        <CalendarMonth color="action" />
+                {/* Date Picker Bar */}
+                <Box
+                    className="glass-panel"
+                    sx={{
+                        px: { xs: 1.5, sm: 2, md: 3 },
+                        py: { xs: 1.5, sm: 1.5 },
+                        display: 'flex',
+                        flexDirection: { xs: 'column', sm: 'row' },
+                        alignItems: { xs: 'stretch', sm: 'center' },
+                        gap: { xs: 1.5, sm: 2 },
+                        width: '100%',
+                        boxSizing: 'border-box'
+                    }}
+                >
+                    <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+                        <CalendarMonth sx={{ color: 'text.secondary', fontSize: { xs: 20, sm: 24 } }} />
+                        <Typography variant="body2" color="text.secondary" fontWeight={600} sx={{ display: { xs: 'block', sm: 'none' } }}>
+                            Filter by Date
+                        </Typography>
                     </Box>
-                    <TextField
-                        type="date"
+
+                    <Box sx={{
+                        display: 'flex',
+                        flexDirection: { xs: 'row', sm: 'row' },
+                        gap: { xs: 1, sm: 2 },
+                        flex: 1,
+                        alignItems: 'center'
+                    }}>
+                        <TextField
+                            type="date"
+                            size="small"
+                            label="From"
+                            fullWidth
+                            value={dates.start}
+                            onChange={(e) => setDates({ ...dates, start: e.target.value })}
+                            InputLabelProps={{ shrink: true }}
+                            sx={{
+                                '& .MuiInputBase-root': {
+                                    fontSize: { xs: '0.8rem', sm: '0.875rem' }
+                                }
+                            }}
+                        />
+                        <TextField
+                            type="date"
+                            size="small"
+                            label="To"
+                            fullWidth
+                            value={dates.end}
+                            onChange={(e) => setDates({ ...dates, end: e.target.value })}
+                            InputLabelProps={{ shrink: true }}
+                            sx={{
+                                '& .MuiInputBase-root': {
+                                    fontSize: { xs: '0.8rem', sm: '0.875rem' }
+                                }
+                            }}
+                        />
+                    </Box>
+
+                    <Button
                         size="small"
-                        label="From"
-                        fullWidth
-                        value={dates.start}
-                        onChange={(e) => setDates({ ...dates, start: e.target.value })}
-                        InputLabelProps={{ shrink: true }}
-                    />
-                    <TextField
-                        type="date"
-                        size="small"
-                        label="To"
-                        fullWidth
-                        value={dates.end}
-                        onChange={(e) => setDates({ ...dates, end: e.target.value })}
-                        InputLabelProps={{ shrink: true }}
-                    />
-                    <Button size="small" onClick={handleResetDates} startIcon={<RestartAlt />} sx={{ minWidth: { sm: 100 } }}>Reset</Button>
-                </Stack>
+                        onClick={handleResetDates}
+                        startIcon={<RestartAlt />}
+                        sx={{
+                            minWidth: { xs: '100%', sm: 100 },
+                            whiteSpace: 'nowrap'
+                        }}
+                    >
+                        Reset
+                    </Button>
+                </Box>
             </Box>
 
             {message.text && (
-                <Alert severity={message.type} sx={{ mb: 4 }} onClose={() => setMessage({ text: "", type: "success" })}>
+                <Alert severity={message.type} sx={{ mb: { xs: 2, md: 4 } }} onClose={() => setMessage({ text: "", type: "success" })}>
                     {message.text}
                 </Alert>
             )}
 
-            <Grid container spacing={4}>
-                {/* Top Row: Removed Key Statistics */}
-
-                {/* Middle Row: Revenue & Technicians */}
+            <Grid container spacing={{ xs: 2, sm: 2.5, md: 4 }}>
+                {/* Revenue Report */}
                 <Grid size={{ xs: 12, lg: 8 }}>
                     <RevenueReport startDate={dates.start} endDate={dates.end} />
                 </Grid>
+
+                {/* Technicians */}
                 <Grid size={{ xs: 12, lg: 4 }}>
                     <TechnicianList technicians={technicians} onUpdate={loadBaseData} />
                 </Grid>
 
-                {/* Bottom Row: Audit Trail */}
+                {/* Audit Trail */}
                 <Grid size={{ xs: 12 }}>
                     <AuditTrail initialLogs={auditLogs} onShowHistory={(item) => setHistoryItem(item)} />
                 </Grid>

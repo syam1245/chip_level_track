@@ -35,7 +35,7 @@ const RevenueReport = ({ startDate, endDate }) => {
     }, [fetchRevenue]);
 
     if (loading) return (
-        <Paper elevation={0} className="glass-panel" sx={{ p: 3, display: "flex", justifyContent: "center", alignItems: "center", minHeight: 200 }}>
+        <Paper elevation={0} className="glass-panel" sx={{ p: { xs: 2, sm: 3 }, display: "flex", justifyContent: "center", alignItems: "center", minHeight: 200 }}>
             <CircularProgress />
         </Paper>
     );
@@ -45,56 +45,118 @@ const RevenueReport = ({ startDate, endDate }) => {
     const breakdown = data?.breakdown ?? [];
 
     return (
-        <Paper elevation={0} className="glass-panel" sx={{ p: 3 }}>
-            <Typography variant="h6" fontWeight={800} mb={3} sx={{ display: "flex", alignItems: "center", gap: 1 }}>
+        <Paper elevation={0} className="glass-panel" sx={{ p: { xs: 2, sm: 3 }, overflow: 'hidden' }}>
+            <Typography
+                variant="h6"
+                fontWeight={800}
+                mb={{ xs: 2, sm: 3 }}
+                sx={{
+                    display: "flex",
+                    alignItems: "center",
+                    gap: 1,
+                    fontSize: { xs: '1rem', sm: '1.25rem' }
+                }}
+            >
                 <TrendingUp color="primary" /> Revenue Reporting
             </Typography>
 
             {/* KPI Summary Cards */}
-            <Grid container spacing={2} mb={3}>
-                <Grid size={{ xs: 12, sm: 6 }}>
+            <Grid container spacing={{ xs: 1.5, sm: 2 }} mb={{ xs: 2, sm: 3 }}>
+                <Grid size={{ xs: 6, sm: 6 }}>
                     <Box sx={{
-                        p: 2, borderRadius: "16px",
+                        p: { xs: 1.5, sm: 2 },
+                        borderRadius: { xs: "12px", sm: "16px" },
                         bgcolor: alpha(theme.palette.primary.main, 0.08),
                         border: `1px solid ${alpha(theme.palette.primary.main, 0.15)}`,
-                        display: "flex", alignItems: "center", gap: 2
+                        display: "flex",
+                        alignItems: "center",
+                        gap: { xs: 1, sm: 2 },
+                        minWidth: 0
                     }}>
                         <Box sx={{
-                            p: 1.5, borderRadius: "12px",
+                            p: { xs: 1, sm: 1.5 },
+                            borderRadius: { xs: "10px", sm: "12px" },
                             bgcolor: alpha(theme.palette.primary.main, 0.12),
-                            color: "primary.main", display: "flex"
+                            color: "primary.main",
+                            display: "flex",
+                            flexShrink: 0
                         }}>
-                            <AccountBalanceWallet sx={{ fontSize: 28 }} />
+                            <AccountBalanceWallet sx={{ fontSize: { xs: 20, sm: 28 } }} />
                         </Box>
-                        <Box>
-                            <Typography variant="caption" color="text.secondary" fontWeight={700} sx={{ textTransform: "uppercase", letterSpacing: "0.05em", fontSize: "0.65rem" }}>
+                        <Box sx={{ minWidth: 0 }}>
+                            <Typography
+                                variant="caption"
+                                color="text.secondary"
+                                fontWeight={700}
+                                sx={{
+                                    textTransform: "uppercase",
+                                    letterSpacing: "0.05em",
+                                    fontSize: { xs: "0.55rem", sm: "0.65rem" },
+                                    display: 'block',
+                                    lineHeight: 1.3
+                                }}
+                            >
                                 Total Revenue
                             </Typography>
-                            <Typography variant="h4" fontWeight={900} color="primary.main">
+                            <Typography
+                                variant="h4"
+                                fontWeight={900}
+                                color="primary.main"
+                                sx={{
+                                    fontSize: { xs: '1.25rem', sm: '1.5rem', md: '2rem' },
+                                    lineHeight: 1.2
+                                }}
+                            >
                                 ₹{totalRevenue.toLocaleString()}
                             </Typography>
                         </Box>
                     </Box>
                 </Grid>
-                <Grid size={{ xs: 12, sm: 6 }}>
+                <Grid size={{ xs: 6, sm: 6 }}>
                     <Box sx={{
-                        p: 2, borderRadius: "16px",
+                        p: { xs: 1.5, sm: 2 },
+                        borderRadius: { xs: "12px", sm: "16px" },
                         bgcolor: alpha(theme.palette.secondary.main, 0.08),
                         border: `1px solid ${alpha(theme.palette.secondary.main, 0.15)}`,
-                        display: "flex", alignItems: "center", gap: 2
+                        display: "flex",
+                        alignItems: "center",
+                        gap: { xs: 1, sm: 2 },
+                        minWidth: 0
                     }}>
                         <Box sx={{
-                            p: 1.5, borderRadius: "12px",
+                            p: { xs: 1, sm: 1.5 },
+                            borderRadius: { xs: "10px", sm: "12px" },
                             bgcolor: alpha(theme.palette.secondary.main, 0.12),
-                            color: "secondary.main", display: "flex"
+                            color: "secondary.main",
+                            display: "flex",
+                            flexShrink: 0
                         }}>
-                            <People sx={{ fontSize: 28 }} />
+                            <People sx={{ fontSize: { xs: 20, sm: 28 } }} />
                         </Box>
-                        <Box>
-                            <Typography variant="caption" color="text.secondary" fontWeight={700} sx={{ textTransform: "uppercase", letterSpacing: "0.05em", fontSize: "0.65rem" }}>
+                        <Box sx={{ minWidth: 0 }}>
+                            <Typography
+                                variant="caption"
+                                color="text.secondary"
+                                fontWeight={700}
+                                sx={{
+                                    textTransform: "uppercase",
+                                    letterSpacing: "0.05em",
+                                    fontSize: { xs: "0.55rem", sm: "0.65rem" },
+                                    display: 'block',
+                                    lineHeight: 1.3
+                                }}
+                            >
                                 Contributing Users
                             </Typography>
-                            <Typography variant="h4" fontWeight={900} color="secondary.main">
+                            <Typography
+                                variant="h4"
+                                fontWeight={900}
+                                color="secondary.main"
+                                sx={{
+                                    fontSize: { xs: '1.25rem', sm: '1.5rem', md: '2rem' },
+                                    lineHeight: 1.2
+                                }}
+                            >
                                 {breakdown.length}
                             </Typography>
                         </Box>
@@ -102,7 +164,7 @@ const RevenueReport = ({ startDate, endDate }) => {
                 </Grid>
             </Grid>
 
-            <Divider sx={{ mb: 3 }} />
+            <Divider sx={{ mb: { xs: 2, sm: 3 } }} />
 
             {/* Bar Chart */}
             {breakdown.length > 0 ? (

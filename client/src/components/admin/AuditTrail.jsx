@@ -14,12 +14,77 @@ import {
     Chip,
     CircularProgress,
     Tooltip,
-    IconButton
+    IconButton,
+    Card,
+    CardContent,
+    CardActionArea,
+    useMediaQuery
 } from "@mui/material";
+import { useTheme, alpha } from "@mui/material/styles";
 import { History, Search, Devices, Language, AccountCircle, Visibility } from "@mui/icons-material";
 import { searchItems } from "../../services/items.api";
 
+/* ─── Mobile Card View for a single audit log ─── */
+const AuditCard = ({ log, onShowHistory }) => {
+    const theme = useTheme();
+    return (
+        <Card
+            variant="outlined"
+            sx={{
+                borderRadius: 2.5,
+                overflow: 'hidden',
+                transition: 'border-color 0.2s',
+                '&:hover': { borderColor: 'primary.main' }
+            }}
+        >
+            <CardActionArea onClick={() => onShowHistory(log)} sx={{ p: 0 }}>
+                <CardContent sx={{ p: 1.5, '&:last-child': { pb: 1.5 } }}>
+                    {/* Top row: Job number + Status */}
+                    <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', mb: 0.75 }}>
+                        <Typography variant="subtitle2" fontWeight={800} color="primary" sx={{ fontSize: '0.8rem' }}>
+                            #{log.jobNumber}
+                        </Typography>
+                        <Chip
+                            label={log.status}
+                            size="small"
+                            variant="soft"
+                            color={log.status === 'Delivered' ? 'success' : 'info'}
+                            sx={{ fontSize: '0.6rem', height: 20 }}
+                        />
+                    </Box>
+
+                    {/* Customer + Brand */}
+                    <Typography variant="body2" fontWeight={600} sx={{ fontSize: '0.8rem', lineHeight: 1.3 }} noWrap>
+                        {log.customerName}
+                    </Typography>
+                    <Typography variant="caption" color="text.secondary" sx={{ fontSize: '0.7rem' }}>
+                        {log.brand}
+                    </Typography>
+
+                    {/* Technician row */}
+                    <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', mt: 1, pt: 1, borderTop: '1px solid', borderColor: 'divider' }}>
+                        <Chip
+                            size="small"
+                            icon={<AccountCircle />}
+                            label={log.technicianName}
+                            variant="outlined"
+                            sx={{ height: 22, "& .MuiChip-label": { px: 0.75, fontSize: '0.65rem' }, "& .MuiChip-icon": { fontSize: 14 } }}
+                        />
+                        <IconButton size="small" color="primary" sx={{ p: 0.5 }}>
+                            <Visibility sx={{ fontSize: 18 }} />
+                        </IconButton>
+                    </Box>
+                </CardContent>
+            </CardActionArea>
+        </Card>
+    );
+};
+
+/* ─── Main AuditTrail Component ─── */
 const AuditTrail = ({ initialLogs = [], onShowHistory }) => {
+    const theme = useTheme();
+    const isMobile = useMediaQuery(theme.breakpoints.down("md"));
+
     const [auditLogs, setAuditLogs] = useState(initialLogs);
     const [searchQuery, setSearchQuery] = useState("");
     const [searching, setSearching] = useState(false);
@@ -52,9 +117,25 @@ const AuditTrail = ({ initialLogs = [], onShowHistory }) => {
     };
 
     return (
-        <Paper elevation={0} className="glass-panel" sx={{ p: 3 }}>
-            <Stack direction={{ xs: 'column', sm: 'row' }} justifyContent="space-between" alignItems={{ xs: 'stretch', sm: 'center' }} spacing={2} mb={3}>
-                <Typography variant="h6" fontWeight={800} sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+        <Paper elevation={0} className="glass-panel" sx={{ p: { xs: 2, sm: 3 } }}>
+            {/* Header */}
+            <Stack
+                direction={{ xs: 'column', sm: 'row' }}
+                justifyContent="space-between"
+                alignItems={{ xs: 'stretch', sm: 'center' }}
+                spacing={{ xs: 1.5, sm: 2 }}
+                mb={{ xs: 2, sm: 3 }}
+            >
+                <Typography
+                    variant="h6"
+                    fontWeight={800}
+                    sx={{
+                        display: 'flex',
+                        alignItems: 'center',
+                        gap: 1,
+                        fontSize: { xs: '1rem', sm: '1.25rem' }
+                    }}
+                >
                     <History color="primary" /> Job Audit & Search
                 </Typography>
 
@@ -69,79 +150,97 @@ const AuditTrail = ({ initialLogs = [], onShowHistory }) => {
                     }}
                     sx={{
                         width: { xs: '100%', sm: 300 },
-                        "& .MuiOutlinedInput-root": { borderRadius: 3 }
+                        "& .MuiOutlinedInput-root": { borderRadius: 3 },
+                        '& .MuiInputBase-input': {
+                            fontSize: { xs: '0.8rem', sm: '0.875rem' }
+                        }
                     }}
                 />
             </Stack>
 
-            <TableContainer sx={{ overflowX: 'auto' }}>
-                <Table size="small">
-                    <TableHead>
-                        <TableRow>
-                            <TableCell sx={{ fontWeight: 800 }}>Details</TableCell>
-                            <TableCell sx={{ fontWeight: 800 }}>Technician</TableCell>
-                            <TableCell sx={{ fontWeight: 800, display: { xs: 'none', md: 'table-cell' } }}>Device Info</TableCell>
-                            <TableCell sx={{ fontWeight: 800 }}>Status</TableCell>
-                            <TableCell sx={{ fontWeight: 800 }}>Action</TableCell>
-                        </TableRow>
-                    </TableHead>
-                    <TableBody>
-                        {auditLogs.map((log) => (
-                            <TableRow key={log._id} hover>
-                                <TableCell>
-                                    <Box>
-                                        <Typography variant="subtitle2" fontWeight={800} color="primary">#{log.jobNumber}</Typography>
-                                        <Typography variant="caption" fontWeight={600} display="block" noWrap sx={{ maxWidth: 150 }}>{log.customerName}</Typography>
-                                        <Typography variant="caption" color="text.secondary">{log.brand}</Typography>
-                                    </Box>
-                                </TableCell>
-                                <TableCell>
-                                    <Stack spacing={0.5}>
-                                        <Chip
-                                            size="small"
-                                            icon={<AccountCircle />}
-                                            label={log.technicianName}
-                                            variant="outlined"
-                                            sx={{ height: 20, "& .MuiChip-label": { px: 1, fontSize: '0.65rem' } }}
-                                        />
-                                        <Typography variant="caption" color="text.disabled" sx={{ fontSize: '0.6rem', fontFamily: 'monospace' }}>
-                                            {log.metadata?.ip?.replace('::ffff:', '') || "127.0.0.1"}
-                                        </Typography>
-                                    </Stack>
-                                </TableCell>
-                                <TableCell sx={{ display: { xs: 'none', md: 'table-cell' } }}>
-                                    <Tooltip title={log.metadata?.ua || "Unknown"}>
-                                        <Box sx={{ display: 'flex', flexDirection: 'column' }}>
-                                            <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5 }}>
-                                                <Devices sx={{ fontSize: 13, color: 'text.secondary' }} />
-                                                <Typography variant="caption" sx={{ fontSize: '0.7rem' }}>{log.metadata?.device || "Desktop"}</Typography>
-                                            </Box>
-                                            <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5 }}>
-                                                <Language sx={{ fontSize: 13, color: 'text.secondary' }} />
-                                                <Typography variant="caption" sx={{ fontSize: '0.7rem' }}>{log.metadata?.os} · {log.metadata?.browser}</Typography>
-                                            </Box>
-                                        </Box>
-                                    </Tooltip>
-                                </TableCell>
-                                <TableCell>
-                                    <Chip
-                                        label={log.status}
-                                        size="small"
-                                        variant="soft"
-                                        color={log.status === 'Delivered' ? 'success' : 'info'}
-                                        sx={{ fontSize: '0.65rem', height: 20 }}
-                                    />
-                                </TableCell>
-                                <TableCell>
-                                    <IconButton size="small" color="primary" onClick={() => onShowHistory(log)}>
-                                        <Visibility fontSize="small" />
-                                    </IconButton>
-                                </TableCell>
+            {/* Mobile: Card layout / Desktop: Table layout */}
+            {isMobile ? (
+                <Stack spacing={1.5}>
+                    {auditLogs.length === 0 ? (
+                        <Typography color="text.secondary" textAlign="center" py={3} sx={{ fontSize: '0.85rem' }}>
+                            No audit logs found.
+                        </Typography>
+                    ) : (
+                        auditLogs.map((log) => (
+                            <AuditCard key={log._id} log={log} onShowHistory={onShowHistory} />
+                        ))
+                    )}
+                </Stack>
+            ) : (
+                <TableContainer sx={{ overflowX: 'auto' }}>
+                    <Table size="small">
+                        <TableHead>
+                            <TableRow>
+                                <TableCell sx={{ fontWeight: 800 }}>Details</TableCell>
+                                <TableCell sx={{ fontWeight: 800 }}>Technician</TableCell>
+                                <TableCell sx={{ fontWeight: 800 }}>Device Info</TableCell>
+                                <TableCell sx={{ fontWeight: 800 }}>Status</TableCell>
+                                <TableCell sx={{ fontWeight: 800 }}>Action</TableCell>
                             </TableRow>
-                        ))}
-                    </TableBody>
-                </Table>
-            </TableContainer>
+                        </TableHead>
+                        <TableBody>
+                            {auditLogs.map((log) => (
+                                <TableRow key={log._id} hover>
+                                    <TableCell>
+                                        <Box>
+                                            <Typography variant="subtitle2" fontWeight={800} color="primary">#{log.jobNumber}</Typography>
+                                            <Typography variant="caption" fontWeight={600} display="block" noWrap sx={{ maxWidth: 150 }}>{log.customerName}</Typography>
+                                            <Typography variant="caption" color="text.secondary">{log.brand}</Typography>
+                                        </Box>
+                                    </TableCell>
+                                    <TableCell>
+                                        <Stack spacing={0.5}>
+                                            <Chip
+                                                size="small"
+                                                icon={<AccountCircle />}
+                                                label={log.technicianName}
+                                                variant="outlined"
+                                                sx={{ height: 20, "& .MuiChip-label": { px: 1, fontSize: '0.65rem' } }}
+                                            />
+                                            <Typography variant="caption" color="text.disabled" sx={{ fontSize: '0.6rem', fontFamily: 'monospace' }}>
+                                                {log.metadata?.ip?.replace('::ffff:', '') || "127.0.0.1"}
+                                            </Typography>
+                                        </Stack>
+                                    </TableCell>
+                                    <TableCell>
+                                        <Tooltip title={log.metadata?.ua || "Unknown"}>
+                                            <Box sx={{ display: 'flex', flexDirection: 'column' }}>
+                                                <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5 }}>
+                                                    <Devices sx={{ fontSize: 13, color: 'text.secondary' }} />
+                                                    <Typography variant="caption" sx={{ fontSize: '0.7rem' }}>{log.metadata?.device || "Desktop"}</Typography>
+                                                </Box>
+                                                <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5 }}>
+                                                    <Language sx={{ fontSize: 13, color: 'text.secondary' }} />
+                                                    <Typography variant="caption" sx={{ fontSize: '0.7rem' }}>{log.metadata?.os} · {log.metadata?.browser}</Typography>
+                                                </Box>
+                                            </Box>
+                                        </Tooltip>
+                                    </TableCell>
+                                    <TableCell>
+                                        <Chip
+                                            label={log.status}
+                                            size="small"
+                                            variant="soft"
+                                            color={log.status === 'Delivered' ? 'success' : 'info'}
+                                            sx={{ fontSize: '0.65rem', height: 20 }}
+                                        />
+                                    </TableCell>
+                                    <TableCell>
+                                        <IconButton size="small" color="primary" onClick={() => onShowHistory(log)}>
+                                            <Visibility fontSize="small" />
+                                        </IconButton>
+                                    </TableCell>
+                                </TableRow>
+                            ))}
+                        </TableBody>
+                    </Table>
+                </TableContainer>
+            )}
         </Paper>
     );
 };
