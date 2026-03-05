@@ -15,6 +15,8 @@ import { CalendarMonth, RestartAlt } from "@mui/icons-material";
 import { format, startOfMonth } from "date-fns";
 import { searchItems } from "../services/items.api";
 import { useAuth } from "../auth/AuthContext";
+import { LocalizationProvider, DatePicker } from "@mui/x-date-pickers";
+import { AdapterDateFns } from "@mui/x-date-pickers/AdapterDateFns";
 
 // Modular Components
 import TechnicianList from "./admin/TechnicianList";
@@ -120,34 +122,34 @@ const AdminDashboard = () => {
                         flex: 1,
                         alignItems: 'center'
                     }}>
-                        <TextField
-                            type="date"
-                            size="small"
-                            label="From"
-                            fullWidth
-                            value={dates.start}
-                            onChange={(e) => setDates({ ...dates, start: e.target.value })}
-                            InputLabelProps={{ shrink: true }}
-                            sx={{
-                                '& .MuiInputBase-root': {
-                                    fontSize: { xs: '0.8rem', sm: '0.875rem' }
-                                }
-                            }}
-                        />
-                        <TextField
-                            type="date"
-                            size="small"
-                            label="To"
-                            fullWidth
-                            value={dates.end}
-                            onChange={(e) => setDates({ ...dates, end: e.target.value })}
-                            InputLabelProps={{ shrink: true }}
-                            sx={{
-                                '& .MuiInputBase-root': {
-                                    fontSize: { xs: '0.8rem', sm: '0.875rem' }
-                                }
-                            }}
-                        />
+                        <LocalizationProvider dateAdapter={AdapterDateFns}>
+                            <DatePicker
+                                label="From"
+                                format="dd/MM/yyyy"
+                                value={new Date(dates.start)}
+                                onChange={(newValue) => setDates({ ...dates, start: format(newValue, "yyyy-MM-dd") })}
+                                slotProps={{
+                                    textField: {
+                                        size: "small",
+                                        fullWidth: true,
+                                        sx: { '& .MuiInputBase-root': { fontSize: { xs: '0.8rem', sm: '0.875rem' } } },
+                                    }
+                                }}
+                            />
+                            <DatePicker
+                                label="To"
+                                format="dd/MM/yyyy"
+                                value={new Date(dates.end)}
+                                onChange={(newValue) => setDates({ ...dates, end: format(newValue, "yyyy-MM-dd") })}
+                                slotProps={{
+                                    textField: {
+                                        size: "small",
+                                        fullWidth: true,
+                                        sx: { '& .MuiInputBase-root': { fontSize: { xs: '0.8rem', sm: '0.875rem' } } },
+                                    }
+                                }}
+                            />
+                        </LocalizationProvider>
                     </Box>
 
                     <Button

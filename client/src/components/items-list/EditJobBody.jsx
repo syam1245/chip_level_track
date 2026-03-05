@@ -14,6 +14,8 @@ import { alpha } from "@mui/system";
 import { STATUS_COLORS, STATUS_ACCENT } from "../../constants/status";
 import { FAULT_OPTIONS } from "../../constants/faults";
 import EditJobSection from "./EditJobSection";
+import { LocalizationProvider, DatePicker } from "@mui/x-date-pickers";
+import { AdapterDateFns } from "@mui/x-date-pickers/AdapterDateFns";
 
 const inputSx = (theme) => ({
     "& .MuiOutlinedInput-root": {
@@ -75,13 +77,23 @@ const EditJobBody = ({ editItem, setEditItem, isAdmin, isMobile, isDark, theme, 
                             />
                         </Grid>
                         <Grid size={{ xs: 12, sm: 6 }}>
-                            <TextField
-                                label="Due Date" type="date"
-                                value={editItem.dueDate ? new Date(editItem.dueDate).toISOString().slice(0, 10) : ""}
-                                onChange={(e) => setEditItem({ ...editItem, dueDate: e.target.value || null })}
-                                fullWidth size="small" InputLabelProps={{ shrink: true }} helperText="Optional — leave blank for no deadline" sx={inputSx(theme)}
-                                slotProps={{ input: { startAdornment: <InputAdornment position="start"><ScheduleIcon fontSize="small" sx={{ color: "text.disabled" }} /></InputAdornment> } }}
-                            />
+                            <LocalizationProvider dateAdapter={AdapterDateFns}>
+                                <DatePicker
+                                    label="Due Date"
+                                    format="dd/MM/yyyy"
+                                    value={editItem.dueDate ? new Date(editItem.dueDate) : null}
+                                    onChange={(newValue) => setEditItem({ ...editItem, dueDate: newValue ? newValue.toISOString() : null })}
+                                    slotProps={{
+                                        textField: {
+                                            fullWidth: true,
+                                            size: "small",
+                                            helperText: "Optional — leave blank for no deadline",
+                                            sx: inputSx(theme),
+                                            InputProps: { startAdornment: <InputAdornment position="start"><ScheduleIcon fontSize="small" sx={{ color: "text.disabled" }} /></InputAdornment> }
+                                        }
+                                    }}
+                                />
+                            </LocalizationProvider>
                         </Grid>
                     </Grid>
                 </EditJobSection>
