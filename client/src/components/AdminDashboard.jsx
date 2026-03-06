@@ -98,10 +98,10 @@ const AdminDashboard = () => {
     if (loading) return <Box sx={{ display: 'flex', justifyContent: 'center', p: 10 }}><CircularProgress /></Box>;
 
     return (
-        <Box sx={{ maxWidth: "1600px", margin: "0 auto", p: { xs: 1.5, sm: 2, md: 4 } }}>
+        <Box sx={{ maxWidth: "1600px", margin: "0 auto", p: { xs: 1, sm: 1.5, md: 3 } }}>
             {/* Header Section - fully responsive */}
             <Box sx={{
-                mb: { xs: 2.5, md: 4 },
+                mb: { xs: 2, md: 3 },
                 display: 'flex',
                 flexDirection: 'column',
                 gap: { xs: 1.5, md: 2 }
@@ -123,7 +123,7 @@ const AdminDashboard = () => {
                 <Box
                     className="glass-panel"
                     sx={{
-                        px: { xs: 1.5, sm: 2, md: 3 },
+                        px: { xs: 1.5, sm: 2 },
                         py: { xs: 1.5, sm: 1.5 },
                         display: 'flex',
                         flexDirection: { xs: 'column', sm: 'row' },
@@ -192,12 +192,12 @@ const AdminDashboard = () => {
             </Box>
 
             {message.text && (
-                <Alert severity={message.type} sx={{ mb: { xs: 2, md: 4 } }} onClose={() => setMessage({ text: "", type: "success" })}>
+                <Alert severity={message.type} sx={{ mb: { xs: 2, md: 3 } }} onClose={() => setMessage({ text: "", type: "success" })}>
                     {message.text}
                 </Alert>
             )}
 
-            <Grid container spacing={{ xs: 2, sm: 2.5, md: 4 }}>
+            <Grid container spacing={{ xs: 1.5, sm: 2, md: 3 }}>
                 {/* Revenue Report */}
                 <Grid size={{ xs: 12, lg: 8 }}>
                     <RevenueReport data={revenueData} loading={statsLoading} />

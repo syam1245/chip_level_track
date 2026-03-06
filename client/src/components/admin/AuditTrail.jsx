@@ -148,14 +148,14 @@ const AuditTrail = ({ initialLogs = [], onShowHistory }) => {
     };
 
     return (
-        <Paper elevation={0} className="glass-panel" sx={{ p: { xs: 2, sm: 3 } }}>
+        <Paper elevation={0} className="glass-panel" sx={{ p: { xs: 1.5, sm: 2 } }}>
             {/* Header */}
             <Stack
                 direction={{ xs: 'column', sm: 'row' }}
                 justifyContent="space-between"
                 alignItems={{ xs: 'stretch', sm: 'center' }}
-                spacing={{ xs: 1.5, sm: 2 }}
-                mb={{ xs: 2, sm: 3 }}
+                spacing={{ xs: 1, sm: 1.5 }}
+                mb={{ xs: 1.5, sm: 2 }}
             >
                 <Typography
                     variant="h6"
@@ -204,7 +204,7 @@ const AuditTrail = ({ initialLogs = [], onShowHistory }) => {
 
             {/* Mobile: Card layout / Desktop: Table layout */}
             {isMobile ? (
-                <Stack spacing={1.5}>
+                <Stack spacing={1}>
                     {auditLogs.length === 0 ? (
                         <Typography color="text.secondary" textAlign="center" py={3} sx={{ fontSize: '0.85rem' }}>
                             No audit logs found.

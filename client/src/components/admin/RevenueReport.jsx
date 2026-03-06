@@ -77,8 +77,8 @@ const RevenueReport = ({ data, loading }) => {
     ];
 
     return (
-        <Paper elevation={0} className="glass-panel" sx={{ p: { xs: 2, sm: 3 }, overflow: 'hidden' }}>
-            <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: { xs: 2, sm: 3 } }}>
+        <Paper elevation={0} className="glass-panel" sx={{ p: { xs: 1.5, sm: 2 }, overflow: 'hidden' }}>
+            <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: { xs: 1.5, sm: 2 } }}>
                 <Typography
                     variant="h6"
                     fontWeight={800}
@@ -116,24 +116,24 @@ const RevenueReport = ({ data, loading }) => {
             </Box>
 
             {/* KPI Summary Cards */}
-            <Grid container spacing={{ xs: 1.5, sm: 2 }} mb={{ xs: 2, sm: 3 }}>
+            <Grid container spacing={{ xs: 1, sm: 1.5 }} mb={{ xs: 1.5, sm: 2 }}>
                 {kpis.map((kpi, index) => (
                     <Grid size={{ xs: 6, sm: 6, md: 3 }} key={index}>
                         <Box sx={{
-                            p: { xs: 1.5, sm: 2 },
-                            borderRadius: { xs: "12px", sm: "16px" },
+                            p: { xs: 1, sm: 1.5 },
+                            borderRadius: { xs: "10px", sm: "12px" },
                             bgcolor: alpha(kpi.color, 0.08),
                             border: `1px solid ${alpha(kpi.color, 0.15)}`,
                             display: "flex",
                             alignItems: "center",
-                            gap: { xs: 1, sm: 2 },
+                            gap: { xs: 1, sm: 1.5 },
                             minWidth: 0,
                             height: '100%',
                             boxSizing: 'border-box'
                         }}>
                             <Box sx={{
-                                p: { xs: 1, sm: 1.5 },
-                                borderRadius: { xs: "10px", sm: "12px" },
+                                p: { xs: 0.75, sm: 1 },
+                                borderRadius: { xs: "8px", sm: "10px" },
                                 bgcolor: alpha(kpi.color, 0.12),
                                 color: kpi.color,
                                 display: "flex",
@@ -179,7 +179,7 @@ const RevenueReport = ({ data, loading }) => {
                 ))}
             </Grid>
 
-            <Divider sx={{ mb: { xs: 2, sm: 3 } }} />
+            <Divider sx={{ mb: { xs: 1.5, sm: 2 } }} />
 
             {/* Bar Chart */}
             {breakdown.length > 0 ? (

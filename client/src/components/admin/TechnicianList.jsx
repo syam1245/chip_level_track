@@ -47,7 +47,7 @@ const TechnicianCard = ({ tech, stats, isAdmin, currentUser, onReset, onEdit, on
             position: 'relative',
             overflow: 'visible'
         }}>
-            <CardContent sx={{ p: { xs: 1.5, sm: 2 }, "&:last-child": { pb: { xs: 1.5, sm: 2 } } }}>
+            <CardContent sx={{ p: { xs: 1, sm: 1.5 }, "&:last-child": { pb: { xs: 1, sm: 1.5 } } }}>
                 <Box sx={{
                     display: 'flex',
                     alignItems: 'center',
@@ -334,8 +334,8 @@ const TechnicianList = ({ technicians, revenueData, onUpdate }) => {
     };
 
     return (
-        <Paper elevation={0} className="glass-panel" sx={{ p: { xs: 2, sm: 3 }, height: '100%' }}>
-            <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: { xs: 2, sm: 3 } }}>
+        <Paper elevation={0} className="glass-panel" sx={{ p: { xs: 1.5, sm: 2 }, height: '100%' }}>
+            <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: { xs: 1.5, sm: 2 } }}>
                 <Typography
                     variant="h6"
                     fontWeight={800}
@@ -367,7 +367,7 @@ const TechnicianList = ({ technicians, revenueData, onUpdate }) => {
                 </Alert>
             )}
 
-            <Stack spacing={{ xs: 1.5, sm: 2 }}>
+            <Stack spacing={{ xs: 1, sm: 1.5 }}>
                 {technicians.map((tech) => {
                     const techStats = revenueData?.breakdown?.find(b => b._id === tech.displayName) || { totalRevenue: 0, deviceCount: 0 };
 
