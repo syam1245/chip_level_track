@@ -69,6 +69,15 @@ class ItemController {
         res.json({ msg: "Item removed" });
     });
 
+    bulkDeleteItems = asyncHandler(async (req, res) => {
+        const { ids } = req.body;
+        if (!Array.isArray(ids) || ids.length === 0) {
+            return res.status(400).json({ error: "ids (array) is required" });
+        }
+        const result = await ItemService.bulkDeleteItems(ids);
+        res.json({ success: true, deletedCount: result.modifiedCount });
+    });
+
     bulkUpdateStatus = asyncHandler(async (req, res) => {
         const { ids, status } = req.body;
         if (!Array.isArray(ids) || ids.length === 0 || !status) {

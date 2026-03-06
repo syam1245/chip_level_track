@@ -108,6 +108,20 @@ export async function bulkUpdateStatus(ids, status) {
 }
 
 /**
+ * Bulk-delete multiple items.
+ * @param {string[]} ids
+ * @returns {Promise<{ok: boolean, data: object, error?: string}>}
+ */
+export async function bulkDeleteItems(ids) {
+    const res = await authFetch("/api/items/bulk-delete", {
+        method: "PATCH",
+        body: JSON.stringify({ ids }),
+    });
+    const data = await res.json();
+    return { ok: res.ok, data, error: data.error };
+}
+
+/**
  * Search items (used by admin audit trail).
  * @param {string} query
  * @param {number} [limit=15]

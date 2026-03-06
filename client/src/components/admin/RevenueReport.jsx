@@ -9,17 +9,45 @@ import RevenueChart from "./RevenueChart";
 const RevenueReport = ({ data, loading }) => {
     const theme = useTheme();
 
+    const totalRevenue = data?.total ?? 0;
+    const totalJobs = data?.totalJobs ?? 0;
+    const pendingJobs = data?.pendingJobs ?? 0;
+    const topTechnician = data?.topTechnician ?? "N/A";
+    const breakdown = data?.breakdown ?? [];
+
+    const kpis = React.useMemo(() => [
+        {
+            title: "Total Revenue",
+            value: `₹${totalRevenue.toLocaleString()}`,
+            icon: <AccountBalanceWallet sx={{ fontSize: { xs: 20, sm: 28 } }} />,
+            color: theme.palette.primary.main
+        },
+        {
+            title: "Total Jobs",
+            value: totalJobs,
+            icon: <Build sx={{ fontSize: { xs: 20, sm: 28 } }} />,
+            color: theme.palette.secondary.main
+        },
+        {
+            title: "Pending Jobs",
+            value: pendingJobs,
+            icon: <PendingActions sx={{ fontSize: { xs: 20, sm: 28 } }} />,
+            color: theme.palette.warning?.main || "#ed6c02" // fallback for warning
+        },
+        {
+            title: "Top Technician",
+            value: topTechnician,
+            icon: <Star sx={{ fontSize: { xs: 20, sm: 28 } }} />,
+            color: theme.palette.success?.main || "#2e7d32" // fallback for success
+        }
+    ], [totalRevenue, totalJobs, pendingJobs, topTechnician, theme]);
+
     if (loading) return (
         <Paper elevation={0} className="glass-panel" sx={{ p: { xs: 2, sm: 3 }, display: "flex", justifyContent: "center", alignItems: "center", minHeight: 200 }}>
             <CircularProgress />
         </Paper>
     );
     if (!data) return <Alert severity="warning" sx={{ borderRadius: 3 }}>No data available</Alert>;
-    const totalRevenue = data?.total ?? 0;
-    const totalJobs = data?.totalJobs ?? 0;
-    const pendingJobs = data?.pendingJobs ?? 0;
-    const topTechnician = data?.topTechnician ?? "N/A";
-    const breakdown = data?.breakdown ?? [];
 
     const handleExportCSV = () => {
         if (!breakdown || breakdown.length === 0) return;
@@ -49,32 +77,7 @@ const RevenueReport = ({ data, loading }) => {
         document.body.removeChild(link);
     };
 
-    const kpis = [
-        {
-            title: "Total Revenue",
-            value: `₹${totalRevenue.toLocaleString()}`,
-            icon: <AccountBalanceWallet sx={{ fontSize: { xs: 20, sm: 28 } }} />,
-            color: theme.palette.primary.main
-        },
-        {
-            title: "Total Jobs",
-            value: totalJobs,
-            icon: <Build sx={{ fontSize: { xs: 20, sm: 28 } }} />,
-            color: theme.palette.secondary.main
-        },
-        {
-            title: "Pending Jobs",
-            value: pendingJobs,
-            icon: <PendingActions sx={{ fontSize: { xs: 20, sm: 28 } }} />,
-            color: theme.palette.warning?.main || "#ed6c02" // fallback for warning
-        },
-        {
-            title: "Top Technician",
-            value: topTechnician,
-            icon: <Star sx={{ fontSize: { xs: 20, sm: 28 } }} />,
-            color: theme.palette.success?.main || "#2e7d32" // fallback for success
-        }
-    ];
+
 
     return (
         <Paper elevation={0} className="glass-panel" sx={{ p: { xs: 1.5, sm: 2 }, overflow: 'hidden' }}>

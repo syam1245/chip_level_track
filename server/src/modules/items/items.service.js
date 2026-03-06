@@ -137,6 +137,17 @@ class ItemService {
         return deleted;
     }
 
+    async bulkDeleteItems(ids) {
+        if (!Array.isArray(ids) || ids.length === 0) {
+            throw new AppError("ids must be a non-empty array", 400);
+        }
+
+        const result = await ItemRepository.bulkSoftDelete(ids);
+        this._invalidateCache();
+        broadcast("job:bulk-updated", { count: ids.length, isDelete: true });
+        return result;
+    }
+
     async bulkUpdateStatus(ids, newStatus) {
         if (!Array.isArray(ids) || ids.length === 0) {
             throw new AppError("ids must be a non-empty array", 400);

@@ -29,6 +29,7 @@ router.use(requireAuth, requireCsrf);
 // Static routes
 router.get("/backup", requirePermission("items:backup"), ItemController.getBackup);
 router.patch("/bulk-status", requirePermission("items:update"), ItemController.bulkUpdateStatus);
+router.patch("/bulk-delete", requirePermission("items:delete"), ItemController.bulkDeleteItems);
 router.post("/", requirePermission("items:create"), ItemController.createItem);
 router.get("/", requirePermission("items:read"), ItemController.getAllItems);
 

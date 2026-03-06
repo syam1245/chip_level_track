@@ -26,7 +26,7 @@ import { History, Search, Devices, Language, AccountCircle, Visibility, Download
 import { searchItems } from "../../services/items.api";
 
 /* ─── Mobile Card View for a single audit log ─── */
-const AuditCard = ({ log, onShowHistory }) => {
+const AuditCard = React.memo(({ log, onShowHistory }) => {
     const theme = useTheme();
     return (
         <Card
@@ -79,10 +79,10 @@ const AuditCard = ({ log, onShowHistory }) => {
             </CardActionArea>
         </Card>
     );
-};
+});
 
 /* ─── Main AuditTrail Component ─── */
-const AuditTrail = ({ initialLogs = [], onShowHistory }) => {
+const AuditTrail = React.memo(({ initialLogs = [], onShowHistory }) => {
     const theme = useTheme();
     const isMobile = useMediaQuery(theme.breakpoints.down("md"));
 
@@ -287,6 +287,6 @@ const AuditTrail = ({ initialLogs = [], onShowHistory }) => {
             )}
         </Paper>
     );
-};
+});
 
 export default AuditTrail;

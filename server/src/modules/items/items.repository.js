@@ -43,6 +43,13 @@ class ItemRepository {
         return await Item.findByIdAndUpdate(id, { isDeleted: true }, { new: true });
     }
 
+    async bulkSoftDelete(ids) {
+        return await Item.updateMany(
+            { _id: { $in: ids } },
+            { $set: { isDeleted: true } }
+        );
+    }
+
     // Backup utility: find all active (non-deleted) items only
     async findAllForBackup() {
         return await Item.find({ isDeleted: false }).sort({ createdAt: -1 }).lean();

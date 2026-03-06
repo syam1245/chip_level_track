@@ -155,6 +155,7 @@ const ItemsList = () => {
                         <BulkActionBar
                             selectedCount={actions.selectedIds.size} bulkStatus={actions.bulkStatus}
                             setBulkStatus={actions.setBulkStatus} onApply={actions.handleBulkApply} onClear={actions.clearSelection}
+                            isAdmin={isAdmin} onBulkDelete={actions.handleBulkDelete}
                         />
                         <ItemsTable
                             items={data.items} loading={data.loading}

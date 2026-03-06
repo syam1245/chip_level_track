@@ -5,7 +5,7 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import { useReactToPrint } from "react-to-print";
 import API_BASE_URL from "../../api";
-import { updateItem, deleteItem, bulkUpdateStatus } from "../../services/items.api";
+import { updateItem, deleteItem, bulkUpdateStatus, bulkDeleteItems } from "../../services/items.api";
 import { generateWhatsAppMessage } from "../../utils/whatsapp";
 
 export default function useItemsActions({ items, setItems, setSnackbar, refetch, notify }) {
@@ -122,6 +122,24 @@ export default function useItemsActions({ items, setItems, setSnackbar, refetch,
         }
     }, [bulkStatus, selectedIds, clearSelection, refetch, setSnackbar]);
 
+    const handleBulkDelete = useCallback(async () => {
+        if (selectedIds.size === 0) return;
+        if (!window.confirm(`Are you sure you want to delete ${selectedIds.size} jobs? This action cannot be undone.`)) return;
+
+        try {
+            const { ok, data, error } = await bulkDeleteItems([...selectedIds]);
+            if (ok) {
+                setSnackbar({ open: true, message: `Successfully deleted ${data.deletedCount} job(s)`, severity: "success" });
+                clearSelection();
+                refetch();
+            } else {
+                setSnackbar({ open: true, message: error || "Bulk delete failed", severity: "error" });
+            }
+        } catch {
+            setSnackbar({ open: true, message: "Network error", severity: "error" });
+        }
+    }, [selectedIds, clearSelection, refetch, setSnackbar]);
+
     return {
         // Edit
         editItem, setEditItem, handleEditSave,
@@ -130,7 +148,7 @@ export default function useItemsActions({ items, setItems, setSnackbar, refetch,
         // Print
         printItem, setPrintItem, printComponentRef,
         // Bulk
-        selectedIds, bulkStatus, setBulkStatus, onSelectChange, clearSelection, handleBulkApply,
+        selectedIds, bulkStatus, setBulkStatus, onSelectChange, clearSelection, handleBulkApply, handleBulkDelete,
         // Misc actions
         handleWhatsApp, downloadBackup,
     };

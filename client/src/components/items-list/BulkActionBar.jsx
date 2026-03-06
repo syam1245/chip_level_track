@@ -3,14 +3,14 @@ import {
     Paper, Chip, Stack, Select, MenuItem,
     FormControl, InputLabel, Button, Tooltip, IconButton,
 } from "@mui/material";
-import { Close as CloseIcon, CheckBox as CheckBoxIcon } from "@mui/icons-material";
+import { Close as CloseIcon, CheckBox as CheckBoxIcon, DeleteOutline as DeleteOutlineIcon } from "@mui/icons-material";
 
 const ALL_STATUSES = [
     "Received", "Sent to Service", "In Progress",
     "Waiting for Parts", "Ready", "Delivered", "Return", "Pending",
 ];
 
-const BulkActionBar = ({ selectedCount, bulkStatus, setBulkStatus, onApply, onClear }) => {
+const BulkActionBar = ({ selectedCount, bulkStatus, setBulkStatus, onApply, onBulkDelete, isAdmin, onClear }) => {
     if (selectedCount === 0) return null;
 
     return (
@@ -58,6 +58,23 @@ const BulkActionBar = ({ selectedCount, bulkStatus, setBulkStatus, onApply, onCl
                 >
                     Apply
                 </Button>
+                {isAdmin && (
+                    <Button
+                        variant="outlined"
+                        size="small"
+                        color="error"
+                        startIcon={<DeleteOutlineIcon fontSize="small" />}
+                        onClick={onBulkDelete}
+                        sx={{
+                            ml: 1,
+                            color: "error.light",
+                            borderColor: "error.main",
+                            "&:hover": { bgcolor: "error.main", color: "white" }
+                        }}
+                    >
+                        Delete
+                    </Button>
+                )}
                 <Tooltip title="Clear selection (Esc)">
                     <IconButton size="small" onClick={onClear} sx={{ color: "primary.contrastText" }}>
                         <CloseIcon fontSize="small" />

@@ -71,7 +71,7 @@ const AdminDashboard = () => {
         loadStats();
     }, [loadStats]);
 
-    const loadBaseData = async () => {
+    const loadBaseData = React.useCallback(async () => {
         setLoading(true);
         try {
             const [techs, itemsData] = await Promise.all([
@@ -86,7 +86,11 @@ const AdminDashboard = () => {
         } finally {
             setLoading(false);
         }
-    };
+    }, [fetchTechnicians]);
+
+    useEffect(() => {
+        loadBaseData();
+    }, [loadBaseData]);
 
     const handleResetDates = () => {
         setDates({
@@ -94,6 +98,8 @@ const AdminDashboard = () => {
             end: format(new Date(), "yyyy-MM-dd")
         });
     };
+
+    const handleShowHistory = React.useCallback((item) => setHistoryItem(item), []);
 
     if (loading) return <Box sx={{ display: 'flex', justifyContent: 'center', p: 10 }}><CircularProgress /></Box>;
 
@@ -210,7 +216,7 @@ const AdminDashboard = () => {
 
                 {/* Audit Trail */}
                 <Grid size={{ xs: 12 }}>
-                    <AuditTrail initialLogs={auditLogs} onShowHistory={(item) => setHistoryItem(item)} />
+                    <AuditTrail initialLogs={auditLogs} onShowHistory={handleShowHistory} />
                 </Grid>
             </Grid>
 
