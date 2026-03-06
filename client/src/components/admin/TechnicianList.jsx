@@ -26,7 +26,7 @@ import { Engineering, VpnKey, PersonOff, PersonAdd, Add as AddIcon, DeleteForeve
 import { resetPassword, toggleUserActive, createUser, deleteUser, updateUser } from "../../services/auth.api";
 import { useAuth } from "../../auth/AuthContext";
 
-const TechnicianCard = ({ tech, stats, isAdmin, currentUser, onReset, onEdit, onToggleActive, onDelete }) => {
+const TechnicianCard = React.memo(({ tech, stats, isAdmin, currentUser, onReset, onEdit, onToggleActive, onDelete }) => {
     const theme = useTheme();
     const isMobile = useMediaQuery(theme.breakpoints.down("sm"));
     const [anchorEl, setAnchorEl] = useState(null);
@@ -209,7 +209,7 @@ const TechnicianCard = ({ tech, stats, isAdmin, currentUser, onReset, onEdit, on
             </CardContent>
         </Card>
     );
-};
+});
 
 const TechnicianList = ({ technicians, revenueData, onUpdate }) => {
     const theme = useTheme();
@@ -368,26 +368,35 @@ const TechnicianList = ({ technicians, revenueData, onUpdate }) => {
             )}
 
             <Stack spacing={{ xs: 1, sm: 1.5 }}>
-                {technicians.map((tech) => {
-                    const techStats = revenueData?.breakdown?.find(b => b._id === tech.displayName) || { totalRevenue: 0, deviceCount: 0 };
+                {(() => {
+                    const revenueMap = {};
+                    if (revenueData?.breakdown) {
+                        for (const b of revenueData.breakdown) {
+                            revenueMap[b._id] = b;
+                        }
+                    }
 
-                    return (
-                        <TechnicianCard
-                            key={tech.username}
-                            tech={tech}
-                            stats={techStats}
-                            isAdmin={isAdmin}
-                            currentUser={user}
-                            onReset={() => setResetUser(tech)}
-                            onEdit={() => {
-                                setEditUserObj(tech);
-                                setEditUserState({ username: tech.username, displayName: tech.displayName });
-                            }}
-                            onToggleActive={() => handleToggleActive(tech)}
-                            onDelete={() => setDeleteUserObj(tech)}
-                        />
-                    );
-                })}
+                    return technicians.map((tech) => {
+                        const techStats = revenueMap[tech.displayName] || { totalRevenue: 0, deviceCount: 0 };
+
+                        return (
+                            <TechnicianCard
+                                key={tech.username}
+                                tech={tech}
+                                stats={techStats}
+                                isAdmin={isAdmin}
+                                currentUser={user}
+                                onReset={() => setResetUser(tech)}
+                                onEdit={() => {
+                                    setEditUserObj(tech);
+                                    setEditUserState({ username: tech.username, displayName: tech.displayName });
+                                }}
+                                onToggleActive={() => handleToggleActive(tech)}
+                                onDelete={() => setDeleteUserObj(tech)}
+                            />
+                        );
+                    });
+                })()}
             </Stack>
 
             {/* Reset Password Dialog */}

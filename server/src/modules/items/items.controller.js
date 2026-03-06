@@ -37,11 +37,11 @@ class ItemController {
         const deviceResult = parser.getResult();
 
         const cleanData = {
-            jobNumber: String(jobNumber).trim(),
-            customerName: String(customerName).trim(),
-            brand: String(brand).trim(),
-            phoneNumber: String(phoneNumber).trim(),
-            issue: issue ? String(issue).trim() : "",
+            jobNumber: String(jobNumber).trim().substring(0, 50),
+            customerName: String(customerName).trim().substring(0, 100),
+            brand: String(brand).trim().substring(0, 50),
+            phoneNumber: String(phoneNumber).trim().substring(0, 15),
+            issue: issue ? String(issue).trim().substring(0, 2000) : "",
             metadata: {
                 ip: req.ip || req.socket?.remoteAddress || "unknown",
                 browser: deviceResult.browser.name || "Unknown",

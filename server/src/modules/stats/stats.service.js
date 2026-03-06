@@ -24,6 +24,10 @@ class StatsService {
         const now = new Date();
         return new Date(now.getFullYear(), now.getMonth(), 1);
     }
+
+    invalidateRevenueCache() {
+        revenueCache.flushAll();
+    }
 }
 
 export default new StatsService();

@@ -4,6 +4,7 @@ import NodeCache from "node-cache";
 import { enrichWithAging, computeAgingSummary } from "./items.aging.js";
 import { buildSearchQuery, buildSortOptions, STATUS_GROUPS } from "./items.query-builder.js";
 import { broadcast } from "./items.events.js";
+import StatsService from "../stats/stats.service.js";
 
 const statsCache = new NodeCache({ stdTTL: 300 }); // Cache for 5 minutes
 
@@ -88,6 +89,12 @@ class ItemService {
         if (data.dueDate !== undefined) item.dueDate = data.dueDate ? new Date(data.dueDate) : null;
 
         if (data.status && data.status !== item.status) {
+            // Validate allowed status values to prevent invalid statuses in history
+            const ALLOWED_STATUSES = ["Received", "Sent to Service", "In Progress", "Waiting for Parts", "Ready", "Delivered", "Return", "Pending"];
+            if (!ALLOWED_STATUSES.includes(data.status)) {
+                throw new AppError(`Invalid status: "${data.status}". Must be one of: ${ALLOWED_STATUSES.join(", ")}`, 400);
+            }
+
             // Validation for Delivered status
             if (data.status === "Delivered" && !item.finalCost) {
                 throw new AppError("A final amount must be provided before marking the job as Delivered.", 400);
@@ -103,6 +110,7 @@ class ItemService {
             // Set revenueRealizedAt when the repair finishes (if not already set)
             if ((data.status === "Ready" || data.status === "Delivered") && !item.revenueRealizedAt) {
                 item.revenueRealizedAt = new Date();
+                StatsService.invalidateRevenueCache(); // New revenue realized, invalidate reports
             }
 
             if (data.status === "Delivered") {
@@ -151,6 +159,7 @@ class ItemService {
         if (newStatus === "Ready") {
             // Bulk set revenueRealizedAt where it is not yet set
             await ItemRepository.bulkSetRevenueRealized(ids);
+            StatsService.invalidateRevenueCache();
         }
 
         this._invalidateCache();
@@ -172,13 +181,30 @@ class ItemService {
         const cached = statsCache.get("itemStats");
         if (cached) return cached;
 
-        const [inProgress, ready, returned] = await Promise.all([
-            ItemRepository.countDocuments({ isDeleted: false, status: { $in: STATUS_GROUPS.inProgress } }),
-            ItemRepository.countDocuments({ isDeleted: false, status: { $in: STATUS_GROUPS.ready } }),
-            ItemRepository.countDocuments({ isDeleted: false, status: { $in: STATUS_GROUPS.returned } }),
+        const results = await ItemRepository.aggregate([
+            { $match: { isDeleted: false } },
+            {
+                $group: {
+                    _id: null,
+                    inProgress: {
+                        $sum: { $cond: [{ $in: ["$status", STATUS_GROUPS.inProgress] }, 1, 0] }
+                    },
+                    ready: {
+                        $sum: { $cond: [{ $in: ["$status", STATUS_GROUPS.ready] }, 1, 0] }
+                    },
+                    returned: {
+                        $sum: { $cond: [{ $in: ["$status", STATUS_GROUPS.returned] }, 1, 0] }
+                    }
+                }
+            }
         ]);
 
-        const stats = { inProgress, ready, returned };
+        const stats = results[0] ? {
+            inProgress: results[0].inProgress,
+            ready: results[0].ready,
+            returned: results[0].returned
+        } : { inProgress: 0, ready: 0, returned: 0 };
+
         statsCache.set("itemStats", stats);
         return stats;
     }
