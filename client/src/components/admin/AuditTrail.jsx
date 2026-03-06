@@ -18,10 +18,11 @@ import {
     Card,
     CardContent,
     CardActionArea,
-    useMediaQuery
+    useMediaQuery,
+    Button
 } from "@mui/material";
 import { useTheme, alpha } from "@mui/material/styles";
-import { History, Search, Devices, Language, AccountCircle, Visibility } from "@mui/icons-material";
+import { History, Search, Devices, Language, AccountCircle, Visibility, Download as DownloadIcon } from "@mui/icons-material";
 import { searchItems } from "../../services/items.api";
 
 /* ─── Mobile Card View for a single audit log ─── */
@@ -116,6 +117,36 @@ const AuditTrail = ({ initialLogs = [], onShowHistory }) => {
         }
     };
 
+    const handleExportCSV = () => {
+        if (!auditLogs || auditLogs.length === 0) return;
+
+        const headers = ["Job Number", "Customer Name", "Phone", "Brand", "Issue", "Technician", "Status", "Date"];
+        const csvRows = [headers.join(",")];
+
+        for (const log of auditLogs) {
+            const row = [
+                `"${log.jobNumber || ''}"`,
+                `"${log.customerName || ''}"`,
+                `"${log.phoneNumber || ''}"`,
+                `"${log.brand || ''}"`,
+                `"${log.issue || ''}"`,
+                `"${log.technicianName || ''}"`,
+                `"${log.status || ''}"`,
+                `"${log.formattedDate || new Date(log.createdAt).toLocaleDateString()}"`
+            ];
+            csvRows.push(row.join(","));
+        }
+
+        const csvContent = "data:text/csv;charset=utf-8," + csvRows.join("\n");
+        const encodedUri = encodeURI(csvContent);
+        const link = document.createElement("a");
+        link.setAttribute("href", encodedUri);
+        link.setAttribute("download", `job_audit_${new Date().toISOString().split('T')[0]}.csv`);
+        document.body.appendChild(link);
+        link.click();
+        document.body.removeChild(link);
+    };
+
     return (
         <Paper elevation={0} className="glass-panel" sx={{ p: { xs: 2, sm: 3 } }}>
             {/* Header */}
@@ -139,23 +170,36 @@ const AuditTrail = ({ initialLogs = [], onShowHistory }) => {
                     <History color="primary" /> Job Audit & Search
                 </Typography>
 
-                <TextField
-                    size="small"
-                    placeholder="Search Job #, Name, Phone..."
-                    value={searchQuery}
-                    onChange={(e) => setSearchQuery(e.target.value)}
-                    InputProps={{
-                        startAdornment: <Search sx={{ color: 'text.secondary', mr: 1, fontSize: 20 }} />,
-                        endAdornment: searching && <CircularProgress size={16} />
-                    }}
-                    sx={{
-                        width: { xs: '100%', sm: 300 },
-                        "& .MuiOutlinedInput-root": { borderRadius: 3 },
-                        '& .MuiInputBase-input': {
-                            fontSize: { xs: '0.8rem', sm: '0.875rem' }
-                        }
-                    }}
-                />
+                <Box sx={{ display: 'flex', gap: 1, flexDirection: { xs: 'column', sm: 'row' } }}>
+                    <TextField
+                        size="small"
+                        placeholder="Search Job #, Name, Phone..."
+                        value={searchQuery}
+                        onChange={(e) => setSearchQuery(e.target.value)}
+                        InputProps={{
+                            startAdornment: <Search sx={{ color: 'text.secondary', mr: 1, fontSize: 20 }} />,
+                            endAdornment: searching && <CircularProgress size={16} />
+                        }}
+                        sx={{
+                            width: { xs: '100%', sm: 300 },
+                            "& .MuiOutlinedInput-root": { borderRadius: 3 },
+                            '& .MuiInputBase-input': {
+                                fontSize: { xs: '0.8rem', sm: '0.875rem' }
+                            }
+                        }}
+                    />
+                    <Button
+                        variant="outlined"
+                        color="primary"
+                        size="small"
+                        startIcon={<DownloadIcon />}
+                        onClick={handleExportCSV}
+                        disabled={auditLogs.length === 0}
+                        sx={{ minWidth: 130, borderRadius: 3, textTransform: 'none', fontWeight: 600 }}
+                    >
+                        Export CSV
+                    </Button>
+                </Box>
             </Stack>
 
             {/* Mobile: Card layout / Desktop: Table layout */}

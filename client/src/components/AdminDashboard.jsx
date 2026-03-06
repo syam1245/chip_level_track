@@ -14,6 +14,7 @@ import { useTheme } from "@mui/material/styles";
 import { CalendarMonth, RestartAlt } from "@mui/icons-material";
 import { format, startOfMonth } from "date-fns";
 import { searchItems } from "../services/items.api";
+import { fetchRevenue as fetchRevenueApi } from "../services/stats.api";
 import { useAuth } from "../auth/AuthContext";
 import { LocalizationProvider, DatePicker } from "@mui/x-date-pickers";
 import { AdapterDateFns } from "@mui/x-date-pickers/AdapterDateFns";
@@ -42,9 +43,33 @@ const AdminDashboard = () => {
     // History Modal
     const [historyItem, setHistoryItem] = useState(null);
 
+    // Revenue/Stats Data
+    const [revenueData, setRevenueData] = useState(null);
+    const [statsLoading, setStatsLoading] = useState(true);
+
     useEffect(() => {
         loadBaseData();
     }, []);
+
+    const loadStats = React.useCallback(async () => {
+        setStatsLoading(true);
+        try {
+            const result = await fetchRevenueApi(dates.start, dates.end);
+            if (result.ok) {
+                setRevenueData(result.data);
+            } else {
+                setMessage({ text: result.error || "Failed to fetch stats", type: "error" });
+            }
+        } catch (err) {
+            console.error(err);
+        } finally {
+            setStatsLoading(false);
+        }
+    }, [dates.start, dates.end]);
+
+    useEffect(() => {
+        loadStats();
+    }, [loadStats]);
 
     const loadBaseData = async () => {
         setLoading(true);
@@ -175,12 +200,12 @@ const AdminDashboard = () => {
             <Grid container spacing={{ xs: 2, sm: 2.5, md: 4 }}>
                 {/* Revenue Report */}
                 <Grid size={{ xs: 12, lg: 8 }}>
-                    <RevenueReport startDate={dates.start} endDate={dates.end} />
+                    <RevenueReport data={revenueData} loading={statsLoading} />
                 </Grid>
 
                 {/* Technicians */}
                 <Grid size={{ xs: 12, lg: 4 }}>
-                    <TechnicianList technicians={technicians} onUpdate={loadBaseData} />
+                    <TechnicianList technicians={technicians} revenueData={revenueData} onUpdate={loadBaseData} />
                 </Grid>
 
                 {/* Audit Trail */}

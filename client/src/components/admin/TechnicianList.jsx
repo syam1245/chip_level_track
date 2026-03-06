@@ -26,7 +26,7 @@ import { Engineering, VpnKey, PersonOff, PersonAdd, Add as AddIcon, DeleteForeve
 import { resetPassword, toggleUserActive, createUser, deleteUser, updateUser } from "../../services/auth.api";
 import { useAuth } from "../../auth/AuthContext";
 
-const TechnicianCard = ({ tech, isAdmin, currentUser, onReset, onEdit, onToggleActive, onDelete }) => {
+const TechnicianCard = ({ tech, stats, isAdmin, currentUser, onReset, onEdit, onToggleActive, onDelete }) => {
     const theme = useTheme();
     const isMobile = useMediaQuery(theme.breakpoints.down("sm"));
     const [anchorEl, setAnchorEl] = useState(null);
@@ -115,6 +115,16 @@ const TechnicianCard = ({ tech, isAdmin, currentUser, onReset, onEdit, onToggleA
                                     />
                                 )}
                             </Stack>
+
+                            {/* Performance Stats */}
+                            <Stack direction="row" spacing={2} mt={1}>
+                                <Typography variant="caption" color="text.secondary" fontWeight={600}>
+                                    Jobs: <Typography component="span" variant="caption" fontWeight={800} color="text.primary">{stats?.deviceCount || 0}</Typography>
+                                </Typography>
+                                <Typography variant="caption" color="success.main" fontWeight={700}>
+                                    Revenue: ₹{(stats?.totalRevenue || 0).toLocaleString()}
+                                </Typography>
+                            </Stack>
                         </Box>
                     </Box>
 
@@ -201,7 +211,7 @@ const TechnicianCard = ({ tech, isAdmin, currentUser, onReset, onEdit, onToggleA
     );
 };
 
-const TechnicianList = ({ technicians, onUpdate }) => {
+const TechnicianList = ({ technicians, revenueData, onUpdate }) => {
     const theme = useTheme();
     const isMobile = useMediaQuery(theme.breakpoints.down("sm"));
     const { user } = useAuth();
@@ -358,21 +368,26 @@ const TechnicianList = ({ technicians, onUpdate }) => {
             )}
 
             <Stack spacing={{ xs: 1.5, sm: 2 }}>
-                {technicians.map((tech) => (
-                    <TechnicianCard
-                        key={tech.username}
-                        tech={tech}
-                        isAdmin={isAdmin}
-                        currentUser={user}
-                        onReset={() => setResetUser(tech)}
-                        onEdit={() => {
-                            setEditUserObj(tech);
-                            setEditUserState({ username: tech.username, displayName: tech.displayName });
-                        }}
-                        onToggleActive={() => handleToggleActive(tech)}
-                        onDelete={() => setDeleteUserObj(tech)}
-                    />
-                ))}
+                {technicians.map((tech) => {
+                    const techStats = revenueData?.breakdown?.find(b => b._id === tech.displayName) || { totalRevenue: 0, deviceCount: 0 };
+
+                    return (
+                        <TechnicianCard
+                            key={tech.username}
+                            tech={tech}
+                            stats={techStats}
+                            isAdmin={isAdmin}
+                            currentUser={user}
+                            onReset={() => setResetUser(tech)}
+                            onEdit={() => {
+                                setEditUserObj(tech);
+                                setEditUserState({ username: tech.username, displayName: tech.displayName });
+                            }}
+                            onToggleActive={() => handleToggleActive(tech)}
+                            onDelete={() => setDeleteUserObj(tech)}
+                        />
+                    );
+                })}
             </Stack>
 
             {/* Reset Password Dialog */}

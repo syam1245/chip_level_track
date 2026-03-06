@@ -22,7 +22,7 @@ class StatsRepository {
         // Use finalCost as revenue
         const revenueExpr = "$finalCost";
 
-        // Single round-trip to MongoDB using $facet
+        // Single round-trip to MongoDB using $facet for date-constrained metrics
         const [result] = await Item.aggregate([
             { $match: matchStage },
             {
@@ -30,6 +30,10 @@ class StatsRepository {
                     // Overall total
                     total: [
                         { $group: { _id: null, amount: { $sum: revenueExpr } } },
+                    ],
+                    // Total jobs completed in this period
+                    totalJobs: [
+                        { $count: "count" }
                     ],
                     // Per-technician breakdown
                     breakdown: [
@@ -46,9 +50,21 @@ class StatsRepository {
             },
         ]);
 
+        // Global pending jobs (not constrained by date)
+        const pendingJobs = await Item.countDocuments({
+            isDeleted: false,
+            status: { $nin: ["Ready", "Delivered", "Return"] }
+        });
+
+        const breakdown = result?.breakdown || [];
+        const topTechnician = breakdown.length > 0 ? breakdown[0]._id : "N/A";
+
         return {
             total: result?.total?.[0]?.amount || 0,
-            breakdown: result?.breakdown || [],
+            totalJobs: result?.totalJobs?.[0]?.count || 0,
+            pendingJobs,
+            topTechnician,
+            breakdown,
         };
     }
 }
