@@ -6,7 +6,9 @@ import { useCallback, useEffect, useRef, useState } from "react";
 import { useReactToPrint } from "react-to-print";
 import API_BASE_URL from "../../api";
 import { updateItem, deleteItem, bulkUpdateStatus, bulkDeleteItems } from "../../services/items.api";
+import { generateAiWhatsAppMessage } from "../../services/communication.api";
 import { generateWhatsAppMessage } from "../../utils/whatsapp";
+import { openWhatsAppChat } from "../../utils/whatsappHelper";
 
 export default function useItemsActions({ items, setItems, setSnackbar, refetch, notify }) {
     // ── Dialog state ───────────────────────────────────────────────────
@@ -89,16 +91,36 @@ export default function useItemsActions({ items, setItems, setSnackbar, refetch,
     };
 
     // ── WhatsApp ───────────────────────────────────────────────────────
+    // Standard WhatsApp
     const handleWhatsApp = useCallback((item) => {
-        // Strip everything but digits
-        let cleanNumber = String(item.phoneNumber || "").replace(/\D/g, "");
-        // If the number doesn't start with 91 and looks like a standard 10-digit Indian mobile, append it
-        if (cleanNumber.length === 10 && !cleanNumber.startsWith("91")) {
-            cleanNumber = `91${cleanNumber}`;
-        }
         const message = generateWhatsAppMessage(item);
-        window.open(`https://wa.me/${cleanNumber}?text=${encodeURIComponent(message)}`, "_blank");
+        openWhatsAppChat(item.phoneNumber, message);
     }, []);
+
+    // AI-generated WhatsApp
+    const handleAIGenerateWhatsApp = useCallback(async (item) => {
+        try {
+            const jobData = {
+                customerName: item.customerName,
+                jobNumber: item.jobNumber,
+                brand: item.brand,
+                status: item.status,
+                repairNotes: item.repairNotes,
+                finalCost: item.finalCost,
+            };
+
+            const { ok, message, error } = await generateAiWhatsAppMessage(jobData);
+
+            if (ok) {
+                openWhatsAppChat(item.phoneNumber, message);
+                setSnackbar({ open: true, message: "AI Message generated", severity: "success" });
+            } else {
+                setSnackbar({ open: true, message: error || "Failed to generate AI message", severity: "error" });
+            }
+        } catch (err) {
+            setSnackbar({ open: true, message: "Network error generating AI message", severity: "error" });
+        }
+    }, [setSnackbar]);
 
     // ── Backup ─────────────────────────────────────────────────────────
     const downloadBackup = useCallback(() => {
@@ -150,6 +172,6 @@ export default function useItemsActions({ items, setItems, setSnackbar, refetch,
         // Bulk
         selectedIds, bulkStatus, setBulkStatus, onSelectChange, clearSelection, handleBulkApply, handleBulkDelete,
         // Misc actions
-        handleWhatsApp, downloadBackup,
+        handleWhatsApp, handleAIGenerateWhatsApp, downloadBackup,
     };
 }

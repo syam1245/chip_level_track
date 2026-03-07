@@ -9,6 +9,7 @@ import authRoutes from "./modules/auth/auth.routes.js";
 import itemsRoutes from "./modules/items/items.routes.js";
 import statsRoutes from "./modules/stats/stats.routes.js";
 import visionRoutes from "./modules/vision/vision.routes.js";
+import communicationRoutes from "./modules/communication/communication.routes.js";
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -29,6 +30,7 @@ app.use("/api/auth", authRoutes);
 app.use("/api/items", itemsRoutes);
 app.use("/api/stats", requireAuth, requireCsrf, statsRoutes);
 app.use("/api/vision", requireAuth, requireCsrf, visionRoutes);
+app.use("/api/comm", requireAuth, requireCsrf, communicationRoutes);
 
 // Health check
 app.get("/api/health", (req, res) => {

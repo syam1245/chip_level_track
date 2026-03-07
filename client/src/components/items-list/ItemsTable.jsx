@@ -10,7 +10,7 @@ const ROW_HEIGHT = 72; // estimated row height in px
 const ItemsTable = ({
     items, loading, sortBy, sortOrder, handleSort,
     technicianFilter, setTechnicianFilter, setPage, techniciansList,
-    handleWhatsApp, setPrintItem, setEditItem, handleDelete,
+    handleWhatsApp, handleAIGenerateWhatsApp, setPrintItem, setEditItem, handleDelete,
     selectedIds, onSelectChange, isAdmin, focusedRowIndex = -1,
 }) => {
     const scrollContainerRef = useRef(null);
@@ -77,6 +77,7 @@ const ItemsTable = ({
                                 key={item._id} item={item} rowIdx={rowIdx}
                                 focusedRowIndex={focusedRowIndex} selectedIds={selectedIds}
                                 onSelectChange={onSelectChange} handleWhatsApp={handleWhatsApp}
+                                handleAIGenerateWhatsApp={handleAIGenerateWhatsApp}
                                 setPrintItem={setPrintItem} setEditItem={setEditItem} handleDelete={handleDelete}
                             />
                         );

@@ -162,7 +162,7 @@ const ItemsList = () => {
                             sortBy={data.sortBy} sortOrder={data.sortOrder} handleSort={data.handleSort}
                             technicianFilter={data.technicianFilter} setTechnicianFilter={data.setTechnicianFilter}
                             setPage={data.setPage} techniciansList={data.techniciansList}
-                            handleWhatsApp={actions.handleWhatsApp} setPrintItem={actions.setPrintItem}
+                            handleWhatsApp={actions.handleWhatsApp} handleAIGenerateWhatsApp={actions.handleAIGenerateWhatsApp} setPrintItem={actions.setPrintItem}
                             setEditItem={actions.setEditItem} handleDelete={actions.handleDelete}
                             selectedIds={actions.selectedIds} onSelectChange={actions.onSelectChange}
                             isAdmin={isAdmin} focusedRowIndex={focusedRowIndex}

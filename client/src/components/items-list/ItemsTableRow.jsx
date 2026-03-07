@@ -1,4 +1,4 @@
-import React from "react";
+import React, { useState } from "react";
 import {
     TableRow, TableCell, Typography, Box,
     Chip, IconButton, Tooltip, Stack, Checkbox,
@@ -6,16 +6,28 @@ import {
 import {
     Edit as EditIcon, Delete as DeleteIcon,
     WhatsApp as WhatsAppIcon, Print as PrintIcon,
-    Notes as NotesIcon,
+    Notes as NotesIcon, AutoAwesome as AutoAwesomeIcon,
 } from "@mui/icons-material";
+import { CircularProgress } from "@mui/material";
 import { STATUS_COLORS } from "../../constants/status";
 import { formatDate } from "../../utils/date";
 import { getAgingInfo, formatAge } from "../../utils/aging";
 
 const ItemsTableRow = ({
     item, rowIdx, focusedRowIndex, selectedIds,
-    onSelectChange, handleWhatsApp, setPrintItem, setEditItem, handleDelete,
+    onSelectChange, handleWhatsApp, handleAIGenerateWhatsApp, setPrintItem, setEditItem, handleDelete,
 }) => {
+    const [isGeneratingAI, setIsGeneratingAI] = useState(false);
+
+    const onAIGenerateClick = async () => {
+        setIsGeneratingAI(true);
+        try {
+            await handleAIGenerateWhatsApp(item);
+        } finally {
+            setIsGeneratingAI(false);
+        }
+    };
+
     const aging = getAgingInfo(item);
     const isFocused = rowIdx === focusedRowIndex;
     const isSelected = selectedIds.has(item._id);
@@ -117,7 +129,14 @@ const ItemsTableRow = ({
             {/* Action buttons */}
             <TableCell align="right">
                 <Stack direction="row" justifyContent="flex-end" spacing={1}>
-                    <Tooltip title="WhatsApp">
+                    <Tooltip title="AI Generate Update">
+                        <span>
+                            <IconButton size="small" onClick={onAIGenerateClick} disabled={isGeneratingAI} sx={{ color: "var(--color-primary)", bgcolor: "var(--color-primary-light)", "&:hover": { bgcolor: "var(--color-primary)", color: "#fff" } }}>
+                                {isGeneratingAI ? <CircularProgress size={16} color="inherit" /> : <AutoAwesomeIcon fontSize="small" />}
+                            </IconButton>
+                        </span>
+                    </Tooltip>
+                    <Tooltip title="Direct WhatsApp">
                         <IconButton size="small" onClick={() => handleWhatsApp(item)} sx={{ color: "success.main", bgcolor: "success.light", "&:hover": { bgcolor: "success.main", color: "success.contrastText" } }}>
                             <WhatsAppIcon fontSize="small" />
                         </IconButton>
