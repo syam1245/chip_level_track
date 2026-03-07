@@ -53,9 +53,15 @@ export default defineConfig({
         assetFileNames: 'assets/[name]-[hash].[ext]',
         manualChunks: (id) => {
           if (id.includes('node_modules')) {
-            if (id.includes('@mui')) return 'mui';
-            if (id.includes('framer-motion')) return 'framer';
-            if (id.includes('react')) return 'vendor';
+            // Grouping core UI and React libraries to avoid initialization issues
+            if (
+              id.includes('react') ||
+              id.includes('@mui') ||
+              id.includes('@emotion') ||
+              id.includes('framer-motion')
+            ) {
+              return 'vendor-core';
+            }
             if (id.includes('date-fns')) return 'utils';
             return 'vendor-libs';
           }
