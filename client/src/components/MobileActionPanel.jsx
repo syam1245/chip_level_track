@@ -6,6 +6,7 @@ import {
     Delete as DeleteIcon,
     AutoAwesome as AutoAwesomeIcon,
 } from "@mui/icons-material";
+import { motion } from "framer-motion";
 
 const MobileActionPanel = ({ onWhatsApp, onAIGenerateWhatsApp, onEdit, onDelete, canDelete, item, closeActions }) => {
     const [isGeneratingAI, setIsGeneratingAI] = useState(false);
@@ -46,7 +47,20 @@ const MobileActionPanel = ({ onWhatsApp, onAIGenerateWhatsApp, onEdit, onDelete,
                             "&:active": { transform: "scale(0.9)" }
                         }}
                     >
-                        {isGeneratingAI ? <CircularProgress size={20} color="inherit" /> : <AutoAwesomeIcon sx={{ fontSize: "1.25rem" }} />}
+                        {isGeneratingAI ? (
+                            <motion.div
+                                animate={{
+                                    rotate: [0, 20, -20, 20, 0],
+                                    scale: [1, 1.25, 1],
+                                }}
+                                transition={{ duration: 1.2, repeat: Infinity, ease: "easeInOut" }}
+                                style={{ display: "flex" }}
+                            >
+                                <AutoAwesomeIcon sx={{ fontSize: "1.25rem" }} />
+                            </motion.div>
+                        ) : (
+                            <AutoAwesomeIcon sx={{ fontSize: "1.25rem" }} />
+                        )}
                     </IconButton>
                 </span>
             </Tooltip>

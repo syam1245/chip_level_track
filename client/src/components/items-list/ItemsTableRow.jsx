@@ -9,6 +9,7 @@ import {
     Notes as NotesIcon, AutoAwesome as AutoAwesomeIcon,
 } from "@mui/icons-material";
 import { CircularProgress } from "@mui/material";
+import { motion } from "framer-motion";
 import { STATUS_COLORS } from "../../constants/status";
 import { formatDate } from "../../utils/date";
 import { getAgingInfo, formatAge } from "../../utils/aging";
@@ -132,7 +133,20 @@ const ItemsTableRow = ({
                     <Tooltip title="AI Generate Update">
                         <span>
                             <IconButton size="small" onClick={onAIGenerateClick} disabled={isGeneratingAI} sx={{ color: "var(--color-primary)", bgcolor: "var(--color-primary-light)", "&:hover": { bgcolor: "var(--color-primary)", color: "#fff" } }}>
-                                {isGeneratingAI ? <CircularProgress size={16} color="inherit" /> : <AutoAwesomeIcon fontSize="small" />}
+                                {isGeneratingAI ? (
+                                    <motion.div
+                                        animate={{
+                                            rotate: [0, 15, -15, 15, 0],
+                                            scale: [1, 1.3, 1],
+                                        }}
+                                        transition={{ duration: 1.2, repeat: Infinity, ease: "easeInOut" }}
+                                        style={{ display: "flex" }}
+                                    >
+                                        <AutoAwesomeIcon fontSize="small" />
+                                    </motion.div>
+                                ) : (
+                                    <AutoAwesomeIcon fontSize="small" />
+                                )}
                             </IconButton>
                         </span>
                     </Tooltip>
