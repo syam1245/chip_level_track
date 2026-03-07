@@ -7,7 +7,7 @@ const StatCard = React.memo(({ title, value, color, icon, isActive, onClick }) =
         initial={{ opacity: 0, y: 20 }}
         animate={{ opacity: 1, y: 0 }}
         transition={{ duration: 0.3 }}
-        style={{ height: '100%' }}
+        style={{ height: '100%', minWidth: '160px', scrollSnapAlign: 'start' }}
     >
         <Card
             elevation={0}

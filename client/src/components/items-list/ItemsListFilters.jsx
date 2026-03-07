@@ -29,9 +29,16 @@ const ItemsListFilters = ({
                 <Box sx={{ position: 'relative', mb: 4, opacity: loading ? 0.7 : 1, transition: 'opacity 0.2s' }}>
                     <Box
                         sx={{
-                            display: "grid",
-                            gridTemplateColumns: { xs: "repeat(2, 1fr)", sm: "repeat(3, 1fr)", md: "repeat(5, 1fr)" },
+                            display: { xs: "flex", sm: "grid" },
+                            gridTemplateColumns: { sm: "repeat(3, 1fr)", md: "repeat(5, 1fr)" },
                             gap: { xs: 1.5, md: 2 },
+                            overflowX: { xs: "auto", sm: "visible" },
+                            pb: { xs: 1, sm: 0 }, // Padding for scrollbar if visible
+                            scrollSnapType: { xs: "x mandatory", sm: "none" },
+                            WebkitOverflowScrolling: "touch",
+                            "&::-webkit-scrollbar": { display: "none" },
+                            msOverflowStyle: "none",
+                            scrollbarWidth: "none",
                         }}
                     >
                         {[
