@@ -17,7 +17,7 @@ router.post("/insights", aiController.getInsights);
 // Vision extraction
 router.post("/vision/extract", upload.single("image"), VisionController.extract);
 
-// WhatsApp message generation
-router.post("/whatsapp/generate", aiController.generateWhatsApp);
+// WhatsApp message generation (renamed to /message/generate to avoid adblocker Network Errors!)
+router.post("/message/generate", aiController.generateWhatsApp);
 
 export default router;

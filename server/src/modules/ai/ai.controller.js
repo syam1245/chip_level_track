@@ -52,16 +52,16 @@ export const getInsights = asyncHandler(async (req, res) => {
 export const generateWhatsApp = asyncHandler(async (req, res) => {
     const { customerName, jobNumber, brand, status, repairNotes, finalCost } = req.body;
 
-    if (!customerName || (!brand && !req.body.deviceDetails)) {
-        throw new AppError("Customer name and device details are required", 400);
+    if (!customerName) {
+        throw new AppError("Customer name is required", 400);
     }
 
     // Mapping fields to what the service expects (as per recent user updates)
     const jobData = {
         customerName,
         jobNumber,
-        make: brand || req.body.deviceDetails, // Handle both old and new field names
-        model: req.body.model || "Device",
+        make: brand || req.body.deviceDetails || "Device", // Handle both old and new field names
+        model: req.body.model || "",
         status,
         fault: repairNotes,
         repairCost: finalCost

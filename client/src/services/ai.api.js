@@ -64,7 +64,7 @@ export async function extractFromImage(base64Image) {
  */
 export async function generateAiWhatsAppMessage(jobData) {
     try {
-        const res = await authFetch("/api/ai/whatsapp/generate", {
+        const res = await authFetch("/api/ai/message/generate", {
             method: "POST",
             body: JSON.stringify(jobData),
         });
@@ -77,7 +77,8 @@ export async function generateAiWhatsAppMessage(jobData) {
         return { ok: true, message: data.message };
     } catch (err) {
         console.error("Error generating AI WhatsApp message:", err);
-        return { ok: false, error: "Network error generating AI message" };
+        const errorMessage = err.message || "Network error generating AI message";
+        return { ok: false, error: errorMessage };
     }
 }
 

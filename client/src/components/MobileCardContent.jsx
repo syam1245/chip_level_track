@@ -15,7 +15,6 @@ import {
 import { STATUS_COLORS } from "../constants/status";
 import { formatDate } from "../utils/date";
 import { formatAge } from "../utils/aging";
-import SummaryWidget from "./AI/SummaryWidget";
 
 const MobileCardContent = ({ item, aging, onWhatsApp, onPrint, onEdit }) => {
     return (
@@ -113,9 +112,6 @@ const MobileCardContent = ({ item, aging, onWhatsApp, onPrint, onEdit }) => {
             )}
 
             {/* ── AI Co-Pilot Summary ───────────────────────────── */}
-            {item.repairNotes && item.repairNotes.length > 20 && (
-                <SummaryWidget jobData={item} />
-            )}
 
             {/* ── Quick actions row (always visible — tap-friendly) ── */}
             <Box sx={{ display: "flex", justifyContent: "space-between", alignItems: "center", mt: 1.5, pt: 1.5, borderTop: "1px solid", borderColor: "divider" }}>

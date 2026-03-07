@@ -10,7 +10,7 @@ import {
 } from "@mui/icons-material";
 import { motion } from "framer-motion";
 
-const MobileActionPanel = ({ onWhatsApp, onAIGenerateWhatsApp, onEdit, onDelete, canDelete, item, closeActions }) => {
+const MobileActionPanel = ({ onWhatsApp, onAIGenerateWhatsApp, onEdit, onDelete, canDelete, item, closeActions, onOpenSummary }) => {
     const [isGeneratingAI, setIsGeneratingAI] = useState(false);
     const [aiAnchorEl, setAiAnchorEl] = useState(null);
 
@@ -99,6 +99,16 @@ const MobileActionPanel = ({ onWhatsApp, onAIGenerateWhatsApp, onEdit, onDelete,
                     <ListItemText
                         primary="Draft WhatsApp"
                         secondary="Smart message generation"
+                        secondaryTypographyProps={{ fontSize: "0.7rem" }}
+                    />
+                </MenuItem>
+                <MenuItem onClick={() => { handleAIMenuClose(); onOpenSummary(); closeActions(); }} sx={{ py: 1.5, px: 2 }}>
+                    <ListItemIcon>
+                        <SummarizeIcon sx={{ color: "#8b5cf6", fontSize: "1.2rem" }} />
+                    </ListItemIcon>
+                    <ListItemText
+                        primary="Summarize Case"
+                        secondary="Quick repair TL;DR"
                         secondaryTypographyProps={{ fontSize: "0.7rem" }}
                     />
                 </MenuItem>
