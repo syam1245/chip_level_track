@@ -1,5 +1,10 @@
 import mongoose from 'mongoose';
+import dns from 'dns';
 import { seedUsers } from './seed.js';
+
+// Fixed for SRV lookup issues in some network environments
+dns.setServers(['8.8.8.8', '8.8.4.4']);
+
 import config from './index.js';
 import logger from '../utils/logger.js';
 
