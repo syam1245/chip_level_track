@@ -10,7 +10,6 @@ class AiService {
      * Generates a unique fingerprint for the job data to detect changes.
      */
     generateFingerprint(data) {
-        // We use fields that would change the technical meaning of a summary
         return `${data.brand}|${data.status}|${data.issue}|${data.repairNotes}|${data.technicianName}`;
     }
 
@@ -28,7 +27,6 @@ class AiService {
             latestTechnicianNotes: jobData.repairNotes || "",
             assignedTechnician: jobData.technicianName || "Unknown",
             jobCreatedOn: jobData.formattedDate || "",
-            // Provide a simplified, readable status history for the AI to understand the repair journey
             technicalHistory: (jobData.statusHistory || []).map(entry => ({
                 statusWas: entry.status,
                 techComment: entry.note || "No note",
@@ -48,7 +46,6 @@ class AiService {
 
             const currentFingerprint = this.generateFingerprint(jobData);
 
-            // 1. Check if we already have a valid summary in the DB
             if (!forceRefresh) {
                 const existingSummary = await AiSummary.findOne({ itemId: jobData._id });
                 if (existingSummary && existingSummary.fingerprint === currentFingerprint) {
@@ -96,7 +93,6 @@ RULES:
             const response = await result.response;
             const summaryText = response.text().trim();
 
-            // 2. Save the summary to the separate AiSummary collection (upsert)
             await AiSummary.findOneAndUpdate(
                 { itemId: jobData._id },
                 {
@@ -106,24 +102,20 @@ RULES:
                     summaryText: summaryText,
                     fingerprint: currentFingerprint
                 },
-                { upsert: true, new: true } // Create if doesn't exist, update if it does
+                { upsert: true, new: true }
             ).catch(err => console.error("Failed to upsert AI summary to DB:", err));
 
             return summaryText;
 
         } catch (error) {
             console.error("Gemini API Error (Summary):", error);
-            // Re-throw with a specific error so the frontend knows it's an AI failure
             if (error.status === 429) {
                 throw new AppError("AI API quota exceeded. Please try again later.", 429);
             }
-            throw new AppError("AI Co-Pilot is currently unavailable.", 503);
+            throw new AppError("Failed to generate AI technical summary. Try again later.", 500);
         }
     }
 
-    /**
-     * Generates a short business consultant-style summary highlighting profitable trends and bottlenecks.
-     */
     async generateInsights(statsData) {
         if (!statsData || (statsData.totalJobs === 0 && statsData.total === 0)) {
             return "Not enough data available for analysis.";
@@ -135,7 +127,6 @@ RULES:
                 systemInstruction: "You are an expert business analyst and consultant for a repair shop in India. Your task is to analyze revenue and job statistics and provide a highly concise, actionable insight report. ALWAYS use Indian Rupees (INR) and the ₹ symbol for all currency mentions."
             });
 
-            // Match properties from StatsRepository: total, totalJobs, pendingJobs, topTechnician, breakdown
             const payload = JSON.stringify({
                 totalJobsInPeriod: statsData.totalJobs || 0,
                 revenueInPeriod: statsData.total || 0,
@@ -172,7 +163,6 @@ REQUIREMENTS:
             throw new AppError("AI Co-Pilot is currently unavailable for insights.", 503);
         }
     }
-
 }
 
 export const aiService = new AiService();
