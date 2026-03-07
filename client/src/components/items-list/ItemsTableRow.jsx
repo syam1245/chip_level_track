@@ -11,14 +11,16 @@ import {
 import { CircularProgress } from "@mui/material";
 import { motion } from "framer-motion";
 import { STATUS_COLORS } from "../../constants/status";
+import { formatAge, getAgingInfo } from "../../utils/aging";
 import { formatDate } from "../../utils/date";
-import { getAgingInfo, formatAge } from "../../utils/aging";
+import SummaryDialog from "../AI/SummaryDialog";
 
 const ItemsTableRow = ({
     item, rowIdx, focusedRowIndex, selectedIds,
     onSelectChange, handleWhatsApp, handleAIGenerateWhatsApp, setPrintItem, setEditItem, handleDelete,
 }) => {
     const [isGeneratingAI, setIsGeneratingAI] = useState(false);
+    const [summaryDialogOpen, setSummaryDialogOpen] = useState(false);
 
     const onAIGenerateClick = async () => {
         setIsGeneratingAI(true);
@@ -28,6 +30,9 @@ const ItemsTableRow = ({
             setIsGeneratingAI(false);
         }
     };
+
+    const handleOpenSummary = () => setSummaryDialogOpen(true);
+    const handleCloseSummary = () => setSummaryDialogOpen(false);
 
     const aging = getAgingInfo(item);
     const isFocused = rowIdx === focusedRowIndex;
@@ -130,6 +135,11 @@ const ItemsTableRow = ({
             {/* Action buttons */}
             <TableCell align="right">
                 <Stack direction="row" justifyContent="flex-end" spacing={1}>
+                    <Tooltip title="✨ Summarize Case">
+                        <IconButton size="small" onClick={handleOpenSummary} sx={{ color: "secodary.main", bgcolor: "secondary.light", "&:hover": { bgcolor: "secondary.main", color: "#fff" } }}>
+                            <AutoAwesomeIcon fontSize="small" sx={{ color: "#8b5cf6" }} />
+                        </IconButton>
+                    </Tooltip>
                     <Tooltip title="AI Generate Update">
                         <span>
                             <IconButton size="small" onClick={onAIGenerateClick} disabled={isGeneratingAI} sx={{ color: "var(--color-primary)", bgcolor: "var(--color-primary-light)", "&:hover": { bgcolor: "var(--color-primary)", color: "#fff" } }}>
@@ -171,6 +181,13 @@ const ItemsTableRow = ({
                         </IconButton>
                     </Tooltip>
                 </Stack>
+
+                {/* AI Summary Dialog Wrapper */}
+                <SummaryDialog
+                    open={summaryDialogOpen}
+                    onClose={handleCloseSummary}
+                    jobData={item}
+                />
             </TableCell>
         </TableRow>
     );
