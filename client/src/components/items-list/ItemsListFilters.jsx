@@ -1,3 +1,4 @@
+import React from 'react';
 import { Box, Typography, Chip, Paper, CircularProgress, InputBase } from '@mui/material';
 import {
     Search as SearchIcon,
@@ -73,7 +74,6 @@ const ItemsListFilters = ({
                                 onClick={() => handleFilterChange(stat.key)}
                             />
                         ))}
-                        {/* Aging / Needs Attention card — warm glow when count > 0 */}
                         <Box
                             sx={{
                                 position: 'relative',
@@ -90,11 +90,25 @@ const ItemsListFilters = ({
                                 color={agingCount > 0 ? "#f97316" : "#94a3b8"}
                                 icon={<WarningIcon />}
                                 isActive={false}
-                                onClick={() => {/* informational only — no filter action */ }}
+                                onClick={() => { }}
                             />
                         </Box>
                     </Box>
-                    {/* Aging breakdown tooltip */}
+
+                    {activeFilter !== "all" && (
+                        <Box sx={{ mt: 1.5, display: 'flex', alignItems: 'center', gap: 1 }}>
+                            <Typography variant="caption" color="text.secondary">
+                                Showing filtered results —
+                            </Typography>
+                            <Chip
+                                label={`Clear filter`}
+                                size="small"
+                                onDelete={() => handleFilterChange("all")}
+                                sx={{ fontWeight: 600, fontSize: '0.7rem', height: '22px' }}
+                            />
+                        </Box>
+                    )}
+
                     {agingCount > 0 && (
                         <Box sx={{ mt: 1, display: 'flex', alignItems: 'center', gap: 1, flexWrap: 'wrap' }}>
                             <Typography variant="caption" color="text.secondary" sx={{ fontWeight: 600 }}>
@@ -121,19 +135,6 @@ const ItemsListFilters = ({
                                     sx={{ fontWeight: 700, fontSize: '0.65rem', height: 20, bgcolor: '#ef444418', color: '#ef4444', border: '1px solid #ef444430' }}
                                 />
                             )}
-                        </Box>
-                    )}
-                    {activeFilter !== "all" && (
-                        <Box sx={{ mt: 1.5, display: 'flex', alignItems: 'center', gap: 1 }}>
-                            <Typography variant="caption" color="text.secondary">
-                                Showing filtered results —
-                            </Typography>
-                            <Chip
-                                label={`Clear filter`}
-                                size="small"
-                                onDelete={() => handleFilterChange("all")}
-                                sx={{ fontWeight: 600, fontSize: '0.7rem', height: '22px' }}
-                            />
                         </Box>
                     )}
                 </Box>

@@ -24,6 +24,7 @@ import TechnicianList from "./admin/TechnicianList";
 import AuditTrail from "./admin/AuditTrail";
 import RevenueReport from "./admin/RevenueReport";
 import ServiceHistoryDialog from "./admin/ServiceHistoryDialog";
+import InsightsCard from "./AI/InsightsCard";
 
 const AdminDashboard = () => {
     const theme = useTheme();
@@ -204,6 +205,11 @@ const AdminDashboard = () => {
             )}
 
             <Grid container spacing={{ xs: 1.5, sm: 2, md: 3 }}>
+                {/* AI Business Insights */}
+                <Grid size={{ xs: 12 }}>
+                    <InsightsCard revenueData={revenueData} />
+                </Grid>
+
                 {/* Revenue Report */}
                 <Grid size={{ xs: 12, lg: 8 }}>
                     <RevenueReport data={revenueData} loading={statsLoading} />

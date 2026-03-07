@@ -12,7 +12,9 @@ export const getSummary = asyncHandler(async (req, res) => {
         });
     }
 
-    const summaryText = await aiService.generateJobSummary(jobData);
+    const { forceRefresh } = req.body;
+
+    const summaryText = await aiService.generateJobSummary(jobData, forceRefresh === true);
 
     res.status(200).json({
         status: "success",
@@ -21,3 +23,25 @@ export const getSummary = asyncHandler(async (req, res) => {
         }
     });
 });
+
+export const getInsights = asyncHandler(async (req, res) => {
+    const statsData = req.body;
+
+    if (!statsData) {
+        return res.status(400).json({
+            status: "error",
+            message: "Missing stats data for insights generation."
+        });
+    }
+
+    const insightsText = await aiService.generateInsights(statsData);
+
+    res.status(200).json({
+        status: "success",
+        data: {
+            insights: insightsText
+        }
+    });
+});
+
+

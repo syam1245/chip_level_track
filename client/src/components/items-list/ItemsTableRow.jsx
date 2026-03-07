@@ -1,12 +1,12 @@
 import React, { useState } from "react";
 import {
     TableRow, TableCell, Typography, Box,
-    Chip, IconButton, Tooltip, Stack, Checkbox,
+    Chip, IconButton, Tooltip, Stack, Checkbox, Menu, MenuItem, ListItemIcon, ListItemText
 } from "@mui/material";
 import {
     Edit as EditIcon, Delete as DeleteIcon,
     WhatsApp as WhatsAppIcon, Print as PrintIcon,
-    Notes as NotesIcon, AutoAwesome as AutoAwesomeIcon,
+    Notes as NotesIcon, AutoAwesome as AutoAwesomeIcon, Summarize as SummarizeIcon, ChatBubbleOutline as ChatIcon
 } from "@mui/icons-material";
 import { CircularProgress } from "@mui/material";
 import { motion } from "framer-motion";
@@ -22,7 +22,18 @@ const ItemsTableRow = ({
     const [isGeneratingAI, setIsGeneratingAI] = useState(false);
     const [summaryDialogOpen, setSummaryDialogOpen] = useState(false);
 
-    const onAIGenerateClick = async () => {
+    const [aiAnchorEl, setAiAnchorEl] = useState(null);
+
+    const handleAIMenuOpen = (event) => {
+        setAiAnchorEl(event.currentTarget);
+    };
+
+    const handleAIMenuClose = () => {
+        setAiAnchorEl(null);
+    };
+
+    const handleAIGenerate = async () => {
+        handleAIMenuClose();
         setIsGeneratingAI(true);
         try {
             await handleAIGenerateWhatsApp(item);
@@ -31,7 +42,11 @@ const ItemsTableRow = ({
         }
     };
 
-    const handleOpenSummary = () => setSummaryDialogOpen(true);
+    const handleOpenSummary = () => {
+        handleAIMenuClose();
+        setSummaryDialogOpen(true);
+    };
+
     const handleCloseSummary = () => setSummaryDialogOpen(false);
 
     const aging = getAgingInfo(item);
@@ -135,14 +150,9 @@ const ItemsTableRow = ({
             {/* Action buttons */}
             <TableCell align="right">
                 <Stack direction="row" justifyContent="flex-end" spacing={1}>
-                    <Tooltip title="✨ Summarize Case">
-                        <IconButton size="small" onClick={handleOpenSummary} sx={{ color: "secodary.main", bgcolor: "secondary.light", "&:hover": { bgcolor: "secondary.main", color: "#fff" } }}>
-                            <AutoAwesomeIcon fontSize="small" sx={{ color: "#8b5cf6" }} />
-                        </IconButton>
-                    </Tooltip>
-                    <Tooltip title="AI Generate Update">
+                    <Tooltip title="AI Actions">
                         <span>
-                            <IconButton size="small" onClick={onAIGenerateClick} disabled={isGeneratingAI} sx={{ color: "var(--color-primary)", bgcolor: "var(--color-primary-light)", "&:hover": { bgcolor: "var(--color-primary)", color: "#fff" } }}>
+                            <IconButton size="small" onClick={handleAIMenuOpen} disabled={isGeneratingAI} sx={{ color: "var(--color-primary)", bgcolor: "var(--color-primary-light)", "&:hover": { bgcolor: "var(--color-primary)", color: "#fff" } }}>
                                 {isGeneratingAI ? (
                                     <motion.div
                                         animate={{
@@ -181,6 +191,43 @@ const ItemsTableRow = ({
                         </IconButton>
                     </Tooltip>
                 </Stack>
+
+                <Menu
+                    anchorEl={aiAnchorEl}
+                    open={Boolean(aiAnchorEl)}
+                    onClose={handleAIMenuClose}
+                    transformOrigin={{ horizontal: 'right', vertical: 'top' }}
+                    anchorOrigin={{ horizontal: 'right', vertical: 'bottom' }}
+                    PaperProps={{
+                        sx: {
+                            borderRadius: "12px",
+                            boxShadow: "0 8px 32px rgba(0,0,0,0.15)",
+                            border: "1px solid rgba(139, 92, 246, 0.2)",
+                            mt: 1
+                        }
+                    }}
+                >
+                    <MenuItem onClick={handleOpenSummary} sx={{ py: 1, px: 2 }}>
+                        <ListItemIcon>
+                            <SummarizeIcon sx={{ color: "#8b5cf6", fontSize: "1.2rem" }} />
+                        </ListItemIcon>
+                        <ListItemText
+                            primary="Summarize Case"
+                            secondary="Quick repair TL;DR"
+                            secondaryTypographyProps={{ fontSize: "0.7rem" }}
+                        />
+                    </MenuItem>
+                    <MenuItem onClick={handleAIGenerate} sx={{ py: 1, px: 2 }}>
+                        <ListItemIcon>
+                            <ChatIcon sx={{ color: "#ec4899", fontSize: "1.2rem" }} />
+                        </ListItemIcon>
+                        <ListItemText
+                            primary="Draft WhatsApp"
+                            secondary="Smart message generation"
+                            secondaryTypographyProps={{ fontSize: "0.7rem" }}
+                        />
+                    </MenuItem>
+                </Menu>
 
                 {/* AI Summary Dialog Wrapper */}
                 <SummaryDialog

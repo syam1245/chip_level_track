@@ -9,7 +9,7 @@ const SummaryDialog = ({ open, onClose, jobData }) => {
             <DialogTitle sx={{ display: "flex", justifyContent: "space-between", alignItems: "center", pb: 1 }}>
                 <span style={{ display: "flex", alignItems: "center", gap: "8px" }}>
                     <AutoAwesomeIcon color="primary" />
-                    AI Co-Pilot Summary
+                    AI Technical Overview
                 </span>
                 <IconButton onClick={onClose} size="small">
                     <CloseIcon />
