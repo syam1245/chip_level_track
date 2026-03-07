@@ -25,6 +25,7 @@ const itemSchema = new mongoose.Schema(
         isDeleted: { type: Boolean, default: false, index: true },
         technicianName: { type: String, default: "Unknown" },
         dueDate: { type: Date, default: null, index: true }, // Expected completion deadline
+        deliveredAt: { type: Date, default: null, index: true }, // Actual delivery time
         revenueRealizedAt: { type: Date, default: null, index: true }, // When revenue is earned (Ready/Delivered)
         formattedDate: { type: String, default: "" }, // Explicit DD/MM/YY database storage
         metadata: {

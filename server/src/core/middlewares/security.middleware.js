@@ -9,7 +9,7 @@ function deepSanitize(obj) {
     if (!obj || typeof obj !== "object" || obj === null) return;
 
     for (const key of Object.keys(obj)) {
-        if (key.startsWith("$") || key.includes(".") || key === "__proto__") {
+        if (key.startsWith("$") || key.includes(".") || key === "__proto__" || key === "constructor") {
             delete obj[key];
             continue;
         }

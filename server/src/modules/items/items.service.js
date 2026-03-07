@@ -114,7 +114,7 @@ class ItemService {
             }
 
             if (data.status === "Delivered") {
-                item.dueDate = new Date();
+                item.deliveredAt = new Date();
             }
         }
 
@@ -192,29 +192,13 @@ class ItemService {
         const cached = statsCache.get("itemStats");
         if (cached) return cached;
 
-        const results = await ItemRepository.aggregate([
-            { $match: { isDeleted: false } },
-            {
-                $group: {
-                    _id: null,
-                    inProgress: {
-                        $sum: { $cond: [{ $in: ["$status", STATUS_GROUPS.inProgress] }, 1, 0] }
-                    },
-                    ready: {
-                        $sum: { $cond: [{ $in: ["$status", STATUS_GROUPS.ready] }, 1, 0] }
-                    },
-                    returned: {
-                        $sum: { $cond: [{ $in: ["$status", STATUS_GROUPS.returned] }, 1, 0] }
-                    }
-                }
-            }
+        const [inProgress, ready, returned] = await Promise.all([
+            ItemRepository.countDocuments({ isDeleted: false, status: { $in: STATUS_GROUPS.inProgress } }),
+            ItemRepository.countDocuments({ isDeleted: false, status: { $in: STATUS_GROUPS.ready } }),
+            ItemRepository.countDocuments({ isDeleted: false, status: { $in: STATUS_GROUPS.returned } })
         ]);
 
-        const stats = results[0] ? {
-            inProgress: results[0].inProgress,
-            ready: results[0].ready,
-            returned: results[0].returned
-        } : { inProgress: 0, ready: 0, returned: 0 };
+        const stats = { inProgress, ready, returned };
 
         statsCache.set("itemStats", stats);
         return stats;

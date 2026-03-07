@@ -145,7 +145,7 @@ const ItemsList = () => {
                         <Box sx={{ opacity: data.loading ? 0.6 : 1, transition: "opacity 0.2s", px: 0.5 }}>
                             {data.items.map((item, idx) => (
                                 <motion.div key={item._id} initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.25, delay: Math.min(idx * 0.04, 0.3) }}>
-                                    <MobileCard item={item} onWhatsApp={actions.handleWhatsApp} onPrint={actions.setPrintItem} onEdit={actions.setEditItem} onDelete={actions.handleDelete} canDelete={isAdmin} />
+                                    <MobileCard item={item} onWhatsApp={actions.handleWhatsApp} onAIGenerateWhatsApp={actions.handleAIGenerateWhatsApp} onPrint={actions.setPrintItem} onEdit={actions.setEditItem} onDelete={actions.handleDelete} canDelete={isAdmin} />
                                 </motion.div>
                             ))}
                         </Box>

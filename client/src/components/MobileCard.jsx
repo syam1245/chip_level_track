@@ -9,9 +9,9 @@ import MobileActionPanel from "./MobileActionPanel";
 import MobileCardContent from "./MobileCardContent";
 
 const SWIPE_THRESHOLD = 80;  // px needed to lock actions open
-const ACTION_WIDTH = 165;     // width of the revealed action panel
+const ACTION_WIDTH = 220;     // width of the revealed action panel
 
-const MobileCard = React.memo(({ item, onWhatsApp, onPrint, onEdit, onDelete, canDelete }) => {
+const MobileCard = React.memo(({ item, onWhatsApp, onAIGenerateWhatsApp, onPrint, onEdit, onDelete, canDelete }) => {
     const aging = getAgingInfo(item);
     const [isOpen, setIsOpen] = useState(false);
     const x = useMotionValue(0);
@@ -52,6 +52,7 @@ const MobileCard = React.memo(({ item, onWhatsApp, onPrint, onEdit, onDelete, ca
                 <MobileActionPanel
                     item={item}
                     onWhatsApp={onWhatsApp}
+                    onAIGenerateWhatsApp={onAIGenerateWhatsApp}
                     onEdit={onEdit}
                     onDelete={onDelete}
                     canDelete={canDelete}
