@@ -3,25 +3,26 @@ import {
     TableRow, TableCell, Typography, Box,
     Chip, IconButton, Tooltip, Stack, Checkbox, Menu, MenuItem, ListItemIcon, ListItemText
 } from "@mui/material";
-import {
-    Edit as EditIcon, Delete as DeleteIcon,
-    WhatsApp as WhatsAppIcon, Print as PrintIcon,
-    Notes as NotesIcon, AutoAwesome as AutoAwesomeIcon, Summarize as SummarizeIcon, ChatBubbleOutline as ChatIcon
-} from "@mui/icons-material";
-import { CircularProgress } from "@mui/material";
+import EditIcon from "@mui/icons-material/Edit";
+import DeleteIcon from "@mui/icons-material/Delete";
+import WhatsAppIcon from "@mui/icons-material/WhatsApp";
+import PrintIcon from "@mui/icons-material/Print";
+import NotesIcon from "@mui/icons-material/Notes";
+import AutoAwesomeIcon from "@mui/icons-material/AutoAwesome";
+import SummarizeIcon from "@mui/icons-material/Summarize";
+import ChatIcon from "@mui/icons-material/ChatBubbleOutline";
+import CircularProgress from "@mui/material/CircularProgress";
 import { motion } from "framer-motion";
 import { STATUS_COLORS } from "../../constants/status";
 import { formatAge, getAgingInfo } from "../../utils/aging";
 import { formatDate } from "../../utils/date";
-import SummaryDialog from "../AI/SummaryDialog";
 
 const ItemsTableRow = ({
     item, rowIdx, focusedRowIndex, selectedIds,
     onSelectChange, handleWhatsApp, handleAIGenerateWhatsApp, setPrintItem, setEditItem, handleDelete,
+    onOpenSummary
 }) => {
     const [isGeneratingAI, setIsGeneratingAI] = useState(false);
-    const [summaryDialogOpen, setSummaryDialogOpen] = useState(false);
-
     const [aiAnchorEl, setAiAnchorEl] = useState(null);
 
     const handleAIMenuOpen = (event) => {
@@ -44,10 +45,8 @@ const ItemsTableRow = ({
 
     const handleOpenSummary = () => {
         handleAIMenuClose();
-        setSummaryDialogOpen(true);
+        onOpenSummary(item);
     };
-
-    const handleCloseSummary = () => setSummaryDialogOpen(false);
 
     const aging = getAgingInfo(item);
     const isFocused = rowIdx === focusedRowIndex;
@@ -229,12 +228,6 @@ const ItemsTableRow = ({
                     </MenuItem>
                 </Menu>
 
-                {/* AI Summary Dialog Wrapper */}
-                <SummaryDialog
-                    open={summaryDialogOpen}
-                    onClose={handleCloseSummary}
-                    jobData={item}
-                />
             </TableCell>
         </TableRow>
     );

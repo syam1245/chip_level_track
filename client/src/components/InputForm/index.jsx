@@ -45,10 +45,12 @@ const Input = () => {
                     <form onSubmit={handleSubmit} style={{ position: "relative", zIndex: 1 }}>
                         <Stack spacing={3}>
                             <TextField
+                                id="new-job-number"
                                 name="jobNumber" label="Job Number" value={form.jobNumber} onChange={handleChange}
                                 required fullWidth variant="outlined" InputProps={{ startAdornment: <InputAdornment position="start"><JobIcon color="action" /></InputAdornment> }}
                             />
                             <TextField
+                                id="new-customer-name"
                                 name="customerName" label="Customer Name" value={form.customerName} onChange={handleChange}
                                 required fullWidth variant="outlined" InputProps={{ startAdornment: <InputAdornment position="start"><PersonIcon color="action" /></InputAdornment> }}
                             />
@@ -57,12 +59,13 @@ const Input = () => {
                                 onInputChange={(_event, newInputValue) => setForm((prev) => ({ ...prev, brand: newInputValue }))}
                                 renderInput={(params) => (
                                     <TextField
-                                        {...params} label="Device Brand / Model" name="brand" required onChange={handleChange} fullWidth
+                                        {...params} id="new-brand-model" label="Device Brand / Model" name="brand" required onChange={handleChange} fullWidth
                                         InputProps={{ ...params.InputProps, startAdornment: <InputAdornment position="start"><DeviceIcon color="action" /></InputAdornment> }}
                                     />
                                 )}
                             />
                             <TextField
+                                id="new-phone-number"
                                 name="phoneNumber" label="Phone Number" value={form.phoneNumber} onChange={handleChange}
                                 required fullWidth inputProps={{ maxLength: 10 }}
                                 helperText={form.phoneNumber.length > 0 && form.phoneNumber.length < 10 ? "Must be 10 digits" : ""}
@@ -76,7 +79,7 @@ const Input = () => {
                                         onChange={(_event, newValue) => setForm((prev) => ({ ...prev, issue: (newValue || "").toUpperCase() }))}
                                         onInputChange={(_event, newInputValue) => setForm((prev) => ({ ...prev, issue: newInputValue.toUpperCase() }))}
                                         renderInput={(params) => (
-                                            <TextField {...params} name="issue" label="Fault / Issue" onChange={handleChange} fullWidth variant="outlined" placeholder="E.g. Power-Section, Broken screen..." />
+                                            <TextField {...params} id="new-issue-input" name="issue" label="Fault / Issue" onChange={handleChange} fullWidth variant="outlined" placeholder="E.g. Power-Section, Broken screen..." />
                                         )}
                                     />
                                 </Grid>

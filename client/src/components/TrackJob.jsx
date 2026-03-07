@@ -86,6 +86,8 @@ const TrackJob = () => {
                     <form onSubmit={handleSearch}>
                         <Stack spacing={3}>
                             <TextField
+                                id="track-job-number"
+                                name="jobNumber"
                                 label="Job Number"
                                 variant="outlined"
                                 fullWidth
@@ -96,6 +98,8 @@ const TrackJob = () => {
                             />
 
                             <TextField
+                                id="track-phone-number"
+                                name="phoneNumber"
                                 label="Phone Number"
                                 variant="outlined"
                                 fullWidth

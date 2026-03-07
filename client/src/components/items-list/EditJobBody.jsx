@@ -51,6 +51,8 @@ const EditJobBody = ({ editItem, setEditItem, isAdmin, isMobile, isDark, theme, 
                             <FormControl fullWidth size="small">
                                 <InputLabel sx={{ fontWeight: 600 }}>Current Status</InputLabel>
                                 <Select
+                                    id="edit-status-select"
+                                    name="status"
                                     value={editItem.status || "Received"} label="Current Status"
                                     onChange={(e) => setEditItem({ ...editItem, status: e.target.value })}
                                     sx={{
@@ -73,7 +75,7 @@ const EditJobBody = ({ editItem, setEditItem, isAdmin, isMobile, isDark, theme, 
                                 freeSolo options={FAULT_OPTIONS} value={editItem.issue || ""}
                                 onChange={(_event, newValue) => setEditItem({ ...editItem, issue: (newValue || "").toUpperCase() })}
                                 onInputChange={(_event, newInputValue) => setEditItem({ ...editItem, issue: newInputValue.toUpperCase() })}
-                                renderInput={(params) => <TextField {...params} label="Fault / Issue" onChange={(e) => setEditItem({ ...editItem, issue: e.target.value.toUpperCase() })} fullWidth size="small" sx={inputSx(theme)} />}
+                                renderInput={(params) => <TextField {...params} id="edit-issue-input" name="issue" label="Fault / Issue" onChange={(e) => setEditItem({ ...editItem, issue: e.target.value.toUpperCase() })} fullWidth size="small" sx={inputSx(theme)} />}
                             />
                         </Grid>
                         <Grid size={{ xs: 12, sm: 6 }}>
@@ -102,13 +104,13 @@ const EditJobBody = ({ editItem, setEditItem, isAdmin, isMobile, isDark, theme, 
                 <EditJobSection icon={<PersonIcon sx={{ fontSize: "1.1rem" }} />} title="Customer & Device" accent="#3b82f6">
                     <Grid container spacing={2}>
                         <Grid size={{ xs: 12, sm: 6 }}>
-                            <TextField label="Customer Name" value={editItem.customerName} onChange={(e) => setEditItem({ ...editItem, customerName: e.target.value.toUpperCase() })} fullWidth size="small" sx={inputSx(theme)} slotProps={{ input: { startAdornment: <InputAdornment position="start"><PersonIcon fontSize="small" sx={{ color: "text.disabled" }} /></InputAdornment> } }} />
+                            <TextField id="edit-customer-name" name="customerName" label="Customer Name" value={editItem.customerName} onChange={(e) => setEditItem({ ...editItem, customerName: e.target.value.toUpperCase() })} fullWidth size="small" sx={inputSx(theme)} slotProps={{ input: { startAdornment: <InputAdornment position="start"><PersonIcon fontSize="small" sx={{ color: "text.disabled" }} /></InputAdornment> } }} />
                         </Grid>
                         <Grid size={{ xs: 12, sm: 6 }}>
-                            <TextField label="Phone Number" value={editItem.phoneNumber} onChange={(e) => setEditItem({ ...editItem, phoneNumber: e.target.value })} fullWidth size="small" sx={inputSx(theme)} slotProps={{ input: { startAdornment: <InputAdornment position="start"><PhoneIcon fontSize="small" sx={{ color: "text.disabled" }} /></InputAdornment> } }} />
+                            <TextField id="edit-phone-number" name="phoneNumber" label="Phone Number" value={editItem.phoneNumber} onChange={(e) => setEditItem({ ...editItem, phoneNumber: e.target.value })} fullWidth size="small" sx={inputSx(theme)} slotProps={{ input: { startAdornment: <InputAdornment position="start"><PhoneIcon fontSize="small" sx={{ color: "text.disabled" }} /></InputAdornment> } }} />
                         </Grid>
                         <Grid size={{ xs: 12, sm: 6 }}>
-                            <TextField label="Brand / Model" value={editItem.brand} onChange={(e) => setEditItem({ ...editItem, brand: e.target.value })} fullWidth size="small" sx={inputSx(theme)} slotProps={{ input: { startAdornment: <InputAdornment position="start"><DevicesIcon fontSize="small" sx={{ color: "text.disabled" }} /></InputAdornment> } }} />
+                            <TextField id="edit-brand-model" name="brand" label="Brand / Model" value={editItem.brand} onChange={(e) => setEditItem({ ...editItem, brand: e.target.value })} fullWidth size="small" sx={inputSx(theme)} slotProps={{ input: { startAdornment: <InputAdornment position="start"><DevicesIcon fontSize="small" sx={{ color: "text.disabled" }} /></InputAdornment> } }} />
                         </Grid>
                     </Grid>
                 </EditJobSection>
@@ -117,6 +119,8 @@ const EditJobBody = ({ editItem, setEditItem, isAdmin, isMobile, isDark, theme, 
                     <Grid container spacing={2}>
                         <Grid size={{ xs: 12, sm: 12 }}>
                             <TextField
+                                id="edit-final-cost"
+                                name="finalCost"
                                 label="Final Cost (₹)" type="number" value={editItem.finalCost || ""}
                                 onChange={(e) => setEditItem({ ...editItem, finalCost: e.target.value })} fullWidth size="small" color="success" focused={!!editItem.finalCost} placeholder="Leave blank if pending"
                                 sx={{ ...inputSx(theme), "& .MuiOutlinedInput-root": { ...inputSx(theme)["& .MuiOutlinedInput-root"], bgcolor: editItem.finalCost ? (isDark ? "rgba(16, 185, 129, 0.08)" : "rgba(16, 185, 129, 0.04)") : (isDark ? "rgba(255,255,255,0.03)" : "rgba(0,0,0,0.02)") } }}
@@ -131,6 +135,8 @@ const EditJobBody = ({ editItem, setEditItem, isAdmin, isMobile, isDark, theme, 
                     <Grid container spacing={2}>
                         <Grid size={12}>
                             <TextField
+                                id="edit-repair-notes"
+                                name="repairNotes"
                                 label="Repair Notes" multiline minRows={3} maxRows={6} value={editItem.repairNotes || ""}
                                 onChange={(e) => setEditItem({ ...editItem, repairNotes: e.target.value })} placeholder="E.g. Replaced display, Checked charging port..." fullWidth variant="outlined"
                                 sx={{ ...inputSx(theme), "& .MuiOutlinedInput-root": { ...inputSx(theme)["& .MuiOutlinedInput-root"], borderRadius: "12px", fontFamily: '"Inter", sans-serif', fontSize: "0.88rem", lineHeight: 1.7 } }}
@@ -138,7 +144,7 @@ const EditJobBody = ({ editItem, setEditItem, isAdmin, isMobile, isDark, theme, 
                         </Grid>
                         {isAdmin && (
                             <Grid size={{ xs: 12, sm: 6 }}>
-                                <TextField label="Technician Name" value={editItem.technicianName || ""} onChange={(e) => setEditItem({ ...editItem, technicianName: e.target.value })} fullWidth size="small" helperText="Admin override" sx={inputSx(theme)} slotProps={{ input: { startAdornment: <InputAdornment position="start"><AdminIcon fontSize="small" sx={{ color: "text.disabled" }} /></InputAdornment> } }} />
+                                <TextField id="edit-technician-override" name="technicianName" label="Technician Name" value={editItem.technicianName || ""} onChange={(e) => setEditItem({ ...editItem, technicianName: e.target.value })} fullWidth size="small" helperText="Admin override" sx={inputSx(theme)} slotProps={{ input: { startAdornment: <InputAdornment position="start"><AdminIcon fontSize="small" sx={{ color: "text.disabled" }} /></InputAdornment> } }} />
                             </Grid>
                         )}
                     </Grid>

@@ -1,6 +1,7 @@
 import React from "react";
 import { Dialog, DialogContent, DialogTitle, IconButton } from "@mui/material";
-import { Close as CloseIcon, AutoAwesome as AutoAwesomeIcon } from "@mui/icons-material";
+import CloseIcon from "@mui/icons-material/Close";
+import AutoAwesomeIcon from "@mui/icons-material/AutoAwesome";
 import SummaryWidget from "../AI/SummaryWidget";
 
 const SummaryDialog = ({ open, onClose, jobData }) => {

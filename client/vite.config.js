@@ -48,14 +48,17 @@ export default defineConfig({
     chunkSizeWarningLimit: 600,
     rollupOptions: {
       output: {
-        entryFileNames: `assets/[name]-[hash]-${Date.now()}.js`,
-        chunkFileNames: `assets/[name]-[hash]-${Date.now()}.js`,
-        assetFileNames: `assets/[name]-[hash]-${Date.now()}.[ext]`,
-        manualChunks: {
-          vendor: ['react', 'react-dom', 'react-router-dom'],
-          mui: ['@mui/material', '@mui/icons-material', '@emotion/react', '@emotion/styled'],
-          framer: ['framer-motion'],
-          utils: ['date-fns']
+        entryFileNames: 'assets/[name]-[hash].js',
+        chunkFileNames: 'assets/[name]-[hash].js',
+        assetFileNames: 'assets/[name]-[hash].[ext]',
+        manualChunks: (id) => {
+          if (id.includes('node_modules')) {
+            if (id.includes('@mui')) return 'mui';
+            if (id.includes('framer-motion')) return 'framer';
+            if (id.includes('react')) return 'vendor';
+            if (id.includes('date-fns')) return 'utils';
+            return 'vendor-libs';
+          }
         }
       }
     }

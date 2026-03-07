@@ -7,15 +7,13 @@ import { getAgingInfo } from "../utils/aging";
 
 import MobileActionPanel from "./MobileActionPanel";
 import MobileCardContent from "./MobileCardContent";
-import SummaryDialog from "./AI/SummaryDialog";
 
 const SWIPE_THRESHOLD = 80;  // px needed to lock actions open
 const ACTION_WIDTH = 220;     // width of the revealed action panel
 
-const MobileCard = React.memo(({ item, onWhatsApp, onAIGenerateWhatsApp, onPrint, onEdit, onDelete, canDelete }) => {
+const MobileCard = React.memo(({ item, onWhatsApp, onAIGenerateWhatsApp, onPrint, onEdit, onDelete, canDelete, onOpenSummary }) => {
     const aging = getAgingInfo(item);
     const [isOpen, setIsOpen] = useState(false);
-    const [summaryDialogOpen, setSummaryDialogOpen] = useState(false);
     const x = useMotionValue(0);
     const controls = useAnimation();
 
@@ -59,7 +57,7 @@ const MobileCard = React.memo(({ item, onWhatsApp, onAIGenerateWhatsApp, onPrint
                     onDelete={onDelete}
                     canDelete={canDelete}
                     closeActions={closeActions}
-                    onOpenSummary={() => setSummaryDialogOpen(true)}
+                    onOpenSummary={() => { closeActions(); onOpenSummary(item); }}
                 />
             </motion.div>
 
@@ -92,12 +90,6 @@ const MobileCard = React.memo(({ item, onWhatsApp, onAIGenerateWhatsApp, onPrint
                     />
                 </Card>
             </motion.div>
-
-            <SummaryDialog
-                open={summaryDialogOpen}
-                onClose={() => setSummaryDialogOpen(false)}
-                jobData={item}
-            />
         </Box>
     );
 });

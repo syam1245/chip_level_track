@@ -26,6 +26,7 @@ import ItemsTable from "./ItemsTable";
 import EditJobDialog from "./EditJobDialog";
 import DeleteJobDialog from "./DeleteJobDialog";
 import BulkActionBar from "./BulkActionBar";
+import SummaryDialog from "../AI/SummaryDialog";
 
 const ItemsList = () => {
     const navigate = useNavigate();
@@ -50,6 +51,9 @@ const ItemsList = () => {
     // ── Keyboard shortcuts ─────────────────────────────────────────────
     const [shortcutsDialogOpen, setShortcutsDialogOpen] = useState(false);
     const [focusedRowIndex, setFocusedRowIndex] = useState(-1);
+    const [summaryDialogItem, setSummaryDialogItem] = useState(null);
+
+    const handleOpenSummary = (item) => setSummaryDialogItem(item);
 
     const shortcuts = useMemo(() => ({
         "n": () => navigate("/"),
@@ -77,6 +81,7 @@ const ItemsList = () => {
         "Escape": () => {
             if (shortcutsDialogOpen) { setShortcutsDialogOpen(false); return; }
             if (actions.editItem) { actions.setEditItem(null); return; }
+            if (summaryDialogItem) { setSummaryDialogItem(null); return; }
             if (actions.deleteConfirmId) { actions.setDeleteConfirmId(null); return; }
             if (actions.selectedIds.size > 0) { actions.clearSelection(); return; }
             if (data.search) { data.setSearch(""); return; }
@@ -145,7 +150,7 @@ const ItemsList = () => {
                         <Box sx={{ opacity: data.loading ? 0.6 : 1, transition: "opacity 0.2s", px: 0.5 }}>
                             {data.items.map((item, idx) => (
                                 <motion.div key={item._id} initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.25, delay: Math.min(idx * 0.04, 0.3) }}>
-                                    <MobileCard item={item} onWhatsApp={actions.handleWhatsApp} onAIGenerateWhatsApp={actions.handleAIGenerateWhatsApp} onPrint={actions.setPrintItem} onEdit={actions.setEditItem} onDelete={actions.handleDelete} canDelete={isAdmin} />
+                                    <MobileCard item={item} onWhatsApp={actions.handleWhatsApp} onAIGenerateWhatsApp={actions.handleAIGenerateWhatsApp} onPrint={actions.setPrintItem} onEdit={actions.setEditItem} onDelete={actions.handleDelete} canDelete={isAdmin} onOpenSummary={handleOpenSummary} />
                                 </motion.div>
                             ))}
                         </Box>
@@ -165,7 +170,7 @@ const ItemsList = () => {
                             handleWhatsApp={actions.handleWhatsApp} handleAIGenerateWhatsApp={actions.handleAIGenerateWhatsApp} setPrintItem={actions.setPrintItem}
                             setEditItem={actions.setEditItem} handleDelete={actions.handleDelete}
                             selectedIds={actions.selectedIds} onSelectChange={actions.onSelectChange}
-                            isAdmin={isAdmin} focusedRowIndex={focusedRowIndex}
+                            isAdmin={isAdmin} focusedRowIndex={focusedRowIndex} onOpenSummary={handleOpenSummary}
                         />
                     </motion.div>
                 )}
@@ -201,6 +206,7 @@ const ItemsList = () => {
 
             <EditJobDialog editItem={actions.editItem} setEditItem={actions.setEditItem} handleEditSave={actions.handleEditSave} isAdmin={isAdmin} />
             <DeleteJobDialog deleteConfirmId={actions.deleteConfirmId} setDeleteConfirmId={actions.setDeleteConfirmId} confirmDelete={actions.confirmDelete} />
+            <SummaryDialog open={!!summaryDialogItem} onClose={() => setSummaryDialogItem(null)} jobData={summaryDialogItem} />
             <KeyboardShortcutsDialog open={shortcutsDialogOpen} onClose={() => setShortcutsDialogOpen(false)} />
 
             <Snackbar open={data.snackbar.open} autoHideDuration={4000} onClose={data.handleCloseSnackbar} anchorOrigin={{ vertical: "bottom", horizontal: "center" }}>

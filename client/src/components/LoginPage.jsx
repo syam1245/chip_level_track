@@ -66,6 +66,8 @@ const LoginPage = () => {
             {technicians.length > 0 || loadingTechs ? (
               <TextField
                 select
+                id="technician-select"
+                name="username"
                 label="Technician"
                 value={username}
                 onChange={(e) => setUsername(e.target.value)}
@@ -93,6 +95,8 @@ const LoginPage = () => {
               </TextField>
             ) : (
               <TextField
+                id="username-input"
+                name="username"
                 label="Username / Technician"
                 value={username}
                 onChange={(e) => setUsername(e.target.value)}
@@ -104,6 +108,8 @@ const LoginPage = () => {
             )}
 
             <TextField
+              id="password-input"
+              name="password"
               label="Password"
               type="password"
               value={password}

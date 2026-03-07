@@ -21,17 +21,15 @@ import {
     Stack,
     Paper
 } from "@mui/material";
-import {
-    Logout,
-    Dashboard as DashboardIcon,
-    AddCircle as AddIcon,
-    FormatListBulleted as ListIcon,
-    Menu as MenuIcon,
-    Brightness4,
-    Brightness7,
-    Person as PersonIcon,
-    Search as SearchIcon
-} from "@mui/icons-material";
+import Logout from "@mui/icons-material/Logout";
+import DashboardIcon from "@mui/icons-material/Dashboard";
+import AddIcon from "@mui/icons-material/AddCircle";
+import ListIcon from "@mui/icons-material/FormatListBulleted";
+import MenuIcon from "@mui/icons-material/Menu";
+import Brightness4 from "@mui/icons-material/Brightness4";
+import Brightness7 from "@mui/icons-material/Brightness7";
+import PersonIcon from "@mui/icons-material/Person";
+import SearchIcon from "@mui/icons-material/Search";
 import { useNavigate, useLocation } from "react-router-dom";
 import { useAuth } from "../auth/AuthContext";
 import { motion, AnimatePresence } from "framer-motion";

@@ -1,6 +1,7 @@
 import React, { useState } from "react";
 import { Box, Typography, Button, Skeleton, Alert, Stack, Collapse } from "@mui/material";
-import { AutoAwesome as AutoAwesomeIcon, Info as InfoIcon } from "@mui/icons-material";
+import AutoAwesomeIcon from "@mui/icons-material/AutoAwesome";
+import InfoIcon from "@mui/icons-material/Info";
 import { aiApi } from "../../services/ai.api";
 
 const SummaryWidget = ({ jobData }) => {

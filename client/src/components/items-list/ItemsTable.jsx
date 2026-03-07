@@ -11,7 +11,7 @@ const ItemsTable = ({
     items, loading, sortBy, sortOrder, handleSort,
     technicianFilter, setTechnicianFilter, setPage, techniciansList,
     handleWhatsApp, handleAIGenerateWhatsApp, setPrintItem, setEditItem, handleDelete,
-    selectedIds, onSelectChange, isAdmin, focusedRowIndex = -1,
+    selectedIds, onSelectChange, isAdmin, focusedRowIndex = -1, onOpenSummary
 }) => {
     const scrollContainerRef = useRef(null);
 
@@ -79,6 +79,7 @@ const ItemsTable = ({
                                 onSelectChange={onSelectChange} handleWhatsApp={handleWhatsApp}
                                 handleAIGenerateWhatsApp={handleAIGenerateWhatsApp}
                                 setPrintItem={setPrintItem} setEditItem={setEditItem} handleDelete={handleDelete}
+                                onOpenSummary={onOpenSummary}
                             />
                         );
                     })}
