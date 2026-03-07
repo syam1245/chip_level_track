@@ -13,7 +13,11 @@ const extractionSchema = {
         make: { type: SchemaType.STRING, nullable: true },
         model: { type: SchemaType.STRING, nullable: true },
         serialNumber: { type: SchemaType.STRING, nullable: true },
-        date: { type: SchemaType.STRING, nullable: true, description: "Extract date in YYYY-MM-DD format if possible" },
+        date: {
+            type: SchemaType.STRING,
+            nullable: true,
+            description: "Extract date in YYYY-MM-DD format if possible"
+        },
         accessories: {
             type: SchemaType.OBJECT,
             properties: {
@@ -34,15 +38,42 @@ class VisionService {
         if (!config.geminiApiKey) {
             console.warn("GEMINI_API_KEY not found in environment variables");
         }
+
         this.genAI = new GoogleGenerativeAI(config.geminiApiKey);
+
         this.model = this.genAI.getGenerativeModel({
             model: config.geminiModel,
-            systemInstruction: "You are an OCR extraction engine specializing in repair service forms. Your goal is to accurately extract handwritten and printed text and map it directly to the structured schema. Ignore company contact details. Extract handwritten notes as accurately as possible.",
+            systemInstruction:
+                "You are an OCR extraction engine specializing in repair service forms. Extract handwritten and printed text accurately and map it directly to the provided schema. Ignore company contact details and headers/footers. Return only structured data.",
         });
     }
 
+    stripMarkdownCodeBlocks(text) {
+        if (!text) return text;
+
+        const trimmed = text.trim();
+
+        if (trimmed.startsWith("```")) {
+            return trimmed
+                .replace(/^```(?:json)?\s*/i, "")
+                .replace(/\s*```$/, "")
+                .trim();
+        }
+
+        return trimmed;
+    }
+
     async extractDataFromImage(imageBuffer, mimeType) {
-        const prompt = "Extract ONLY customer and device information from this repair service form. Return the data adhering to the specified JSON schema.";
+        if (!imageBuffer || !Buffer.isBuffer(imageBuffer)) {
+            throw new AppError("Invalid image buffer provided", 400);
+        }
+
+        if (!mimeType || typeof mimeType !== "string") {
+            throw new AppError("Invalid image MIME type", 400);
+        }
+
+        const prompt =
+            "Extract ONLY customer and device information from this repair service form. Return the data strictly following the provided JSON schema.";
 
         try {
             const result = await this.model.generateContent({
@@ -67,19 +98,41 @@ class VisionService {
                 },
             });
 
+            if (!result || !result.response) {
+                throw new Error("Empty response from Gemini API");
+            }
+
             let rawText = result.response.text();
 
-            // Strip markdown code block wrappers if they slip through 
-            if (rawText.startsWith('```')) {
-                rawText = rawText.replace(/^```(json)?\n/, '').replace(/\n```$/, '');
+            if (!rawText) {
+                throw new Error("Empty response text from Gemini API");
             }
 
-            return JSON.parse(rawText);
-        } catch (error) {
-            if (error.message?.includes("429") || error.message?.includes("Quota exceeded")) {
-                throw new AppError("Gemini API quota exceeded. Please wait a moment or try again later.", 429);
+            rawText = this.stripMarkdownCodeBlocks(rawText);
+
+            try {
+                return JSON.parse(rawText);
+            } catch (parseError) {
+                throw new Error("Failed to parse JSON response from Gemini");
             }
-            throw new AppError("Vision extraction service failure: " + error.message, 500);
+        } catch (error) {
+            const message = error?.message || "Unknown error";
+
+            if (
+                message.includes("429") ||
+                message.toLowerCase().includes("quota") ||
+                message.toLowerCase().includes("rate limit")
+            ) {
+                throw new AppError(
+                    "Gemini API quota exceeded. Please wait a moment or try again later.",
+                    429
+                );
+            }
+
+            throw new AppError(
+                "Vision extraction service failure: " + message,
+                500
+            );
         }
     }
 }
