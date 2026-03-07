@@ -154,6 +154,11 @@ const AuthAppContent = ({ mode, toggleTheme }) => {
     return () => window.removeEventListener("keydown", handleKeyDown);
   }, [user]);
 
+  // Close palette if user logs out (e.g. session expires)
+  useEffect(() => {
+    if (!user && paletteOpen) setPaletteOpen(false);
+  }, [user, paletteOpen]);
+
   if (loadingSession) return <LoadingFallback />;
 
   return (
