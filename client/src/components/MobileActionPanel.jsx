@@ -30,7 +30,7 @@ const MobileActionPanel = ({ onWhatsApp, onAIGenerateWhatsApp, onEdit, onDelete,
             sx={{
                 display: "flex", alignItems: "center", justifyContent: "space-evenly",
                 width: "100%", gap: 0.5, px: 1, height: "100%",
-                background: "linear-gradient(90deg, transparent 0%, rgba(30,41,59,0.95) 25%)",
+                bgcolor: "rgba(30,41,59, 1)",
             }}
         >
             <Tooltip title="AI Generate Update" placement="top">
@@ -38,7 +38,13 @@ const MobileActionPanel = ({ onWhatsApp, onAIGenerateWhatsApp, onEdit, onDelete,
                     <IconButton
                         onClick={handleAIGenerate}
                         disabled={isGeneratingAI}
-                        sx={{ color: "var(--color-primary)", bgcolor: "var(--color-primary-light)", width: 44, height: 44, "&:hover": { bgcolor: "var(--color-primary)", color: "#fff" }, "&:active": { transform: "scale(0.9)" } }}
+                        sx={{
+                            color: "#fff",
+                            background: "linear-gradient(135deg, #8b5cf6 0%, #ec4899 100%)",
+                            width: 44, height: 44,
+                            "&:hover": { filter: "brightness(1.1)" },
+                            "&:active": { transform: "scale(0.9)" }
+                        }}
                     >
                         {isGeneratingAI ? <CircularProgress size={20} color="inherit" /> : <AutoAwesomeIcon sx={{ fontSize: "1.25rem" }} />}
                     </IconButton>
