@@ -1,9 +1,6 @@
-import { GoogleGenerativeAI } from "@google/generative-ai";
-import config from "../../core/config/index.js";
 import AppError from "../../core/errors/AppError.js";
 import AiSummary from "./models/aiSummary.model.js";
-
-const genAI = new GoogleGenerativeAI(config.geminiApiKey);
+import { generateTextWithFallback } from "./llmProvider.js";
 
 class AiService {
     /**
@@ -55,10 +52,7 @@ class AiService {
 
             const cleanData = this.sanitizeJobData(jobData);
 
-            const model = genAI.getGenerativeModel({
-                model: config.geminiModel,
-                systemInstruction: "You are an expert technician assistant. Your task is to provide a complete, technical, and detailed summary of a repair job. Use professional technical language and structure the response clearly."
-            });
+            const systemInstruction = "You are an expert technician assistant. Your task is to provide a complete, technical, and detailed summary of a repair job. Use professional technical language and structure the response clearly.";
 
             const payload = JSON.stringify(cleanData);
 
@@ -89,9 +83,7 @@ RULES:
 4. Output Markdown format.
 `;
 
-            const result = await model.generateContent(prompt);
-            const response = await result.response;
-            const summaryText = response.text().trim();
+            const summaryText = await generateTextWithFallback(prompt, systemInstruction);
 
             await AiSummary.findOneAndUpdate(
                 { itemId: jobData._id },
@@ -108,10 +100,8 @@ RULES:
             return summaryText;
 
         } catch (error) {
-            console.error("Gemini API Error (Summary):", error);
-            if (error.status === 429) {
-                throw new AppError("AI API quota exceeded. Please try again later.", 429);
-            }
+            console.error("AI Generation Error (Summary):", error);
+            if (error instanceof AppError) throw error;
             throw new AppError("Failed to generate AI technical summary. Try again later.", 500);
         }
     }
@@ -122,10 +112,7 @@ RULES:
         }
 
         try {
-            const model = genAI.getGenerativeModel({
-                model: config.geminiModel,
-                systemInstruction: "You are an expert business analyst and consultant for a repair shop in India. Your task is to analyze revenue and job statistics and provide a highly concise, actionable insight report. ALWAYS use Indian Rupees (INR) and the ₹ symbol for all currency mentions."
-            });
+            const systemInstruction = "You are an expert business analyst and consultant for a repair shop in India. Your task is to analyze revenue and job statistics and provide a highly concise, actionable insight report. ALWAYS use Indian Rupees (INR) and the ₹ symbol for all currency mentions.";
 
             const payload = JSON.stringify({
                 totalJobsInPeriod: statsData.totalJobs || 0,
@@ -151,15 +138,11 @@ REQUIREMENTS:
 6. Do NOT include greetings.
 `;
 
-            const result = await model.generateContent(prompt);
-            const response = await result.response;
-            return response.text().trim();
+            return await generateTextWithFallback(prompt, systemInstruction);
 
         } catch (error) {
-            console.error("Gemini API Error (Insights):", error);
-            if (error.status === 429) {
-                throw new AppError("AI API quota exceeded. Please try again later.", 429);
-            }
+            console.error("AI Generation Error (Insights):", error);
+            if (error instanceof AppError) throw error;
             throw new AppError("AI Co-Pilot is currently unavailable for insights.", 503);
         }
     }

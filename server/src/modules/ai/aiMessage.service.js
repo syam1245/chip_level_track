@@ -1,8 +1,5 @@
-import { GoogleGenerativeAI } from "@google/generative-ai";
-import config from "../../core/config/index.js";
 import AppError from "../../core/errors/AppError.js";
-
-const genAI = new GoogleGenerativeAI(config.geminiApiKey);
+import { generateTextWithFallback } from "./llmProvider.js";
 
 /**
  * Service for handling AI-generated messages via Gemini.
@@ -38,11 +35,9 @@ class AiMessageService {
     async generatePersonalizedUpdate(jobData) {
         try {
             const cleanData = this.sanitizeJobData(jobData);
+
             // 1. Separate AI Role/System Instructions for better constraint following and caching
-            const model = genAI.getGenerativeModel({
-                model: config.geminiModel,
-                systemInstruction: "You are the Senior Customer Relations Agent at 'Admin Info Solution, Haripad'. Write highly professional, empathetic, and concise WhatsApp status updates. Output ONLY the raw message text, without markdown code blocks."
-            });
+            const systemInstruction = "You are the Senior Customer Relations Agent at 'Admin Info Solution, Haripad'. Write highly professional, empathetic, and concise WhatsApp status updates. Output ONLY the raw message text, without markdown code blocks.";
 
             // 2. Compress data into a clean JSON structure to save tokens over long lists
             const payload = JSON.stringify({
@@ -73,15 +68,12 @@ Regards, Admin Info Solution.
 _(This is an automated update)_
 `;
 
-            const result = await model.generateContent(prompt);
-            const response = await result.response;
-            return response.text().trim(); // .trim() removes any accidental leading/trailing whitespace
+            return await generateTextWithFallback(prompt, systemInstruction);
 
         } catch (error) {
-            console.error("Gemini API Error:", error);
-            if (error.status === 429) {
-                throw new AppError("AI API quota exceeded. Please try again later.", 429);
-            }
+            console.error("AI Generation Error (WhatsApp):", error);
+            // Provider will throw 429 correctly, we just bubble it up or fallback to a 500
+            if (error instanceof AppError) throw error;
             throw new AppError("Failed to generate AI message", 500);
         }
     }

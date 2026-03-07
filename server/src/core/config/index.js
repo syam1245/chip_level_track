@@ -6,6 +6,7 @@ const config = {
     mongodbUri: process.env.MONGODB_URI,
     authTokenSecret: process.env.AUTH_TOKEN_SECRET,
     geminiApiKey: process.env.GEMINI_API_KEY,
+    groqApiKey: process.env.GROQ_API_KEY,
     // Model name is configurable so updates don't require code changes
     geminiModel: process.env.GEMINI_MODEL || "gemini-2.5-flash",
     isProduction: process.env.NODE_ENV === "production",
