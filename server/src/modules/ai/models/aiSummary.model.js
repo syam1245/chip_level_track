@@ -1,20 +1,27 @@
 import mongoose from "mongoose";
 
 const aiSummarySchema = new mongoose.Schema(
-    {
-        itemId: {
-            type: mongoose.Schema.Types.ObjectId,
-            ref: "Item",
-            required: true,
-            index: true,
-            unique: true // One summary per job
-        },
-        jobNumber: { type: String }, // Stored for easy reference/debugging
-        customerName: { type: String },
-        summaryText: { type: String, required: true },
-        fingerprint: { type: String, required: true },
+  {
+    itemId: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: "Item",
+      required: true
     },
-    { timestamps: true }
+    jobNumber: String,
+    customerName: String,
+    summaryText: {
+      type: String,
+      required: true,
+      maxlength: 5000
+    },
+    fingerprint: {
+      type: String,
+      required: true
+    }
+  },
+  { timestamps: true }
 );
+
+aiSummarySchema.index({ itemId: 1 }, { unique: true });
 
 export default mongoose.model("AiSummary", aiSummarySchema);

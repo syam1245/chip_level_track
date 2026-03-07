@@ -2,29 +2,40 @@ import AppError from "../../core/errors/AppError.js";
 import { generateTextWithFallback } from "./llmProvider.js";
 
 /**
- * Service for handling AI-generated messages via Gemini.
+ * Service for handling AI-generated WhatsApp messages.
  */
 class AiMessageService {
     /**
      * Sanitizes data by picking only relevant fields and stripping unwanted ones.
-     * Ensures we don't pass sensitive internal notes to the AI.
+     * Ensures sensitive internal data is never sent to the AI.
      */
-    sanitizeJobData(jobData) {
-        if (!jobData) return {};
+    sanitizeJobData(jobData = {}) {
+        const sanitizeText = (value) =>
+            typeof value === "string" ? value.replace(/[<>]/g, "").trim() : value;
 
-        // Helper to format cost properly (only add ₹ if it's a number)
         const formatCost = (cost) => {
-            if (!cost) return "Not yet determined";
-            return isNaN(cost) ? cost : `₹${cost}`;
+            if (cost === undefined || cost === null || cost === "") {
+                return "Not yet determined";
+            }
+
+            if (typeof cost === "number") {
+                return `₹${cost}`;
+            }
+
+            const numeric = Number(cost);
+            return Number.isFinite(numeric) ? `₹${numeric}` : sanitizeText(String(cost));
         };
 
         return {
-            customerName: jobData.customerName || "Customer",
-            jobNumber: jobData.jobNumber || "N/A",
-            make: jobData.make || "",
-            model: jobData.model || "Device",
-            currentStatus: jobData.status || jobData.currentStatus || "Received",
-            fault: jobData.fault || "Not specified",
+            customerName: sanitizeText(jobData.customerName) || "Customer",
+            jobNumber: sanitizeText(jobData.jobNumber) || "N/A",
+            make: sanitizeText(jobData.make) || "",
+            model: sanitizeText(jobData.model) || "Device",
+            currentStatus:
+                sanitizeText(jobData.status) ||
+                sanitizeText(jobData.currentStatus) ||
+                "Received",
+            fault: sanitizeText(jobData.fault) || "Not specified",
             repairCost: formatCost(jobData.repairCost),
         };
     }
@@ -36,10 +47,9 @@ class AiMessageService {
         try {
             const cleanData = this.sanitizeJobData(jobData);
 
-            // 1. Separate AI Role/System Instructions for better constraint following and caching
-            const systemInstruction = "You are the Senior Customer Relations Agent at 'Admin Info Solution, Haripad'. Write highly professional, empathetic, and concise WhatsApp status updates. Output ONLY the raw message text, without markdown code blocks.";
+            const systemInstruction =
+                "You are the Senior Customer Relations Agent at 'Admin Info Solution, Haripad'. Write highly professional, empathetic, concise WhatsApp status updates. Output ONLY the raw message text without markdown code blocks.";
 
-            // 2. Compress data into a clean JSON structure to save tokens over long lists
             const payload = JSON.stringify({
                 customer: cleanData.customerName,
                 job: cleanData.jobNumber,
@@ -47,33 +57,46 @@ class AiMessageService {
                 model: cleanData.model,
                 status: cleanData.currentStatus,
                 fault: cleanData.fault,
-                cost: cleanData.repairCost
+                cost: cleanData.repairCost,
             });
 
-            // 3. Compacted Prompt using concise rules
             const prompt = `
 Generate a WhatsApp update for this repair job: ${payload}
 
 RULES:
-1. DEVICE: If 'make' is Apple, Dell, HP, Acer, Lenovo, ASUS, or MSI, refer to it as "your *${cleanData.make} Laptop*". Otherwise, use "your *${cleanData.make} ${cleanData.model}*".
+1. DEVICE:
+   - If 'make' is Apple, Dell, HP, Acer, Lenovo, ASUS, or MSI → refer to it as "your *${cleanData.make} Laptop*".
+   - Otherwise use "your *${cleanData.make} ${cleanData.model}*".
+
 2. STRUCTURE:
-   - Greeting: "Hi *${cleanData.customerName}*!"
-   - Context: "Update regarding your device (Job #${cleanData.jobNumber})."
-   - Status: Explain friendly. ('Ready' = ready for pickup; 'In Progress' = actively working; 'Waiting for Parts' = sourcing parts).
-   - Cost: Mention briefly if not "Not yet determined".
-   - Action: "Reply here if you have any questions!"
-3. FORMAT: Use *bold* for status and device name. DO NOT hallucinate missing data.
-4. End exactly with:
+   Greeting → "Hi *${cleanData.customerName}*!"
+   Context → "Update regarding your device (Job #${cleanData.jobNumber})."
+   Status → Explain the status clearly and politely.
+   Cost → Mention briefly if not "Not yet determined".
+   Action → "Reply here if you have any questions!"
+
+3. FORMAT:
+   - Use *bold* for status and device name.
+   - Do NOT hallucinate missing data.
+
+4. END EXACTLY WITH:
 Regards, Admin Info Solution.
 _(This is an automated update)_
 `;
 
-            return await generateTextWithFallback(prompt, systemInstruction);
+            const text = await generateTextWithFallback(prompt, systemInstruction);
+
+            // WhatsApp safe length guard
+            const MAX_LENGTH = 1000;
+            return typeof text === "string" ? text.slice(0, MAX_LENGTH) : text;
 
         } catch (error) {
             console.error("AI Generation Error (WhatsApp):", error);
-            // Provider will throw 429 correctly, we just bubble it up or fallback to a 500
-            if (error.statusCode) throw error;
+
+            if (error?.statusCode) {
+                throw error;
+            }
+
             throw new AppError("Failed to generate AI message", 500);
         }
     }

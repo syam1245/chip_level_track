@@ -3,22 +3,25 @@ import AppError from "../../core/errors/AppError.js";
 import { aiService } from "./ai.service.js";
 import { aiMessageService } from "./aiMessage.service.js";
 
+/**
+ * Controller: Generate AI technical summary for a repair job.
+ */
 export const getSummary = asyncHandler(async (req, res) => {
     const jobData = req.body;
 
-    // Simple validation
-    if (!jobData || !jobData._id) {
+    // Validate required job data
+    if (!jobData || typeof jobData !== "object" || !jobData._id) {
         return res.status(400).json({
             status: "error",
             message: "Missing job data for summary generation."
         });
     }
 
-    const { forceRefresh } = req.body;
+    const forceRefresh = jobData.forceRefresh === true;
 
-    const summaryText = await aiService.generateJobSummary(jobData, forceRefresh === true);
+    const summaryText = await aiService.generateJobSummary(jobData, forceRefresh);
 
-    res.status(200).json({
+    return res.status(200).json({
         status: "success",
         data: {
             summary: summaryText
@@ -26,10 +29,14 @@ export const getSummary = asyncHandler(async (req, res) => {
     });
 });
 
+
+/**
+ * Controller: Generate AI business insights from shop statistics.
+ */
 export const getInsights = asyncHandler(async (req, res) => {
     const statsData = req.body;
 
-    if (!statsData) {
+    if (!statsData || typeof statsData !== "object") {
         return res.status(400).json({
             status: "error",
             message: "Missing stats data for insights generation."
@@ -38,7 +45,7 @@ export const getInsights = asyncHandler(async (req, res) => {
 
     const insightsText = await aiService.generateInsights(statsData);
 
-    res.status(200).json({
+    return res.status(200).json({
         status: "success",
         data: {
             insights: insightsText
@@ -46,31 +53,39 @@ export const getInsights = asyncHandler(async (req, res) => {
     });
 });
 
+
 /**
- * Controller for handling AI WhatsApp message generation.
+ * Controller: Generate AI WhatsApp update message for a repair job.
  */
 export const generateWhatsApp = asyncHandler(async (req, res) => {
-    const { customerName, jobNumber, brand, status, repairNotes, finalCost } = req.body;
+    const {
+        customerName,
+        jobNumber,
+        brand,
+        status,
+        repairNotes,
+        finalCost
+    } = req.body || {};
 
     if (!customerName) {
         throw new AppError("Customer name is required", 400);
     }
 
-    // Mapping fields to what the service expects (as per recent user updates)
+    // Map request fields to service format
     const jobData = {
         customerName,
         jobNumber,
-        make: brand || req.body.deviceDetails || "Device", // Handle both old and new field names
-        model: req.body.model || "",
+        make: brand || req.body?.deviceDetails || "Device",
+        model: req.body?.model || "",
         status,
         fault: repairNotes,
         repairCost: finalCost
     };
 
-    // Call the service to generate the message
-    const generatedMessage = await aiMessageService.generatePersonalizedUpdate(jobData);
+    const generatedMessage =
+        await aiMessageService.generatePersonalizedUpdate(jobData);
 
-    res.status(200).json({
+    return res.status(200).json({
         ok: true,
         message: generatedMessage
     });
