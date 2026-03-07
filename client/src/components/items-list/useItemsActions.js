@@ -6,7 +6,7 @@ import { useCallback, useEffect, useRef, useState } from "react";
 import { useReactToPrint } from "react-to-print";
 import API_BASE_URL from "../../api";
 import { updateItem, deleteItem, bulkUpdateStatus, bulkDeleteItems } from "../../services/items.api";
-import { generateAiWhatsAppMessage } from "../../services/communication.api";
+import { generateAiWhatsAppMessage } from "../../services/ai.api";
 import { generateWhatsAppMessage } from "../../utils/whatsapp";
 import { openWhatsAppChat } from "../../utils/whatsappHelper";
 

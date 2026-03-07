@@ -18,7 +18,7 @@ import {
     AutoFixHigh as MagicIcon
 } from '@mui/icons-material';
 import Webcam from 'react-webcam';
-import { extractFromImage } from '../../services/vision.api';
+import { extractFromImage } from '../../services/ai.api';
 
 const optimizeImage = (dataUrl, maxWidth = 1024) => {
     return new Promise((resolve) => {

@@ -79,6 +79,9 @@ _(This is an automated update)_
 
         } catch (error) {
             console.error("Gemini API Error:", error);
+            if (error.status === 429) {
+                throw new AppError("AI API quota exceeded. Please try again later.", 429);
+            }
             throw new AppError("Failed to generate AI message", 500);
         }
     }
