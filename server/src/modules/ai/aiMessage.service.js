@@ -73,7 +73,7 @@ _(This is an automated update)_
         } catch (error) {
             console.error("AI Generation Error (WhatsApp):", error);
             // Provider will throw 429 correctly, we just bubble it up or fallback to a 500
-            if (error instanceof AppError) throw error;
+            if (error.statusCode) throw error;
             throw new AppError("Failed to generate AI message", 500);
         }
     }

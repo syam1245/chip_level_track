@@ -44,9 +44,13 @@ export default defineConfig({
   ],
   build: {
     outDir: 'build',
+    emptyOutDir: true, // Force clean build to remove old minified JS
     chunkSizeWarningLimit: 600,
     rollupOptions: {
       output: {
+        entryFileNames: `assets/[name]-[hash]-${Date.now()}.js`,
+        chunkFileNames: `assets/[name]-[hash]-${Date.now()}.js`,
+        assetFileNames: `assets/[name]-[hash]-${Date.now()}.[ext]`,
         manualChunks: {
           vendor: ['react', 'react-dom', 'react-router-dom'],
           mui: ['@mui/material', '@mui/icons-material', '@emotion/react', '@emotion/styled'],

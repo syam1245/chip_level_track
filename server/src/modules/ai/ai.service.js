@@ -101,7 +101,7 @@ RULES:
 
         } catch (error) {
             console.error("AI Generation Error (Summary):", error);
-            if (error instanceof AppError) throw error;
+            if (error.statusCode) throw error;
             throw new AppError("Failed to generate AI technical summary. Try again later.", 500);
         }
     }
@@ -142,7 +142,7 @@ REQUIREMENTS:
 
         } catch (error) {
             console.error("AI Generation Error (Insights):", error);
-            if (error instanceof AppError) throw error;
+            if (error.statusCode) throw error;
             throw new AppError("AI Co-Pilot is currently unavailable for insights.", 503);
         }
     }
