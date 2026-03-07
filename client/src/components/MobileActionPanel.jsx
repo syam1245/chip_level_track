@@ -115,14 +115,6 @@ const MobileActionPanel = ({ onWhatsApp, onAIGenerateWhatsApp, onEdit, onDelete,
                 {/* Note: The summary is currently inside the MobileCardContent, so we don't need a strict second action here right now, but this menu establishes the pattern for future "Smart Actions" */}
             </Menu>
 
-            <Tooltip title="WhatsApp" placement="top">
-                <IconButton
-                    onClick={handleAction(onWhatsApp)}
-                    sx={{ color: "#fff", bgcolor: "#25D366", width: 44, height: 44, "&:hover": { bgcolor: "#1da851" }, "&:active": { transform: "scale(0.9)" } }}
-                >
-                    <WhatsAppIcon sx={{ fontSize: "1.25rem" }} />
-                </IconButton>
-            </Tooltip>
             <Tooltip title="Edit" placement="top">
                 <IconButton
                     onClick={handleAction(onEdit)}
