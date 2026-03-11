@@ -62,9 +62,16 @@ class ItemService {
             throw new AppError("Job number already exists", 400);
         }
 
+        const initialStatus = data.status || "Received";
         const itemData = {
             ...data,
+            status: initialStatus,
             technicianName: user.displayName,
+            statusHistory: [{
+                status: initialStatus,
+                note: data.repairNotes ? String(data.repairNotes).trim() : "Job Created",
+                changedAt: new Date()
+            }]
         };
 
         this._invalidateCache();
@@ -107,13 +114,21 @@ class ItemService {
                 changedAt: new Date(),
             });
 
-            // Set revenueRealizedAt when the repair finishes (if not already set)
-            if ((data.status === "Ready" || data.status === "Delivered") && !item.revenueRealizedAt) {
-                item.revenueRealizedAt = new Date();
-                StatsService.invalidateRevenueCache(); // New revenue realized, invalidate reports
-            }
-
-            if (data.status === "Delivered") {
+            // "Ready": if no due date was assigned, assign it automatically.
+            // Also assign revenueRealizedAt
+            if (data.status === "Ready") {
+                if (!item.dueDate) {
+                    item.dueDate = new Date();
+                }
+                if (!item.revenueRealizedAt) {
+                    item.revenueRealizedAt = new Date();
+                    StatsService.invalidateRevenueCache();
+                }
+            } else if (data.status === "Delivered") {
+                if (!item.revenueRealizedAt) {
+                    item.revenueRealizedAt = new Date();
+                    StatsService.invalidateRevenueCache();
+                }
                 item.deliveredAt = new Date();
             }
         }
@@ -170,6 +185,8 @@ class ItemService {
         if (newStatus === "Ready") {
             // Bulk set revenueRealizedAt where it is not yet set
             await ItemRepository.bulkSetRevenueRealized(ids);
+            // Bulk set dueDate if it was not set previously
+            await ItemRepository.bulkSetDueDateIfNull(ids);
             StatsService.invalidateRevenueCache();
         }
 

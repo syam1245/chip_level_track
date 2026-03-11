@@ -4,6 +4,7 @@ import compression from "compression";
 import cors from "cors";
 import rateLimit from "express-rate-limit";
 import config from "../config/index.js";
+import AppError from "../errors/AppError.js";
 
 function deepSanitize(obj) {
     if (!obj || typeof obj !== "object" || obj === null) return;
@@ -65,13 +66,17 @@ export const applySecurity = (app) => {
 
     app.use(compression({ level: 6, threshold: 1024 }));
 
-    const allowedOrigins = config.security.corsOrigin.split(",");
+    const allowedOrigins = config.security.corsOrigin.split(",").map(o => o.trim().replace(/\/$/, ""));
     app.use(cors({
         origin: (origin, callback) => {
-            if (!origin || config.security.corsOrigin === "*" || allowedOrigins.includes(origin)) {
+            if (!origin || config.security.corsOrigin === "*") {
                 return callback(null, true);
             }
-            return callback(new Error("CORS Policy Violation"));
+            const normalizedOrigin = origin.replace(/\/$/, "");
+            if (allowedOrigins.includes(normalizedOrigin)) {
+                return callback(null, true);
+            }
+            return callback(new AppError(`CORS Policy Violation: Origin ${origin} not allowed.`, 403));
         },
         credentials: true,
     }));

@@ -11,6 +11,7 @@ class AuthService {
     }
 
     async verifyPassword(plainPassword, storedHash) {
+        if (!plainPassword || !storedHash) return false;
         return bcrypt.compare(plainPassword, storedHash);
     }
 

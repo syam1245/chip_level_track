@@ -75,6 +75,15 @@ class ItemRepository {
         );
     }
 
+    async bulkSetDueDateIfNull(ids) {
+        return await Item.updateMany(
+            { _id: { $in: ids }, isDeleted: false, dueDate: null },
+            {
+                $set: { dueDate: new Date() },
+            }
+        );
+    }
+
     async findByTrackingDetails(jobNumber, phoneNumber) {
         return await Item.findOne({
             jobNumber,
