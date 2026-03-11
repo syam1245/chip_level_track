@@ -9,7 +9,7 @@ function deepSanitize(obj) {
     if (!obj || typeof obj !== "object" || obj === null) return;
 
     for (const key of Object.keys(obj)) {
-        if (key.startsWith("$") || key.includes(".") || key === "__proto__" || key === "constructor") {
+        if (key.startsWith("$") || key.includes(".") || key === "__proto__" || key === "constructor" || key === "prototype") {
             delete obj[key];
             continue;
         }
@@ -26,7 +26,7 @@ export const applySecurity = (app) => {
 
     const limiter = rateLimit({
         windowMs: config.security.rateLimitWindowMs,
-        limit: config.security.rateLimitMax * 10, // Global limit is higher
+        limit: config.security.rateLimitMax * 3, // Global limit — conservative for free tier
         standardHeaders: 'draft-7',
         legacyHeaders: false,
         message: { success: false, message: "Too many requests." },

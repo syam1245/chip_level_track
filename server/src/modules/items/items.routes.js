@@ -1,22 +1,36 @@
 import express from "express";
+import rateLimit from "express-rate-limit";
 import ItemController from "./items.controller.js";
 import { requirePermission, requireAuth, requireCsrf } from "../auth/auth.middleware.js";
-import { registerClient } from "./items.events.js";
+import { registerClient, getClientCount } from "./items.events.js";
 
 const router = express.Router();
 
+const trackLimiter = rateLimit({
+    windowMs: 60 * 1000,
+    limit: 10,
+    standardHeaders: "draft-7",
+    legacyHeaders: false,
+    message: { error: "Too many tracking requests. Please try again shortly." },
+});
+
+const MAX_SSE_CLIENTS = 50;
+
 // Public route FIRST
-router.get("/track", ItemController.trackItem); // Public tracking endpoint
+router.get("/track", trackLimiter, ItemController.trackItem);
 
 // SSE live-events stream — auth required, no CSRF (GET stream)
 router.get("/events", requireAuth, (req, res) => {
+    if (getClientCount() >= MAX_SSE_CLIENTS) {
+        return res.status(503).json({ error: "Too many live connections. Try again later." });
+    }
+
     res.setHeader("Content-Type", "text/event-stream");
     res.setHeader("Cache-Control", "no-cache");
     res.setHeader("Connection", "keep-alive");
-    res.setHeader("X-Accel-Buffering", "no"); // Disable nginx buffering if behind proxy
+    res.setHeader("X-Accel-Buffering", "no");
     res.flushHeaders();
 
-    // Send a heartbeat every 20s to keep the connection alive through proxies
     const heartbeat = setInterval(() => res.write(": heartbeat\n\n"), 20_000);
     req.on("close", () => clearInterval(heartbeat));
 

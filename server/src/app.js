@@ -32,11 +32,7 @@ app.use("/api/ai", requireAuth, requireCsrf, aiRoutes);
 
 // Health check
 app.get("/api/health", (req, res) => {
-    res.json({
-        status: "OK",
-        uptime: process.uptime(),
-        timestamp: new Date().toISOString(),
-    });
+    res.json({ status: "OK" });
 });
 
 // Static assets

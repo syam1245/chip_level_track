@@ -1,7 +1,10 @@
+import mongoose from "mongoose";
 import ItemService from "./items.service.js";
 import ItemValidator from "./items.validator.js";
 import asyncHandler from "../../core/utils/asyncHandler.js";
 import { UAParser } from "ua-parser-js";
+
+const MAX_BULK_SIZE = 100;
 
 class ItemController {
     getAllItems = asyncHandler(async (req, res) => {
@@ -59,12 +62,18 @@ class ItemController {
     });
 
     updateItem = asyncHandler(async (req, res) => {
+        if (!mongoose.isValidObjectId(req.params.id)) {
+            return res.status(400).json({ error: "Invalid item ID" });
+        }
         ItemValidator.validateUpdate(req.body);
         const item = await ItemService.updateItem(req.params.id, req.body);
         res.json(item);
     });
 
     deleteItem = asyncHandler(async (req, res) => {
+        if (!mongoose.isValidObjectId(req.params.id)) {
+            return res.status(400).json({ error: "Invalid item ID" });
+        }
         await ItemService.deleteItem(req.params.id);
         res.json({ msg: "Item removed" });
     });
@@ -74,6 +83,9 @@ class ItemController {
         if (!Array.isArray(ids) || ids.length === 0) {
             return res.status(400).json({ error: "ids (array) is required" });
         }
+        if (ids.length > MAX_BULK_SIZE) {
+            return res.status(400).json({ error: `Maximum ${MAX_BULK_SIZE} items per bulk operation` });
+        }
         const result = await ItemService.bulkDeleteItems(ids);
         res.json({ success: true, deletedCount: result.modifiedCount });
     });
@@ -82,6 +94,9 @@ class ItemController {
         const { ids, status } = req.body;
         if (!Array.isArray(ids) || ids.length === 0 || !status) {
             return res.status(400).json({ error: "ids (array) and status are required" });
+        }
+        if (ids.length > MAX_BULK_SIZE) {
+            return res.status(400).json({ error: `Maximum ${MAX_BULK_SIZE} items per bulk operation` });
         }
         const result = await ItemService.bulkUpdateStatus(ids, status);
         res.json({ success: true, modifiedCount: result.modifiedCount });

@@ -2,6 +2,7 @@ import { GoogleGenerativeAI } from "@google/generative-ai";
 import Groq from "groq-sdk";
 import config from "../../core/config/index.js";
 import AppError from "../../core/errors/AppError.js";
+import logger from "../../core/utils/logger.js";
 
 const genAI = new GoogleGenerativeAI(config.geminiApiKey);
 const groq = config.groqApiKey ? new Groq({ apiKey: config.groqApiKey }) : null;
@@ -139,7 +140,7 @@ export async function generateTextWithFallback(prompt, systemInstruction = "") {
   // Attempt 1: Groq
   if (groq) {
     try {
-      console.log("LLM Provider: Attempting Groq (llama-3.1-8b-instant)...");
+      logger.info("LLM Provider: Attempting Groq (llama-3.1-8b-instant)...");
 
       const result = await withRetry(() =>
         withTimeout(generateWithGroq(prompt, systemInstruction))
@@ -147,14 +148,14 @@ export async function generateTextWithFallback(prompt, systemInstruction = "") {
 
       return result;
     } catch (error) {
-      console.warn(`Groq Provider Failed: ${error.message}`);
+      logger.warn(`Groq Provider Failed: ${error.message}`);
       lastError = error;
     }
   }
 
   // Attempt 2: Gemini fallback
   try {
-    console.log("LLM Provider: Attempting Gemini Fallback...");
+    logger.info("LLM Provider: Attempting Gemini Fallback...");
 
     const result = await withRetry(() =>
       withTimeout(generateWithGemini(prompt, systemInstruction))
@@ -162,7 +163,7 @@ export async function generateTextWithFallback(prompt, systemInstruction = "") {
 
     return result;
   } catch (error) {
-    console.error(`Gemini Provider Failed: ${error.message}`);
+    logger.error(`Gemini Provider Failed: ${error.message}`);
 
     if (isRateLimitError(error) || isRateLimitError(lastError)) {
       throw new AppError(

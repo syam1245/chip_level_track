@@ -48,8 +48,13 @@ export function buildSearchQuery({ search, statusGroup, technicianName }) {
  * Build the MongoDB sort descriptor.
  * @returns {object} A MongoDB sort object (e.g. { createdAt: -1 })
  */
+const ALLOWED_SORT_FIELDS = new Set([
+    "createdAt", "customerName", "brand", "status", "jobNumber",
+    "finalCost", "technicianName", "dueDate", "updatedAt"
+]);
+
 export function buildSortOptions({ sortBy, sortOrder }) {
-    if (!sortBy) return { createdAt: -1 };
+    if (!sortBy || !ALLOWED_SORT_FIELDS.has(sortBy)) return { createdAt: -1 };
 
     const order = sortOrder === "asc" ? 1 : -1;
     const sortObject = { [sortBy]: order };

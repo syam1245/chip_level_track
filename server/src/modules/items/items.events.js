@@ -7,6 +7,14 @@
 const clients = new Set();
 
 /**
+ * Get the current number of connected SSE clients.
+ * @returns {number}
+ */
+export function getClientCount() {
+    return clients.size;
+}
+
+/**
  * Register a new SSE client connection.
  * @param {import('express').Response} res
  */
@@ -30,3 +38,4 @@ export function broadcast(event, data = {}) {
         }
     }
 }
+

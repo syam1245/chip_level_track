@@ -47,8 +47,11 @@ class AuthController {
         if (!username || !password || !displayName) {
             return res.status(400).json({ error: "Username, password, and display name are required." });
         }
-        if (password.length < 4) {
-            return res.status(400).json({ error: "Password must be at least 4 characters long." });
+        if (username.length > 50) {
+            return res.status(400).json({ error: "Username must be 50 characters or less." });
+        }
+        if (password.length < 8) {
+            return res.status(400).json({ error: "Password must be at least 8 characters long." });
         }
 
         const newUser = await AuthService.createUser(username, password, displayName, "user");
@@ -61,6 +64,9 @@ class AuthController {
     updatePassword = asyncHandler(async (req, res) => {
         const { newPassword, overrideUsername, overridePassword } = req.body;
         const { username } = req.params;
+        if (!username || username.length > 50) {
+            return res.status(400).json({ error: "Invalid username." });
+        }
 
         if (!newPassword || newPassword.length < 8) {
             return res.status(400).json({ error: "Password must be at least 8 characters" });
@@ -95,6 +101,9 @@ class AuthController {
     toggleActive = asyncHandler(async (req, res) => {
         const { isActive } = req.body;
         const { username } = req.params;
+        if (!username || username.length > 50) {
+            return res.status(400).json({ error: "Invalid username." });
+        }
 
         if (req.user.role !== "admin") {
             return res.status(403).json({ error: "Only admins can deactivate users." });
@@ -112,6 +121,9 @@ class AuthController {
 
     deleteUser = asyncHandler(async (req, res) => {
         const { username } = req.params;
+        if (!username || username.length > 50) {
+            return res.status(400).json({ error: "Invalid username." });
+        }
         const { adminPassword } = req.body;
 
         if (req.user.role !== "admin") {
@@ -136,6 +148,9 @@ class AuthController {
 
     updateUser = asyncHandler(async (req, res) => {
         const { username } = req.params;
+        if (!username || username.length > 50) {
+            return res.status(400).json({ error: "Invalid username." });
+        }
         const { newUsername, displayName } = req.body;
 
         if (req.user.role !== "admin") {

@@ -81,7 +81,7 @@ class ItemRepository {
             phoneNumber,
             isDeleted: false
         })
-            .select("-metadata -isDeleted -createdAt")
+            .select("jobNumber status brand issue finalCost updatedAt")
             .lean();
     }
 }

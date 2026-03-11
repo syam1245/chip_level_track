@@ -1,6 +1,19 @@
 import AppError from "../../core/errors/AppError.js";
 import AiSummary from "./models/aiSummary.model.js";
 import { generateTextWithFallback } from "./llmProvider.js";
+import logger from "../../core/utils/logger.js";
+
+/**
+ * Strip control characters and known prompt-injection patterns from user text.
+ */
+function sanitizeForPrompt(text) {
+    if (!text || typeof text !== "string") return "";
+    return text
+        .replace(/[\x00-\x08\x0B\x0C\x0E-\x1F\x7F]/g, "") // strip control chars
+        .replace(/ignore\s+(previous|above|all)\s+instructions?/gi, "[REDACTED]")
+        .replace(/system\s*:\s*/gi, "[REDACTED]")
+        .trim();
+}
 
 class AiService {
     /**
@@ -28,16 +41,16 @@ class AiService {
 
         return {
             jobNumber: jobData.jobNumber || "N/A",
-            customer: jobData.customerName || "Customer",
-            deviceBrand: jobData.brand || "Not Specified",
-            initialReportedIssue: jobData.issue || "Not Specified",
+            customer: sanitizeForPrompt(jobData.customerName) || "Customer",
+            deviceBrand: sanitizeForPrompt(jobData.brand) || "Not Specified",
+            initialReportedIssue: sanitizeForPrompt(jobData.issue) || "Not Specified",
             currentStatus: jobData.status || "Received",
-            latestTechnicianNotes: jobData.repairNotes || "",
-            assignedTechnician: jobData.technicianName || "Unknown",
+            latestTechnicianNotes: sanitizeForPrompt(jobData.repairNotes) || "",
+            assignedTechnician: sanitizeForPrompt(jobData.technicianName) || "Unknown",
             jobCreatedOn: jobData.formattedDate || "",
             technicalHistory: history.map((entry) => ({
                 statusWas: entry?.status || "",
-                techComment: entry?.note || "No note",
+                techComment: sanitizeForPrompt(entry?.note) || "No note",
                 timeOfEntry: entry?.changedAt
                     ? new Date(entry.changedAt).toLocaleDateString("en-IN")
                     : "",
@@ -126,7 +139,7 @@ RULES:
                     { upsert: true, new: true }
                 );
             } catch (dbError) {
-                console.error(
+                logger.error(
                     "Failed to upsert AI summary to DB:",
                     dbError?.message || dbError
                 );
@@ -134,7 +147,7 @@ RULES:
 
             return summaryText;
         } catch (error) {
-            console.error("AI Generation Error (Summary):", error);
+            logger.error("AI Generation Error (Summary):", error);
 
             if (error?.statusCode) {
                 throw error;
@@ -187,7 +200,7 @@ REQUIREMENTS:
 
             return await generateTextWithFallback(prompt, systemInstruction);
         } catch (error) {
-            console.error("AI Generation Error (Insights):", error);
+            logger.error("AI Generation Error (Insights):", error);
 
             if (error?.statusCode) {
                 throw error;
