@@ -10,6 +10,15 @@ import { generateAiWhatsAppMessage } from "../../services/ai.api";
 import { generateWhatsAppMessage } from "../../utils/whatsapp";
 import { openWhatsAppChat } from "../../utils/whatsappHelper";
 
+// Fields the server's validateUpdate() accepts — keep in sync with
+// server/src/modules/items/items.validator.js → ALLOWED_UPDATE_FIELDS.
+// Sending only these avoids transmitting the full DB document (statusHistory,
+// metadata, __v, timestamps) on every save.
+const ALLOWED_UPDATE_FIELDS = new Set([
+    "customerName", "brand", "phoneNumber", "repairNotes",
+    "issue", "finalCost", "technicianName", "dueDate", "status",
+]);
+
 export default function useItemsActions({ items, setItems, setSnackbar, refetch, notify }) {
     // ── Dialog state ───────────────────────────────────────────────────
     const [editItem, setEditItem] = useState(null);
@@ -48,12 +57,14 @@ export default function useItemsActions({ items, setItems, setSnackbar, refetch,
     // ── Delete ─────────────────────────────────────────────────────────
     const handleDelete = useCallback((id) => setDeleteConfirmId(id), []);
 
-    const confirmDelete = async () => {
+    const confirmDelete = useCallback(async () => {
         const id = deleteConfirmId;
         setDeleteConfirmId(null);
         try {
             const { ok } = await deleteItem(id);
             if (ok) {
+                // Optimistically remove from local state for instant feedback,
+                // then refetch to sync any server-side side effects (cache, counts).
                 setItems((prev) => prev.filter((item) => item._id !== id));
                 setSnackbar({ open: true, message: "Deleted successfully", severity: "success" });
                 refetch();
@@ -63,18 +74,31 @@ export default function useItemsActions({ items, setItems, setSnackbar, refetch,
         } catch {
             setSnackbar({ open: true, message: "Network error", severity: "error" });
         }
-    };
+    }, [deleteConfirmId, deleteItem, setItems, setSnackbar, refetch]);
 
     // ── Edit / Save ────────────────────────────────────────────────────
-    const handleEditSave = async () => {
+    const handleEditSave = useCallback(async () => {
         if (!editItem) return;
         const prevStatus = items.find((i) => i._id === editItem._id)?.status;
 
-        // Ensure finalCost is a number before sending
-        const payload = {
-            ...editItem,
-            finalCost: editItem.finalCost ? Number(editItem.finalCost) : 0
-        };
+        // Build a clean payload with only the fields the server accepts.
+        // Avoids sending the full DB document (statusHistory array, metadata,
+        // __v, timestamps) on every save — the server strips them anyway,
+        // but this reduces payload size and is more explicit.
+        const payload = {};
+        for (const key of ALLOWED_UPDATE_FIELDS) {
+            if (key in editItem) {
+                payload[key] = editItem[key];
+            }
+        }
+
+        // Coerce finalCost to a number. Check for undefined/empty string explicitly
+        // rather than relying on truthiness — a valid value of 0 is falsy.
+        if (payload.finalCost !== undefined && payload.finalCost !== "") {
+            payload.finalCost = Number(payload.finalCost);
+        } else {
+            payload.finalCost = 0;
+        }
 
         try {
             const { ok, error } = await updateItem(editItem._id, payload);
@@ -94,25 +118,23 @@ export default function useItemsActions({ items, setItems, setSnackbar, refetch,
         } catch {
             setSnackbar({ open: true, message: "Network error", severity: "error" });
         }
-    };
+    }, [editItem, items, setSnackbar, notify, setEditItem, refetch]);
 
     // ── WhatsApp ───────────────────────────────────────────────────────
-    // Standard WhatsApp
     const handleWhatsApp = useCallback((item) => {
         const message = generateWhatsAppMessage(item);
         openWhatsAppChat(item.phoneNumber, message);
     }, []);
 
-    // AI-generated WhatsApp
     const handleAIGenerateWhatsApp = useCallback(async (item) => {
         try {
             const jobData = {
                 customerName: item.customerName,
-                jobNumber: item.jobNumber,
-                brand: item.brand,
-                status: item.status,
-                repairNotes: item.repairNotes,
-                finalCost: item.finalCost,
+                jobNumber:    item.jobNumber,
+                brand:        item.brand,
+                status:       item.status,
+                repairNotes:  item.repairNotes,
+                finalCost:    item.finalCost,
             };
 
             const { ok, message, error } = await generateAiWhatsAppMessage(jobData);
@@ -123,15 +145,38 @@ export default function useItemsActions({ items, setItems, setSnackbar, refetch,
             } else {
                 setSnackbar({ open: true, message: error || "Failed to generate AI message", severity: "error" });
             }
-        } catch (err) {
+        } catch {
+            // `err` removed — was declared but never used (lint warning)
             setSnackbar({ open: true, message: "Network error generating AI message", severity: "error" });
         }
     }, [setSnackbar]);
 
     // ── Backup ─────────────────────────────────────────────────────────
-    const downloadBackup = useCallback(() => {
-        window.open(`${API_BASE_URL}/api/items/backup`, "_blank");
-    }, []);
+    // Uses fetch + blob instead of window.open so the download is handled
+    // programmatically: no new tab, no URL in browser history, auth cookie
+    // is sent automatically on the same-origin fetch.
+    const downloadBackup = useCallback(async () => {
+        try {
+            const res = await fetch(`${API_BASE_URL}/api/items/backup`, {
+                credentials: "include",
+            });
+            if (!res.ok) {
+                setSnackbar({ open: true, message: "Backup download failed", severity: "error" });
+                return;
+            }
+            const blob = await res.blob();
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement("a");
+            a.href = url;
+            a.download = `backup_${new Date().toISOString().slice(0, 10)}.json`;
+            document.body.appendChild(a);
+            a.click();
+            a.remove();
+            URL.revokeObjectURL(url);
+        } catch {
+            setSnackbar({ open: true, message: "Network error during backup", severity: "error" });
+        }
+    }, [setSnackbar]);
 
     // ── Bulk status update ─────────────────────────────────────────────
     const handleBulkApply = useCallback(async () => {

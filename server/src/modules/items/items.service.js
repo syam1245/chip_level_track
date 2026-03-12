@@ -4,9 +4,10 @@ import NodeCache from "node-cache";
 import { enrichWithAging, computeAgingSummary } from "./items.aging.js";
 import { buildSearchQuery, buildSortOptions, STATUS_GROUPS } from "./items.query-builder.js";
 import { broadcast } from "./items.events.js";
+import { ALLOWED_STATUSES } from "../../constants/status.js";
 import StatsService from "../stats/stats.service.js";
 
-const statsCache = new NodeCache({ stdTTL: 300 }); // Cache for 5 minutes
+const statsCache = new NodeCache({ stdTTL: 300 });
 
 class ItemService {
     async getItems({ page, limit, search, statusGroup, userRole, includeMetadata, sortBy, sortOrder, technicianName }) {
@@ -16,12 +17,12 @@ class ItemService {
         const showMetadata = userRole === "admin" && includeMetadata === "true";
 
         // ── Stat counts (cached) ───────────────────────────────────────
-        let { inProgress, ready, returned } = await this._getStatCounts();
+        const { inProgress, ready, returned } = await this._getStatCounts();
 
-        // ── Fetch page of items + total count ──────────────────────────
+        // ── Fetch page of items + unfiltered total in parallel ─────────
         const [items, total] = await Promise.all([
             ItemRepository.findAll({ query, skip, limit, showMetadata, sort: sortObject }),
-            ItemRepository.countDocuments({ isDeleted: false })
+            ItemRepository.countDocuments({ isDeleted: false }),
         ]);
 
         // ── Enrich items with aging info (in-place, O(pageSize)) ───────
@@ -30,7 +31,10 @@ class ItemService {
             enrichWithAging(item, now);
         }
 
-        const filteredTotal = (search || statusGroup || (technicianName && technicianName !== "All"))
+        // When filtered, run a separate count against the filtered query.
+        // When unfiltered, reuse the already-fetched total to save a DB round-trip.
+        const isFiltered = search || statusGroup || (technicianName && technicianName !== "All");
+        const filteredTotal = isFiltered
             ? await ItemRepository.countDocuments(query)
             : total;
 
@@ -47,10 +51,10 @@ class ItemService {
             totalPages: Math.ceil(filteredTotal / limit),
             totalItems: filteredTotal,
             stats: {
-                total: total || 0,
-                inProgress: inProgress || 0,
-                ready: ready || 0,
-                returned: returned || 0,
+                total:        total        || 0,
+                inProgress:   inProgress   || 0,
+                ready:        ready        || 0,
+                returned:     returned     || 0,
                 agingSummary,
             },
         };
@@ -68,14 +72,17 @@ class ItemService {
             status: initialStatus,
             technicianName: user.displayName,
             statusHistory: [{
-                status: initialStatus,
-                note: data.repairNotes ? String(data.repairNotes).trim() : "Job Created",
-                changedAt: new Date()
-            }]
+                status:    initialStatus,
+                note:      data.repairNotes ? String(data.repairNotes).trim() : "Job Created",
+                changedAt: new Date(),
+            }],
         };
 
-        this._invalidateCache();
+        // Invalidate AFTER confirmed write — not before.
+        // If create throws (duplicate race condition, network blip), the cache
+        // should not have been cleared since the data has not changed.
         const newItem = await ItemRepository.create(itemData);
+        this._invalidateCache();
         broadcast("job:created", { jobNumber: newItem.jobNumber });
         return newItem;
     }
@@ -86,40 +93,38 @@ class ItemService {
             throw new AppError("Item not found", 404);
         }
 
-        if (data.customerName) item.customerName = String(data.customerName).trim();
-        if (data.brand) item.brand = String(data.brand).trim();
-        if (data.phoneNumber) item.phoneNumber = String(data.phoneNumber).trim();
-        if (data.repairNotes !== undefined) item.repairNotes = String(data.repairNotes).trim();
-        if (data.issue !== undefined) item.issue = String(data.issue).trim();
-        if (data.finalCost !== undefined) item.finalCost = Number(data.finalCost) || 0;
+        if (data.customerName)              item.customerName   = String(data.customerName).trim();
+        if (data.brand)                     item.brand          = String(data.brand).trim();
+        if (data.phoneNumber)               item.phoneNumber    = String(data.phoneNumber).trim();
+        if (data.repairNotes !== undefined)  item.repairNotes   = String(data.repairNotes).trim();
+        if (data.issue !== undefined)        item.issue         = String(data.issue).trim();
+        if (data.finalCost !== undefined)    item.finalCost     = Number(data.finalCost) || 0;
         if (data.technicianName !== undefined) item.technicianName = String(data.technicianName).trim();
-        if (data.dueDate !== undefined) item.dueDate = data.dueDate ? new Date(data.dueDate) : null;
+        if (data.dueDate !== undefined)      item.dueDate       = data.dueDate ? new Date(data.dueDate) : null;
 
         if (data.status && data.status !== item.status) {
-            // Validate allowed status values to prevent invalid statuses in history
-            const ALLOWED_STATUSES = ["Received", "Sent to Service", "In Progress", "Waiting for Parts", "Ready", "Delivered", "Return", "Pending"];
+            // ALLOWED_STATUSES check is already done in items.validator.js before this
+            // method is ever called. The check is kept here as a service-layer guard
+            // for any future caller that bypasses the validator (e.g. internal scripts,
+            // tests calling the service directly). If you remove the validator route,
+            // remove this comment too.
             if (!ALLOWED_STATUSES.includes(data.status)) {
                 throw new AppError(`Invalid status: "${data.status}". Must be one of: ${ALLOWED_STATUSES.join(", ")}`, 400);
             }
 
-            // Validation for Delivered status
             if (data.status === "Delivered" && !item.finalCost) {
                 throw new AppError("A final amount must be provided before marking the job as Delivered.", 400);
             }
 
             item.status = data.status;
             item.statusHistory.push({
-                status: data.status,
-                note: data.repairNotes ? String(data.repairNotes).trim() : "",
+                status:    data.status,
+                note:      data.repairNotes ? String(data.repairNotes).trim() : "",
                 changedAt: new Date(),
             });
 
-            // "Ready": if no due date was assigned, assign it automatically.
-            // Also assign revenueRealizedAt
             if (data.status === "Ready") {
-                if (!item.dueDate) {
-                    item.dueDate = new Date();
-                }
+                if (!item.dueDate) item.dueDate = new Date();
                 if (!item.revenueRealizedAt) {
                     item.revenueRealizedAt = new Date();
                     StatsService.invalidateRevenueCache();
@@ -134,9 +139,11 @@ class ItemService {
         }
 
         const savedItem = await item.save();
+
         if (data.status) {
-            this._invalidateCache(); // status change may affect aging buckets
+            this._invalidateCache();
         }
+
         broadcast("job:updated", { id });
         return savedItem;
     }
@@ -146,8 +153,10 @@ class ItemService {
         if (!item) {
             throw new AppError("Item not found", 404);
         }
-        this._invalidateCache();
+
+        // Invalidate AFTER confirmed soft-delete — same reason as createItem.
         const deleted = await ItemRepository.softDelete(id);
+        this._invalidateCache();
         broadcast("job:deleted", { id });
         return deleted;
     }
@@ -168,25 +177,22 @@ class ItemService {
             throw new AppError("ids must be a non-empty array", 400);
         }
 
-        // Validate against schema enum before hitting the DB
-        const ALLOWED_STATUSES = ["Received", "Sent to Service", "In Progress", "Waiting for Parts", "Ready", "Delivered", "Return", "Pending"];
         if (!newStatus || !ALLOWED_STATUSES.includes(newStatus)) {
             throw new AppError(`Invalid status: "${newStatus}". Must be one of: ${ALLOWED_STATUSES.join(", ")}`, 400);
         }
 
         if (newStatus === "Delivered") {
-            // Bulk update to Delivered is restricted to ensure final cost is verified.
-            // Technicians should transition items individually to supply the final amount.
             throw new AppError('Cannot bulk update to "Delivered". Please update items individually to provide the final amount.', 400);
         }
 
         const result = await ItemRepository.bulkUpdateStatus(ids, newStatus);
 
         if (newStatus === "Ready") {
-            // Bulk set revenueRealizedAt where it is not yet set
-            await ItemRepository.bulkSetRevenueRealized(ids);
-            // Bulk set dueDate if it was not set previously
-            await ItemRepository.bulkSetDueDateIfNull(ids);
+            // Both operations target different fields on the same documents — run in parallel.
+            await Promise.all([
+                ItemRepository.bulkSetRevenueRealized(ids),
+                ItemRepository.bulkSetDueDateIfNull(ids),
+            ]);
             StatsService.invalidateRevenueCache();
         }
 
@@ -212,11 +218,10 @@ class ItemService {
         const [inProgress, ready, returned] = await Promise.all([
             ItemRepository.countDocuments({ isDeleted: false, status: { $in: STATUS_GROUPS.inProgress } }),
             ItemRepository.countDocuments({ isDeleted: false, status: { $in: STATUS_GROUPS.ready } }),
-            ItemRepository.countDocuments({ isDeleted: false, status: { $in: STATUS_GROUPS.returned } })
+            ItemRepository.countDocuments({ isDeleted: false, status: { $in: STATUS_GROUPS.returned } }),
         ]);
 
         const stats = { inProgress, ready, returned };
-
         statsCache.set("itemStats", stats);
         return stats;
     }

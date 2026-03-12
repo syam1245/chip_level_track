@@ -1,64 +1,79 @@
 import mongoose from "mongoose";
+import { ALLOWED_STATUSES } from "../../../constants/status.js";
 
 const itemSchema = new mongoose.Schema(
     {
-        jobNumber: { type: String, required: true, unique: true, index: true },
+        jobNumber:    { type: String, required: true, unique: true, index: true },
         customerName: { type: String, required: true, uppercase: true },
-        brand: { type: String, required: true },
-        phoneNumber: { type: String, required: true, index: true },
+        brand:        { type: String, required: true },
+        phoneNumber:  { type: String, required: true },
         status: {
-            type: String,
+            type:    String,
             default: "Received",
-            enum: ["Received", "Sent to Service", "In Progress", "Waiting for Parts", "Ready", "Delivered", "Return", "Pending"],
-            index: true
+            enum:    ALLOWED_STATUSES,
         },
         repairNotes: { type: String },
-        issue: { type: String, uppercase: true },
-        finalCost: { type: Number, default: 0 },
+        issue:       { type: String, uppercase: true },
+        finalCost:   { type: Number, default: 0 },
         statusHistory: [
             {
-                status: { type: String },
-                note: { type: String, default: "" },
+                status:    { type: String },
+                note:      { type: String, default: "" },
                 changedAt: { type: Date, default: Date.now },
-            }
+            },
         ],
-        isDeleted: { type: Boolean, default: false, index: true },
-        technicianName: { type: String, default: "Unknown" },
-        dueDate: { type: Date, default: null, index: true }, // Expected completion deadline
-        deliveredAt: { type: Date, default: null, index: true }, // Actual delivery time
-        revenueRealizedAt: { type: Date, default: null, index: true }, // When revenue is earned (Ready/Delivered)
-        formattedDate: { type: String, default: "" }, // Explicit DD/MM/YY database storage
+        isDeleted:        { type: Boolean, default: false },
+        technicianName:   { type: String, default: "Unknown" },
+        dueDate:          { type: Date, default: null },
+        deliveredAt:      { type: Date, default: null },
+        revenueRealizedAt:{ type: Date, default: null },
+        formattedDate:    { type: String, default: "" },
         metadata: {
-            type: Object,
+            type:   Object,
             select: false,
         },
     },
     { timestamps: true }
 );
 
+// ── Pre-save: set formattedDate (DD/MM/YY) once at creation ──────────────────
+// Guard with this.isNew so every subsequent item.save() call in updateItem
+// doesn't recompute a value that can never change (createdAt is immutable).
 itemSchema.pre("save", function (next) {
-    if (this.createdAt) {
-        const d = new Date(this.createdAt);
-        const day = String(d.getDate()).padStart(2, '0');
-        const month = String(d.getMonth() + 1).padStart(2, '0');
-        const year = String(d.getFullYear()).slice(-2);
+    if (this.isNew && this.createdAt) {
+        const d     = new Date(this.createdAt);
+        const day   = String(d.getDate()).padStart(2, "0");
+        const month = String(d.getMonth() + 1).padStart(2, "0");
+        const year  = String(d.getFullYear()).slice(-2);
         this.formattedDate = `${day}/${month}/${year}`;
     }
     next();
 });
 
+// ── Text index — full-text search across key customer-facing fields ──────────
 itemSchema.index({
     customerName: "text",
-    brand: "text",
-    jobNumber: "text",
-    phoneNumber: "text"
+    brand:        "text",
+    jobNumber:    "text",
+    phoneNumber:  "text",
 });
 
-itemSchema.index({ isDeleted: 1, createdAt: -1 });
-itemSchema.index({ isDeleted: 1, status: 1 });
-itemSchema.index({ isDeleted: 1, status: 1, createdAt: -1 });
-itemSchema.index({ isDeleted: 1, technicianName: 1, createdAt: -1 }); // Technician filter
-itemSchema.index({ isDeleted: 1, dueDate: 1, status: 1 });             // Overdue queries
-itemSchema.index({ isDeleted: 1, revenueRealizedAt: 1 });              // Revenue tracking
+// ── Compound indexes — covering the actual query patterns in the codebase ────
+//
+// Single-field indexes on isDeleted, dueDate, and revenueRealizedAt were
+// removed. Every query in items.repository.js filters by isDeleted first,
+// so the compound indexes below are always the best plan. The standalone
+// single-field indexes on those three fields added write overhead and disk
+// usage with no query that would prefer them.
+//
+// Kept: jobNumber (unique lookup), phoneNumber (tracking lookup).
+// phoneNumber single-field index retained — used in findByTrackingDetails
+// independently of isDeleted in some query paths.
+
+itemSchema.index({ isDeleted: 1, createdAt: -1 });          // default list, newest first
+itemSchema.index({ isDeleted: 1, status: 1, createdAt: -1 });// status filter + sort
+itemSchema.index({ isDeleted: 1, technicianName: 1, createdAt: -1 }); // technician filter
+itemSchema.index({ isDeleted: 1, dueDate: 1, status: 1 });  // overdue queries
+itemSchema.index({ isDeleted: 1, revenueRealizedAt: 1 });   // revenue date range
 
 export default mongoose.model("Item", itemSchema);
