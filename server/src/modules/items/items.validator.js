@@ -67,8 +67,12 @@ class ItemValidator {
             throw new AppError(`Invalid status: "${status}"`, 400);
         }
 
-        if (finalCost !== undefined && (typeof finalCost !== "number" || finalCost < 0 || finalCost > 10000000)) {
-            throw new AppError("Final cost must be a valid non-negative number", 400);
+        if (finalCost !== undefined) {
+            const parsedCost = Number(finalCost);
+            if (isNaN(parsedCost) || parsedCost < 0 || parsedCost > 10000000) {
+                throw new AppError("Final cost must be a valid non-negative number", 400);
+            }
+            data.finalCost = parsedCost;
         }
 
         return true;
