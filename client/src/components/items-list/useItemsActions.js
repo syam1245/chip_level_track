@@ -70,8 +70,14 @@ export default function useItemsActions({ items, setItems, setSnackbar, refetch,
         if (!editItem) return;
         const prevStatus = items.find((i) => i._id === editItem._id)?.status;
 
+        // Ensure finalCost is a number before sending
+        const payload = {
+            ...editItem,
+            finalCost: editItem.finalCost ? Number(editItem.finalCost) : 0
+        };
+
         try {
-            const { ok, error } = await updateItem(editItem._id, editItem);
+            const { ok, error } = await updateItem(editItem._id, payload);
             if (ok) {
                 setSnackbar({ open: true, message: "Updated successfully", severity: "success" });
                 if (editItem.status && editItem.status !== prevStatus) {
