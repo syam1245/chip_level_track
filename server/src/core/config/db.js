@@ -1,83 +1,72 @@
 import mongoose from "mongoose";
 import dns from "dns";
-import { seedUsers } from "./seed.js";
 import config from "./index.js";
 import logger from "../utils/logger.js";
 
-// Optional DNS override for SRV issues in dev environments
+// ── DNS override ─────────────────────────────────────────────────────────────
+// Kept intentionally: some local/office networks fail to resolve MongoDB SRV
+// records, requiring a forced fallback to Google's public DNS. Production uses
+// the host's default DNS (Atlas handles it correctly there).
 if (config.env !== "production") {
-  dns.setServers(["8.8.8.8", "8.8.4.4"]);
+    dns.setServers(["8.8.8.8", "8.8.4.4"]);
 }
 
-// Global cache (prevents multiple connections in hot reload / serverless)
-global.__mongoose ||= { conn: null, promise: null };
-const cached = global.__mongoose;
-
-if (!config.mongodbUri) {
-  throw new Error("MONGODB_URI must be configured.");
-}
-
-const connectDB = async () => {
-  if (cached.conn) {
-    logger.info("✅ Using cached MongoDB connection");
-    return cached.conn;
-  }
-
-  if (!cached.promise) {
-    const opts = {
-      bufferCommands: false,
-      serverSelectionTimeoutMS: 5000,
-      maxPoolSize: 10,
-      minPoolSize: 2,
-    };
-
-    cached.promise = mongoose
-      .connect(config.mongodbUri, opts)
-      .then((mongooseInstance) => {
-        logger.info("✅ New MongoDB connection established");
-        return mongooseInstance;
-      });
-  }
-
-  try {
-    cached.conn = await cached.promise;
-
-    // Seed default users safely
-    await seedUsers().catch((err) => {
-      logger.warn("User seed skipped:", err.message);
-    });
-
-  } catch (err) {
-    cached.promise = null;
-    logger.error("❌ MongoDB initial connection error:", err.message);
-    process.exit(1);
-  }
-
-  return cached.conn;
+// ── Connection options ───────────────────────────────────────────────────────
+const MONGO_OPTS = {
+    bufferCommands: false,         // fail immediately if not connected; don't queue ops silently
+    serverSelectionTimeoutMS: 5000, // give up finding a server after 5s
+    socketTimeoutMS: 45000,         // close sockets idle for 45s (catches stale Atlas free-tier connections)
+    heartbeatFrequencyMS: 10000,    // check server health every 10s for faster reconnect detection
+    maxPoolSize: 10,
+    minPoolSize: 2,
 };
 
-// Connection lifecycle logs
+// ── Simple connection state flag ─────────────────────────────────────────────
+// Replaces the global.__mongoose caching pattern which is designed for
+// serverless (Next.js / Lambda). In a long-running Express process, Mongoose
+// manages its own connection pool internally — the global cache only adds
+// complexity and a mutable global with no benefit.
+let isConnected = false;
+
+const connectDB = async () => {
+    if (isConnected) {
+        logger.info("✅ Using existing MongoDB connection");
+        return;
+    }
+
+    try {
+        await mongoose.connect(config.mongodbUri, MONGO_OPTS);
+        // isConnected is set to true by the "connected" event listener below,
+        // but we set it here as well so it's immediately accurate after await.
+        isConnected = true;
+    } catch (err) {
+        logger.error("❌ MongoDB initial connection failed:", err.message);
+        process.exit(1);
+    }
+};
+
+// ── Connection lifecycle logs ────────────────────────────────────────────────
 mongoose.connection.on("connected", () => {
-  logger.info("🔗 MongoDB connected");
+    isConnected = true;
+    logger.info("🔗 MongoDB connected");
 });
 
 mongoose.connection.on("reconnected", () => {
-  logger.info("♻️ MongoDB reconnected");
+    isConnected = true;
+    logger.info("♻️  MongoDB reconnected");
 });
 
 mongoose.connection.on("disconnected", () => {
-  logger.warn("⚠️ MongoDB disconnected");
+    isConnected = false;
+    logger.warn("⚠️  MongoDB disconnected");
 });
 
 mongoose.connection.on("error", (err) => {
-  logger.error("❌ MongoDB runtime error:", err);
+    logger.error("❌ MongoDB runtime error:", err);
 });
 
-// Graceful shutdown
-process.on("SIGINT", async () => {
-  await mongoose.connection.close();
-  logger.info("MongoDB connection closed on app termination");
-  process.exit(0);
-});
+// Signal handling lives in server.js — it owns the full shutdown sequence
+// (HTTP server close first, then DB). db.js must not register its own
+// signal handlers or mongoose.connection.close() gets called twice.
 
 export default connectDB;
