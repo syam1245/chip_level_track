@@ -1,82 +1,110 @@
 import logger from "../utils/logger.js";
 import config from "../config/index.js";
 
-const handleCastErrorDB = (err) => {
-    const message = `Invalid ${err.path}: ${err.value}.`;
-    return { message, statusCode: 400 };
-};
+// ── MongoDB error normalizers ──────────────────────────────────────────────────
+
+const handleCastErrorDB = (err) => ({
+    message: `Invalid ${err.path}: ${err.value}.`,
+    statusCode: 400,
+});
 
 const handleDuplicateFieldsDB = (err) => {
     let value = "Unknown";
     if (err.keyValue && typeof err.keyValue === "object") {
-        // Modern MongoDB driver — keyValue is always an object like { jobNumber: "JOB-123" }
-        const entries = Object.entries(err.keyValue);
-        value = entries.map(([k, v]) => `${k}: ${v}`).join(", ");
+        // Modern MongoDB driver — keyValue is always { field: value }
+        value = Object.entries(err.keyValue)
+            .map(([k, v]) => `${k}: ${v}`)
+            .join(", ");
     } else if (err.errmsg) {
-        // Legacy fallback — parse the quoted value from errmsg string
+        // Legacy fallback — parse quoted value from errmsg string
         try {
             const match = err.errmsg.match(/(["'])(?:(?!\1)[^\\]|\\.)*\1/);
             value = match ? match[0] : "Unknown";
         } catch { /* regex failed, keep "Unknown" */ }
     }
-    const message = `Duplicate field value: ${value}. Please use another value!`;
-    return { message, statusCode: 400 };
+    return {
+        message: `Duplicate field value: ${value}. Please use another value!`,
+        statusCode: 400,
+    };
 };
 
-const handleValidationErrorDB = (err) => {
-    const errors = Object.values(err.errors).map((el) => el.message);
-    const message = `Invalid input data. ${errors.join(". ")}`;
-    return { message, statusCode: 400 };
-};
+const handleValidationErrorDB = (err) => ({
+    message: `Invalid input data. ${Object.values(err.errors).map((e) => e.message).join(". ")}`,
+    statusCode: 400,
+});
 
-const errorMiddleware = (err, req, res, next) => {
-    let error = { ...err };
-    error.message = err.message;
-    error.statusCode = err.statusCode || 500;
-    error.status = err.status || "error";
+// JWT errors are normal operational events (expired session, tampered token).
+// Without explicit handling they fall through to the generic 500 path and
+// return "Something went very wrong!" in production — wrong severity entirely.
+const handleJWTError = () => ({
+    message: "Invalid or expired session. Please log in again.",
+    statusCode: 401,
+});
 
+// ── Error middleware ───────────────────────────────────────────────────────────
+// Express identifies error middleware by the 4-argument signature.
+// _next is required by Express but intentionally unused here.
+const errorMiddleware = (err, req, res, _next) => {
+    // Do NOT spread Error objects — message, stack, name are non-enumerable and
+    // won't copy. Work with err directly and build a clean response object.
+    let statusCode  = err.statusCode  || 500;
+    let status      = err.status      || "error";
+    let message     = err.message     || "Something went wrong";
+    let isOperational = err.isOperational || false;
+
+    // ── Normalize known error types ────────────────────────────────────────
     if (err.name === "CastError") {
-        const { message, statusCode } = handleCastErrorDB(err);
-        error.message = message;
-        error.statusCode = statusCode;
-        error.isOperational = true;
-    }
-    if (err.code === 11000) {
-        const { message, statusCode } = handleDuplicateFieldsDB(err);
-        error.message = message;
-        error.statusCode = statusCode;
-        error.isOperational = true;
-    }
-    if (err.name === "ValidationError") {
-        const { message, statusCode } = handleValidationErrorDB(err);
-        error.message = message;
-        error.statusCode = statusCode;
-        error.isOperational = true;
+        ({ message, statusCode } = handleCastErrorDB(err));
+        isOperational = true;
+    } else if (err.code === 11000) {
+        ({ message, statusCode } = handleDuplicateFieldsDB(err));
+        isOperational = true;
+    } else if (err.name === "ValidationError") {
+        ({ message, statusCode } = handleValidationErrorDB(err));
+        isOperational = true;
+    } else if (err.name === "JsonWebTokenError" || err.name === "TokenExpiredError") {
+        ({ message, statusCode } = handleJWTError());
+        isOperational = true;
     }
 
+    status = `${statusCode}`.startsWith("4") ? "fail" : "error";
+
+    // ── Logging ────────────────────────────────────────────────────────────
+    if (isOperational) {
+        // Operational errors (bad input, duplicate keys, expired tokens) are
+        // logged at warn — expected events, useful for spotting abuse patterns.
+        logger.warn(`[${statusCode}] ${req.method} ${req.originalUrl} — ${message}`);
+    } else {
+        // Non-operational errors are unexpected bugs — log full detail.
+        logger.error("🔥 CRITICAL ERROR:", {
+            message: err.message,
+            stack:   err.stack,
+            url:     req.originalUrl,
+            method:  req.method,
+        });
+    }
+
+    // ── Response ───────────────────────────────────────────────────────────
     if (config.isProduction) {
-        if (error.isOperational) {
-            return res.status(error.statusCode).json({
+        if (isOperational) {
+            return res.status(statusCode).json({
                 success: false,
-                error: error.message, // Map message to error for legacy compatibility
+                error: message,
             });
         }
-
-        logger.error("🔥 CRITICAL ERROR:", err);
         return res.status(500).json({
             success: false,
             error: "Something went very wrong!",
         });
-    } else {
-        // Development: send details
-        return res.status(error.statusCode).json({
-            success: false,
-            error: error.message, // Frontend expect 'error' string
-            message: error.message,
-            stack: err.stack,
-            details: err,
-        });
     }
+
+    // Development: include stack for debugging
+    return res.status(statusCode).json({
+        success: false,
+        status,
+        error: message,
+        stack: err.stack,
+    });
 };
 
 export default errorMiddleware;

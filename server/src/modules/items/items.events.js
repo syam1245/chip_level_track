@@ -4,6 +4,8 @@
  * whenever a job CRUD operation occurs.
  */
 
+import logger from "../../core/utils/logger.js";
+
 const clients = new Set();
 
 /**
@@ -33,9 +35,12 @@ export function broadcast(event, data = {}) {
     for (const res of clients) {
         try {
             res.write(payload);
-        } catch (_) {
+        } catch (err) {
+            // Write failed — client disconnected without firing the "close" event
+            // (can happen with some proxies). Remove from registry and log at debug
+            // level — this is expected behaviour, not an error worth alerting on.
+            logger.debug(`SSE client removed after write failure: ${err.message}`);
             clients.delete(res);
         }
     }
 }
-

@@ -28,6 +28,8 @@ class ItemRepository {
     }
 
     async findByJobNumber(jobNumber) {
+        // Intentionally no isDeleted filter — soft-deleted job numbers remain
+        // reserved to prevent reuse, which would create confusing history.
         return await Item.findOne({ jobNumber });
     }
 
@@ -35,9 +37,10 @@ class ItemRepository {
         return await new Item(data).save();
     }
 
-    async update(id, data) {
-        return await Item.findByIdAndUpdate(id, data, { new: true });
-    }
+    // NOTE: update() via findByIdAndUpdate was removed — it was never called.
+    // items.service.js uses findById() + document.save() to get Mongoose
+    // validation, pre-save hooks (formattedDate), and statusHistory pushes.
+    // findByIdAndUpdate bypasses all of those — do not reintroduce it.
 
     async softDelete(id) {
         return await Item.findByIdAndUpdate(id, { isDeleted: true }, { new: true });
@@ -50,7 +53,6 @@ class ItemRepository {
         );
     }
 
-    // Backup utility: find all active (non-deleted) items only
     async findAllForBackup() {
         return await Item.find({ isDeleted: false }).sort({ createdAt: -1 }).lean();
     }
@@ -60,7 +62,7 @@ class ItemRepository {
         return await Item.updateMany(
             { _id: { $in: ids }, isDeleted: false },
             {
-                $set: { status: newStatus },
+                $set:  { status: newStatus },
                 $push: { statusHistory: historyEntry },
             }
         );
@@ -69,27 +71,21 @@ class ItemRepository {
     async bulkSetRevenueRealized(ids) {
         return await Item.updateMany(
             { _id: { $in: ids }, isDeleted: false, revenueRealizedAt: null },
-            {
-                $set: { revenueRealizedAt: new Date() },
-            }
+            { $set: { revenueRealizedAt: new Date() } }
         );
     }
 
     async bulkSetDueDateIfNull(ids) {
         return await Item.updateMany(
             { _id: { $in: ids }, isDeleted: false, dueDate: null },
-            {
-                $set: { dueDate: new Date() },
-            }
+            { $set: { dueDate: new Date() } }
         );
     }
 
     async findByTrackingDetails(jobNumber, phoneNumber) {
-        return await Item.findOne({
-            jobNumber,
-            phoneNumber,
-            isDeleted: false
-        })
+        // Deliberately limited field selection — this is a public endpoint.
+        // Customer name and phone number are not returned to avoid exposing PII.
+        return await Item.findOne({ jobNumber, phoneNumber, isDeleted: false })
             .select("jobNumber status brand issue finalCost updatedAt")
             .lean();
     }

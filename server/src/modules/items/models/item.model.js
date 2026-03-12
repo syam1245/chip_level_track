@@ -66,9 +66,11 @@ itemSchema.index({
 // single-field indexes on those three fields added write overhead and disk
 // usage with no query that would prefer them.
 //
-// Kept: jobNumber (unique lookup), phoneNumber (tracking lookup).
-// phoneNumber single-field index retained — used in findByTrackingDetails
-// independently of isDeleted in some query paths.
+// Kept: jobNumber unique index (fast single-document lookup by job number).
+// phoneNumber has no standalone index — findByTrackingDetails queries by
+// both jobNumber AND phoneNumber, so MongoDB uses the jobNumber unique index
+// and filters phoneNumber on the single result. A separate phoneNumber index
+// would never be chosen and would only add write overhead.
 
 itemSchema.index({ isDeleted: 1, createdAt: -1 });          // default list, newest first
 itemSchema.index({ isDeleted: 1, status: 1, createdAt: -1 });// status filter + sort

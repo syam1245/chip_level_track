@@ -21,8 +21,13 @@ export async function trackItem(jobNumber, phoneNumber) {
 
 /**
  * Fetch a paginated list of items with optional filters.
+ *
+ * NOTE: search and statusGroup are mutually exclusive — if both are provided,
+ * statusGroup is silently dropped. This is intentional: free-text search
+ * spans all statuses, so grouping by status at the same time is meaningless.
+ *
  * @param {object} params
- * @param {AbortSignal} [params.signal] - Optional AbortController signal
+ * @param {AbortSignal} [params.signal] - Optional AbortController signal for cancellation
  * @returns {Promise<{items, currentPage, totalPages, totalItems, stats}>}
  */
 export async function fetchItems({
@@ -49,12 +54,23 @@ export async function fetchItems({
     else if (statusGroup && statusGroup !== "all") params.set("statusGroup", statusGroup);
 
     const res = await authFetch(`/api/items?${params.toString()}`, { method: "GET", signal });
+
+    // Without this check, a 401/403/500 response still resolves successfully
+    // because the error body is valid JSON. The caller (useItemsData) would
+    // receive { success: false, error: "..." } instead of { items, stats, ... }
+    // and silently read undefined for every expected field — no snackbar, no
+    // error boundary, just an empty list with no explanation.
+    if (!res.ok) {
+        const errBody = await res.json().catch(() => ({}));
+        throw new Error(errBody.error || `Request failed with status ${res.status}`);
+    }
+
     return res.json();
 }
 
 /**
  * Create a new item.
- * @param {object} itemData - { jobNumber, customerName, brand, phoneNumber, issue }
+ * @param {object} itemData - { jobNumber, customerName, brand, phoneNumber, issue, repairNotes }
  * @returns {Promise<object>} Created item data
  */
 export async function createItem(itemData) {
@@ -131,6 +147,10 @@ export async function searchItems(query, limit = 15) {
     const res = await authFetch(
         `/api/items?search=${encodeURIComponent(query)}&includeMetadata=true&limit=${limit}`
     );
-    if (!res.ok) throw new Error("Search failed");
+    if (!res.ok) {
+        // Original discarded the actual server error — preserve it for the caller.
+        const errBody = await res.json().catch(() => ({}));
+        throw new Error(errBody.error || "Search failed");
+    }
     return res.json();
 }

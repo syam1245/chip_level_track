@@ -16,40 +16,51 @@ const trackLimiter = rateLimit({
 
 const MAX_SSE_CLIENTS = 50;
 
-// Public route FIRST
+// ── Public route — no auth ────────────────────────────────────────────────────
 router.get("/track", trackLimiter, ItemController.trackItem);
 
-// SSE live-events stream — auth required, no CSRF (GET stream)
+// ── SSE live-events stream ────────────────────────────────────────────────────
+// requireAuth but NOT requireCsrf — EventSource is a GET request and browsers
+// cannot set custom headers on it, so CSRF token injection is not possible.
 router.get("/events", requireAuth, (req, res) => {
     if (getClientCount() >= MAX_SSE_CLIENTS) {
         return res.status(503).json({ error: "Too many live connections. Try again later." });
     }
 
-    res.setHeader("Content-Type", "text/event-stream");
-    res.setHeader("Cache-Control", "no-cache");
-    res.setHeader("Connection", "keep-alive");
-    res.setHeader("X-Accel-Buffering", "no");
+    res.setHeader("Content-Type",      "text/event-stream");
+    res.setHeader("Cache-Control",     "no-cache");
+    res.setHeader("Connection",        "keep-alive");
+    res.setHeader("X-Accel-Buffering", "no"); // Disable Nginx buffering for SSE
     res.flushHeaders();
 
-    const heartbeat = setInterval(() => res.write(": heartbeat\n\n"), 20_000);
+    const heartbeat = setInterval(() => {
+        // Wrap in try/catch — if the proxy suppresses req "close" event,
+        // the interval keeps running and an uncaught write error to a dead
+        // connection would crash the interval without cleanup.
+        try {
+            res.write(": heartbeat\n\n");
+        } catch {
+            clearInterval(heartbeat);
+        }
+    }, 20_000);
+
     req.on("close", () => clearInterval(heartbeat));
 
     registerClient(res);
 });
 
-// Apply auth to all subsequent routes
+// ── Apply auth + CSRF to all subsequent routes ────────────────────────────────
 router.use(requireAuth, requireCsrf);
 
-// Static routes
-router.get("/backup", requirePermission("items:backup"), ItemController.getBackup);
+// Static named routes — must come before /:id to avoid being matched as a param
+router.get("/backup",      requirePermission("items:backup"), ItemController.getBackup);
 router.patch("/bulk-status", requirePermission("items:update"), ItemController.bulkUpdateStatus);
 router.patch("/bulk-delete", requirePermission("items:delete"), ItemController.bulkDeleteItems);
-router.post("/", requirePermission("items:create"), ItemController.createItem);
-router.get("/", requirePermission("items:read"), ItemController.getAllItems);
+router.post("/",           requirePermission("items:create"), ItemController.createItem);
+router.get("/",            requirePermission("items:read"),   ItemController.getAllItems);
 
-// Parameterised routes
-router.put("/:id", requirePermission("items:update"), ItemController.updateItem);
+// Parameterised routes — after all static routes
+router.put("/:id",    requirePermission("items:update"), ItemController.updateItem);
 router.delete("/:id", requirePermission("items:delete"), ItemController.deleteItem);
 
 export default router;
-
