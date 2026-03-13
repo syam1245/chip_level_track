@@ -18,7 +18,6 @@ export const ROLE_PERMISSIONS = Object.freeze({
         "items:create",
         "items:read",
         "items:update",
-        "items:delete",
     ]),
 });
 

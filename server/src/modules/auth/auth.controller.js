@@ -13,21 +13,16 @@ class AuthController {
         const { user, token, csrfToken } = await AuthService.login(username, password);
         setAuthCookies(res, token, csrfToken);
 
-        res.json(user);
+        res.json({ user, csrfToken });
     });
 
     logout = asyncHandler(async (req, res) => {
         clearAuthCookies(res);
-        res.status(204).send();
+        res.json({ message: "Logged out successfully" });
     });
 
     getSession = asyncHandler(async (req, res) => {
-        res.json({
-            username: req.user.username,
-            role: req.user.role,
-            displayName: req.user.displayName,
-            csrfToken: req.user.csrfToken,
-        });
+        res.json({ user: req.user });
     });
 
     getUsers = asyncHandler(async (req, res) => {

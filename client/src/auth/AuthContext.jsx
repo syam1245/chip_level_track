@@ -10,12 +10,12 @@ export const AuthProvider = ({ children }) => {
   useEffect(() => {
     const loadSession = async () => {
       try {
-        const { ok, user: session } = await authApi.getSession();
-        if (!ok) {
+        const { ok, user: response } = await authApi.getSession();
+        if (!ok || !response?.user) {
           setUser(null);
           return;
         }
-        setUser(session);
+        setUser(response.user);
       } catch (_err) {
         setUser(null);
       } finally {
@@ -39,7 +39,7 @@ export const AuthProvider = ({ children }) => {
   // re-renders in every consumer of useAuth().
   const login = useCallback(async (username, password) => {
     const data = await authApi.login(username, password);
-    setUser(data);
+    setUser(data.user);
     return data;
   }, []);
 

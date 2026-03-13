@@ -27,7 +27,7 @@ router.get("/users", requireAuth, AuthController.getUsers);
 router.post("/users", requireAuth, requireCsrf, AuthController.createUser);
 router.get("/technicians", technicianLimiter, AuthController.getTechnicianNames);
 router.post("/login", loginLimiter, AuthController.login);
-router.post("/logout", AuthController.logout);
+router.post("/logout", requireAuth, requireCsrf, AuthController.logout);
 router.get("/session", requireAuth, AuthController.getSession);
 
 // ADMIN: Update technician password (any authenticated user, controller enforces role)
