@@ -18,6 +18,7 @@
   "dependencies": {
     "@google/generative-ai": "^0.24.1",
     "bcryptjs": "^3.0.3",
+    "chip-level-track-shared": "file:../shared",
     "compression": "^1.8.1",
     "cors": "^2.8.5",
     "dotenv": "^17.3.1",

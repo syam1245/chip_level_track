@@ -1,6 +1,7 @@
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { createItem } from "../../services/items.api";
+import { jobCreateSchema } from "chip-level-track-shared";
 
 export default function useJobForm() {
     const navigate = useNavigate();
@@ -28,12 +29,13 @@ export default function useJobForm() {
 
     const handleSubmit = async (e) => {
         e.preventDefault();
-        if (!form.jobNumber || !form.customerName || !form.brand || !form.phoneNumber) {
-            setSnackbar({ open: true, message: "All fields are required.", severity: "error" });
-            return;
-        }
-        if (form.phoneNumber.length !== 10) {
-            setSnackbar({ open: true, message: "Phone number must be exactly 10 digits.", severity: "error" });
+        
+        // Zod Pre-flight Validation
+        const result = jobCreateSchema.safeParse(form);
+        if (!result.success) {
+            // Grab the first error message to display in the snackbar
+            const errorMessage = result.error.errors[0]?.message || "Validation failed";
+            setSnackbar({ open: true, message: errorMessage, severity: "error" });
             return;
         }
 
