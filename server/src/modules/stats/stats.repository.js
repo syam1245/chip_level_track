@@ -36,6 +36,8 @@ class StatsRepository {
                     $addFields: {
                         // Normalize technician name by removing " (Admin)" suffix so
                         // historical data matches current names in the UI.
+                        // Canonical definition: items/domain/technician.domain.js
+                        // This in-DB $replaceAll mirrors the JS-side normalizeTechnicianName().
                         normalizedTech: {
                             $trim: {
                                 input: {

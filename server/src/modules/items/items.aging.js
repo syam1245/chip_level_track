@@ -1,5 +1,6 @@
 import ItemRepository from "./items.repository.js";
 import { ALLOWED_STATUSES } from "../../constants/status.js";
+import { buildTechnicianFilter } from "./domain/technician.domain.js";
 import logger from "../../core/utils/logger.js";
 
 const MS_PER_DAY = 86_400_000;
@@ -72,13 +73,9 @@ export async function computeAgingSummary(technicianName = "All") {
     
     // Build the initial match filter
     const matchFilter = { isDeleted: false, status: { $in: ACTIVE_STATUSES } };
-    if (technicianName && technicianName !== "All") {
-        const baseName = technicianName.replace(/\s*\(Admin\)\s*$/i, "");
-        if (baseName !== technicianName) {
-            matchFilter.technicianName = { $in: [technicianName, baseName] };
-        } else {
-            matchFilter.technicianName = technicianName;
-        }
+    const techFilter = buildTechnicianFilter(technicianName);
+    if (techFilter) {
+        matchFilter.technicianName = techFilter;
     }
 
     try {

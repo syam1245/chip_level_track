@@ -1,63 +1,10 @@
 import AppError from "../../core/errors/AppError.js";
 import AiSummary from "./models/aiSummary.model.js";
 import { generateTextWithFallback } from "./llmProvider.js";
+import { generateFingerprint, sanitizeJobData } from "./domain/fingerprint.domain.js";
 import logger from "../../core/utils/logger.js";
 
-/**
- * Strip control characters and known prompt-injection patterns from user text.
- */
-function sanitizeForPrompt(text) {
-    if (!text || typeof text !== "string") return "";
-    return text
-        .replace(/[\x00-\x08\x0B\x0C\x0E-\x1F\x7F]/g, "") // strip control chars
-        .replace(/ignore\s+(previous|above|all)\s+instructions?/gi, "[REDACTED]")
-        .replace(/system\s*:\s*/gi, "[REDACTED]")
-        .trim();
-}
-
 class AiService {
-    /**
-     * Generates a deterministic fingerprint for job data to detect changes.
-     */
-    generateFingerprint(data = {}) {
-        const fields = [
-            data.brand,
-            data.status,
-            data.issue,
-            data.repairNotes,
-            data.technicianName,
-        ];
-
-        return fields.map((v) => (v ? String(v).trim() : "")).join("|");
-    }
-
-    /**
-     * Sanitizes job data for summary generation.
-     */
-    sanitizeJobData(jobData = {}) {
-        const history = Array.isArray(jobData.statusHistory)
-            ? jobData.statusHistory.slice(-5) // limit to last 5 entries
-            : [];
-
-        return {
-            jobNumber: jobData.jobNumber || "N/A",
-            customer: sanitizeForPrompt(jobData.customerName) || "Customer",
-            deviceBrand: sanitizeForPrompt(jobData.brand) || "Not Specified",
-            initialReportedIssue: sanitizeForPrompt(jobData.issue) || "Not Specified",
-            currentStatus: jobData.status || "Received",
-            latestTechnicianNotes: sanitizeForPrompt(jobData.repairNotes) || "",
-            assignedTechnician: sanitizeForPrompt(jobData.technicianName) || "Unknown",
-            jobCreatedOn: jobData.formattedDate || "",
-            technicalHistory: history.map((entry) => ({
-                statusWas: entry?.status || "",
-                techComment: sanitizeForPrompt(entry?.note) || "No note",
-                timeOfEntry: entry?.changedAt
-                    ? new Date(entry.changedAt).toLocaleDateString("en-IN")
-                    : "",
-            })),
-        };
-    }
-
     /**
      * Generates a "TL;DR" technical summary for a repair job.
      */
@@ -70,7 +17,8 @@ class AiService {
                 );
             }
 
-            const currentFingerprint = this.generateFingerprint(jobData);
+            // Domain: deterministic fingerprint to detect changes
+            const currentFingerprint = generateFingerprint(jobData);
 
             if (!forceRefresh) {
                 const existingSummary = await AiSummary.findOne({
@@ -85,7 +33,8 @@ class AiService {
                 }
             }
 
-            const cleanData = this.sanitizeJobData(jobData);
+            // Domain: sanitize job data for LLM consumption
+            const cleanData = sanitizeJobData(jobData);
 
             const systemInstruction =
                 "You are an expert technician assistant. Your task is to provide a complete, technical, and detailed summary of a repair job. Use professional technical language and structure the response clearly. If any data is missing, state 'Not available' instead of guessing.";

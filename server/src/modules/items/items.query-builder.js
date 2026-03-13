@@ -4,39 +4,9 @@
  * without any direct DB calls — pure functions that return query descriptors.
  */
 
-import { ALLOWED_STATUSES } from "../../constants/status.js";
 import { ACTIVE_STATUSES } from "./items.aging.js";
-
-// ── Status group mappings ──────────────────────────────────────────────────
-// These groupings are semantic business decisions — they cannot be derived
-// automatically from ALLOWED_STATUSES. However, every status in ALLOWED_STATUSES
-// must belong to exactly one group, enforced by the dev-time check below.
-const STATUS_GROUPS = {
-    inProgress: ["Received", "In Progress", "Waiting for Parts", "Sent to Service", "Pending"],
-    ready:      ["Ready", "Delivered"],
-    returned:   ["Return"],
-};
-
-// ── Dev-time completeness check ───────────────────────────────────────────────
-// If a new status is added to status.js but not placed in a STATUS_GROUP,
-// it will silently be excluded from all stat counts (inProgress/ready/returned).
-// This check catches the omission immediately at startup.
-if (process.env.NODE_ENV !== "production") {
-    const allGrouped = new Set(Object.values(STATUS_GROUPS).flat());
-    const missing = ALLOWED_STATUSES.filter((s) => !allGrouped.has(s));
-    const extra   = [...allGrouped].filter((s) => !ALLOWED_STATUSES.includes(s));
-
-    if (missing.length) {
-        throw new Error(
-            `[items.query-builder.js] These statuses are in ALLOWED_STATUSES but not in any STATUS_GROUP: ${missing.join(", ")}`
-        );
-    }
-    if (extra.length) {
-        throw new Error(
-            `[items.query-builder.js] These statuses are in STATUS_GROUPS but not in ALLOWED_STATUSES: ${extra.join(", ")}`
-        );
-    }
-}
+import { STATUS_GROUPS } from "./domain/jobStatus.domain.js";
+import { buildTechnicianFilter } from "./domain/technician.domain.js";
 
 /**
  * Build the MongoDB filter query from search/filter parameters.
@@ -54,16 +24,9 @@ export function buildSearchQuery({ search, statusGroup, technicianName }) {
     }
 
     // ── Technician filter ──────────────────────────────────────────────
-    // Shyam's displayName is "Shyam (Admin)" — stored as technicianName in DB.
-    // The $in handles both the full display name and the base name so filtering
-    // by either variant returns the same results.
-    if (technicianName && technicianName !== "All") {
-        const baseName = technicianName.replace(/\s*\(Admin\)\s*$/i, "");
-        if (baseName !== technicianName) {
-            query.technicianName = { $in: [technicianName, baseName] };
-        } else {
-            query.technicianName = technicianName;
-        }
+    const techFilter = buildTechnicianFilter(technicianName);
+    if (techFilter) {
+        query.technicianName = techFilter;
     }
 
     // ── Status group filter ────────────────────────────────────────────
@@ -103,6 +66,6 @@ export function buildSortOptions({ sortBy, sortOrder }) {
 }
 
 /**
- * The status-group query filters, exported for stat-counting reuse in items.service.js.
+ * Re-export STATUS_GROUPS from domain for backward compatibility.
  */
 export { STATUS_GROUPS };

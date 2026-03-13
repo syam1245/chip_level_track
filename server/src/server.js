@@ -4,6 +4,7 @@ import logger from "./core/utils/logger.js";
 import connectDB from "./core/config/db.js";
 import { seedUsers } from "./core/config/seed.js";
 import app from "./app.js";
+import { initializeEventListeners } from "./listeners/index.js";
 
 const PORT = config.port;
 
@@ -24,6 +25,10 @@ let server;
         // log in — the warning makes that visible in the logs.
         logger.warn("⚠️  User seeding skipped:", err.message);
     });
+
+    // ── Event Listeners Registration ───────────────
+    // Connect decoupled background processes to the domain event bus
+    initializeEventListeners();
 
     server = app.listen(PORT, () => {
         logger.info(`🚀 Server running on port ${PORT} in ${config.env} mode`);

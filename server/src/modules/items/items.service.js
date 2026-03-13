@@ -2,10 +2,12 @@ import ItemRepository from "./items.repository.js";
 import AppError from "../../core/errors/AppError.js";
 import NodeCache from "node-cache";
 import { enrichWithAging, computeAgingSummary } from "./items.aging.js";
-import { buildSearchQuery, buildSortOptions, STATUS_GROUPS } from "./items.query-builder.js";
-import { broadcast } from "./items.events.js";
+import { buildSearchQuery, buildSortOptions } from "./items.query-builder.js";
+import { STATUS_GROUPS } from "./domain/jobStatus.domain.js";
+import { buildNewJobData, applyFieldUpdates, applyStatusChange } from "./domain/job.domain.js";
+import { buildTechnicianFilter } from "./domain/technician.domain.js";
 import { ALLOWED_STATUSES } from "../../constants/status.js";
-import StatsService from "../stats/stats.service.js";
+import { eventBus, EVENTS } from "../../core/events/eventBus.js";
 
 const statsCache = new NodeCache({ stdTTL: 300 });
 
@@ -17,15 +19,9 @@ class ItemService {
         const showMetadata = userRole === "admin" && includeMetadata === "true";
 
         // ── Stat counts (cached per technician) ────────────────────────
-        // _getStatCounts() uses a single $facet aggregation — 1 DB round-trip
-        // instead of 3 parallel countDocuments calls.
         const { inProgress, ready, returned } = await this._getStatCounts(technicianName);
 
         // ── Total is free — derived from stat counts ───────────────────
-        // Every non-deleted item belongs to exactly one STATUS_GROUP (enforced
-        // by the dev-time completeness check in items.query-builder.js), so the
-        // sum is always correct. Eliminates the previous countDocuments({ isDeleted: false })
-        // round-trip that ran in parallel with findAll on every request.
         const total = inProgress + ready + returned;
 
         // ── Fetch current page of items ────────────────────────────────
@@ -38,8 +34,6 @@ class ItemService {
         }
 
         // ── Filtered total for pagination ──────────────────────────────
-        // When unfiltered, the total from stat counts is exact — no extra query.
-        // When filtered, we need the count of documents matching the specific query.
         const isFiltered = search || statusGroup || (technicianName && technicianName !== "All");
         const filteredTotal = isFiltered
             ? await ItemRepository.countDocuments(query)
@@ -74,24 +68,17 @@ class ItemService {
             throw new AppError("Job number already exists", 400);
         }
 
-        const initialStatus = data.status || "Received";
-        const itemData = {
-            ...data,
-            status: initialStatus,
-            technicianName: user.displayName,
-            statusHistory: [{
-                status:    initialStatus,
-                note:      data.repairNotes ? String(data.repairNotes).trim() : "Job Created",
-                changedAt: new Date(),
-            }],
-        };
+        // Domain: build the initial job data structure
+        const itemData = buildNewJobData(data, user);
 
-        // Invalidate AFTER confirmed write — not before.
-        // If create throws (duplicate race condition, network blip), the cache
-        // should not have been cleared since the data has not changed.
         const newItem = await ItemRepository.create(itemData);
+        
+        // Clear local cache
         this._invalidateCache();
-        broadcast("job:created", { jobNumber: newItem.jobNumber });
+        
+        // Fire domain event (listeners will handle broadcasting, etc.)
+        eventBus.emit(EVENTS.JOB_CREATED, { jobNumber: newItem.jobNumber });
+        
         return newItem;
     }
 
@@ -101,60 +88,46 @@ class ItemService {
             throw new AppError("Item not found", 404);
         }
 
-        if (data.customerName)               item.customerName    = String(data.customerName).trim();
-        if (data.brand)                      item.brand           = String(data.brand).trim();
-        if (data.phoneNumber)                item.phoneNumber     = String(data.phoneNumber).trim();
-        if (data.repairNotes !== undefined)   item.repairNotes    = String(data.repairNotes).trim();
-        if (data.issue !== undefined)         item.issue          = String(data.issue).trim();
-        if (data.finalCost !== undefined)     item.finalCost      = Number(data.finalCost) || 0;
-        if (data.technicianName !== undefined) item.technicianName = String(data.technicianName).trim();
-        if (data.dueDate !== undefined)       item.dueDate        = data.dueDate ? new Date(data.dueDate) : null;
+        // Domain: apply field-level updates
+        applyFieldUpdates(item, data);
 
-        if (data.status && data.status !== item.status) {
-            // ALLOWED_STATUSES check is already done in items.validator.js before this
-            // method is ever called. The check is kept here as a service-layer guard
-            // for any future caller that bypasses the validator (e.g. internal scripts,
-            // tests calling the service directly). If you remove the validator route,
-            // remove this comment too.
-            if (!ALLOWED_STATUSES.includes(data.status)) {
-                throw new AppError(`Invalid status: "${data.status}". Must be one of: ${ALLOWED_STATUSES.join(", ")}`, 400);
+        // Domain: apply status change + business-rule side effects
+        let statusChanged = false;
+        let revenueRealized = false;
+        let revenueRealizedDate = null;
+
+        if (data.status) {
+            const result = applyStatusChange(item, data);
+
+            if (result.reason) {
+                throw new AppError(result.reason, 400);
             }
 
-            if (data.status === "Delivered" && !item.finalCost) {
-                throw new AppError("A final amount must be provided before marking the job as Delivered.", 400);
-            }
-
-            item.status = data.status;
-            item.statusHistory.push({
-                status:    data.status,
-                note:      data.repairNotes ? String(data.repairNotes).trim() : "",
-                changedAt: new Date(),
-            });
-
-            if (data.status === "Ready") {
-                if (!item.dueDate) item.dueDate = new Date();
-                if (!item.revenueRealizedAt) {
-                    item.revenueRealizedAt = new Date();
-                    // Pass the date so stats cache only evicts ranges that
-                    // overlap this job's revenueRealizedAt — not the entire cache.
-                    StatsService.invalidateRevenueCache(item.revenueRealizedAt);
-                }
-            } else if (data.status === "Delivered") {
-                if (!item.revenueRealizedAt) {
-                    item.revenueRealizedAt = new Date();
-                    StatsService.invalidateRevenueCache(item.revenueRealizedAt);
-                }
-                item.deliveredAt = new Date();
+            statusChanged = result.changed;
+            revenueRealized = result.revenueRealized;
+            if (revenueRealized) {
+                revenueRealizedDate = item.revenueRealizedAt;
             }
         }
 
         const savedItem = await item.save();
 
-        if (data.status) {
+        // Emit domain events
+        eventBus.emit(EVENTS.JOB_UPDATED, { id });
+        
+        if (statusChanged) {
             this._invalidateCache();
+            eventBus.emit(EVENTS.JOB_STATUS_CHANGED, {
+                id,
+                jobNumber: savedItem.jobNumber,
+                newStatus: savedItem.status
+            });
+            
+            if (revenueRealized) {
+                eventBus.emit(EVENTS.JOB_REVENUE_REALIZED, { date: revenueRealizedDate });
+            }
         }
 
-        broadcast("job:updated", { id });
         return savedItem;
     }
 
@@ -164,10 +137,10 @@ class ItemService {
             throw new AppError("Item not found", 404);
         }
 
-        // Invalidate AFTER confirmed soft-delete — same reason as createItem.
         const deleted = await ItemRepository.softDelete(id);
         this._invalidateCache();
-        broadcast("job:deleted", { id });
+        
+        eventBus.emit(EVENTS.JOB_DELETED, { id });
         return deleted;
     }
 
@@ -178,7 +151,8 @@ class ItemService {
 
         const result = await ItemRepository.bulkSoftDelete(ids);
         this._invalidateCache();
-        broadcast("job:bulk-updated", { count: ids.length, isDelete: true });
+        
+        eventBus.emit(EVENTS.JOB_BULK_UPDATED, { count: ids.length, isDelete: true });
         return result;
     }
 
@@ -198,18 +172,15 @@ class ItemService {
         const result = await ItemRepository.bulkUpdateStatus(ids, newStatus);
 
         if (newStatus === "Ready") {
-            // Both operations target different fields on the same documents — run in parallel.
             await Promise.all([
                 ItemRepository.bulkSetRevenueRealized(ids),
                 ItemRepository.bulkSetDueDateIfNull(ids),
             ]);
-            // Bulk Ready sets revenueRealizedAt to now — pass today's date for
-            // targeted cache invalidation instead of flushing everything.
-            StatsService.invalidateRevenueCache(new Date());
+            eventBus.emit(EVENTS.JOB_REVENUE_REALIZED, { date: new Date() });
         }
 
         this._invalidateCache();
-        broadcast("job:bulk-updated", { count: ids.length, status: newStatus });
+        eventBus.emit(EVENTS.JOB_BULK_UPDATED, { count: ids.length, status: newStatus });
         return result;
     }
 
@@ -229,13 +200,9 @@ class ItemService {
         if (cached) return cached;
 
         const matchStage = { isDeleted: false };
-        if (technicianName && technicianName !== "All") {
-            const baseName = technicianName.replace(/\s*\(Admin\)\s*$/i, "");
-            if (baseName !== technicianName) {
-                matchStage.technicianName = { $in: [technicianName, baseName] };
-            } else {
-                matchStage.technicianName = technicianName;
-            }
+        const techFilter = buildTechnicianFilter(technicianName);
+        if (techFilter) {
+            matchStage.technicianName = techFilter;
         }
 
         const [result] = await ItemRepository.aggregate([
@@ -260,9 +227,6 @@ class ItemService {
     }
 
     _invalidateCache() {
-        // flushAll is safer here because different technicians have different cache keys
-        // (itemStats:All, itemStats:Shyam, etc.). Clearing everything ensures consistent
-        // data across all potential views after a write.
         statsCache.flushAll();
     }
 }
