@@ -16,10 +16,10 @@ class ItemService {
         const sortObject = buildSortOptions({ sortBy, sortOrder });
         const showMetadata = userRole === "admin" && includeMetadata === "true";
 
-        // ── Stat counts (cached) ───────────────────────────────────────
+        // ── Stat counts (cached per technician) ────────────────────────
         // _getStatCounts() uses a single $facet aggregation — 1 DB round-trip
         // instead of 3 parallel countDocuments calls.
-        const { inProgress, ready, returned } = await this._getStatCounts();
+        const { inProgress, ready, returned } = await this._getStatCounts(technicianName);
 
         // ── Total is free — derived from stat counts ───────────────────
         // Every non-deleted item belongs to exactly one STATUS_GROUP (enforced
@@ -45,11 +45,12 @@ class ItemService {
             ? await ItemRepository.countDocuments(query)
             : total;
 
-        // ── Aging summary (cached — runs once every 5 min) ─────────────
-        let agingSummary = statsCache.get("agingSummary");
+        // ── Aging summary (cached per technician — runs once every 5 min)
+        const agingCacheKey = `agingSummary:${technicianName || "All"}`;
+        let agingSummary = statsCache.get(agingCacheKey);
         if (!agingSummary) {
-            agingSummary = await computeAgingSummary();
-            statsCache.set("agingSummary", agingSummary);
+            agingSummary = await computeAgingSummary(technicianName);
+            statsCache.set(agingCacheKey, agingSummary);
         }
 
         return {
@@ -222,16 +223,23 @@ class ItemService {
 
     // ── Private helpers ────────────────────────────────────────────────
 
-    async _getStatCounts() {
-        const cached = statsCache.get("itemStats");
+    async _getStatCounts(technicianName = "All") {
+        const cacheKey = `itemStats:${technicianName || "All"}`;
+        const cached = statsCache.get(cacheKey);
         if (cached) return cached;
 
-        // Single $facet aggregation — one DB round-trip replaces three parallel
-        // countDocuments calls. Each facet filters by the status group and counts.
-        // The result shape mirrors the old { inProgress, ready, returned } object
-        // so no callers need to change.
+        const matchStage = { isDeleted: false };
+        if (technicianName && technicianName !== "All") {
+            const baseName = technicianName.replace(/\s*\(Admin\)\s*$/i, "");
+            if (baseName !== technicianName) {
+                matchStage.technicianName = { $in: [technicianName, baseName] };
+            } else {
+                matchStage.technicianName = technicianName;
+            }
+        }
+
         const [result] = await ItemRepository.aggregate([
-            { $match: { isDeleted: false } },
+            { $match: matchStage },
             {
                 $facet: {
                     inProgress: [{ $match: { status: { $in: STATUS_GROUPS.inProgress } } }, { $count: "n" }],
@@ -247,13 +255,15 @@ class ItemService {
             returned:   result?.returned?.[0]?.n   ?? 0,
         };
 
-        statsCache.set("itemStats", stats);
+        statsCache.set(cacheKey, stats);
         return stats;
     }
 
     _invalidateCache() {
-        statsCache.del("itemStats");
-        statsCache.del("agingSummary");
+        // flushAll is safer here because different technicians have different cache keys
+        // (itemStats:All, itemStats:Shyam, etc.). Clearing everything ensures consistent
+        // data across all potential views after a write.
+        statsCache.flushAll();
     }
 }
 

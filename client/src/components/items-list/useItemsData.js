@@ -60,7 +60,7 @@ export default function useItemsData({ isAdmin, user }) {
     }, []);
 
     const [technicianFilter, setTechnicianFilter] = useState(() =>
-        user?.role !== "admin" && user?.displayName ? user.displayName : "All"
+        !isAdmin && user?.displayName ? user.displayName : "All"
     );
     const [techniciansList, setTechniciansList] = useState([]);
 

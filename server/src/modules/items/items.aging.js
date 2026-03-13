@@ -67,11 +67,23 @@ export function enrichWithAging(item, now) {
  * Falls back to threshold-based countDocuments for MongoDB < 5.0.
  * Returns: { attention: N, overdue: N, critical: N, total: N }
  */
-export async function computeAgingSummary() {
+export async function computeAgingSummary(technicianName = "All") {
     const now = new Date();
+    
+    // Build the initial match filter
+    const matchFilter = { isDeleted: false, status: { $in: ACTIVE_STATUSES } };
+    if (technicianName && technicianName !== "All") {
+        const baseName = technicianName.replace(/\s*\(Admin\)\s*$/i, "");
+        if (baseName !== technicianName) {
+            matchFilter.technicianName = { $in: [technicianName, baseName] };
+        } else {
+            matchFilter.technicianName = technicianName;
+        }
+    }
+
     try {
         const pipeline = [
-            { $match: { isDeleted: false, status: { $in: ACTIVE_STATUSES } } },
+            { $match: matchFilter },
             {
                 $addFields: {
                     ageDays: {
@@ -99,24 +111,16 @@ export async function computeAgingSummary() {
         return summary;
 
     } catch (err) {
-        // Log before falling back — the original catch swallowed all errors silently.
-        // A network timeout or replica set election would fall through to the fallback
-        // and potentially return wrong data with no signal in the logs.
-        // Only $dateDiff errors (MongoDB < 5.0) are expected here.
         logger.warn("computeAgingSummary: $dateDiff aggregation failed, using fallback:", err.message);
 
-        // Fallback for MongoDB < 5.0: threshold-based countDocuments.
-        // Date thresholds derived from AGING_TIERS to stay in sync with tier definitions.
         const sixDaysAgo     = new Date(now.getTime() -  6 * MS_PER_DAY);
         const eightDaysAgo   = new Date(now.getTime() -  8 * MS_PER_DAY);
         const fifteenDaysAgo = new Date(now.getTime() - 15 * MS_PER_DAY);
 
-        const baseQuery = { isDeleted: false, status: { $in: ACTIVE_STATUSES } };
-
         const [attention, overdue, critical] = await Promise.all([
-            ItemRepository.countDocuments({ ...baseQuery, createdAt: { $lte: sixDaysAgo,   $gt: eightDaysAgo   } }),
-            ItemRepository.countDocuments({ ...baseQuery, createdAt: { $lte: eightDaysAgo, $gt: fifteenDaysAgo  } }),
-            ItemRepository.countDocuments({ ...baseQuery, createdAt: { $lte: fifteenDaysAgo                     } }),
+            ItemRepository.countDocuments({ ...matchFilter, createdAt: { $lte: sixDaysAgo,   $gt: eightDaysAgo   } }),
+            ItemRepository.countDocuments({ ...matchFilter, createdAt: { $lte: eightDaysAgo, $gt: fifteenDaysAgo  } }),
+            ItemRepository.countDocuments({ ...matchFilter, createdAt: { $lte: fifteenDaysAgo                     } }),
         ]);
 
         return { attention, overdue, critical, total: attention + overdue + critical };

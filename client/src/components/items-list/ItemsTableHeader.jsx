@@ -9,7 +9,7 @@ const ItemsTableHeader = ({
     sortBy, sortOrder, handleSort,
     technicianFilter, setTechnicianFilter, setPage, techniciansList,
     allSelected, someSelected, handleSelectAll,
-    shouldVirtualize,
+    shouldVirtualize, isAdmin
 }) => {
     const [techMenuAnchor, setTechMenuAnchor] = useState(null);
 
@@ -36,11 +36,18 @@ const ItemsTableHeader = ({
                     <Typography variant="subtitle2" fontWeight="700" color="text.secondary">DEVICE</Typography>
                 </TableCell>
                 <TableCell sx={{ width: "12%" }}>
-                    <Box sx={{ display: "flex", alignItems: "center", cursor: "pointer" }} onClick={(e) => setTechMenuAnchor(e.currentTarget)}>
+                    <Box 
+                        sx={{ 
+                            display: "flex", 
+                            alignItems: "center", 
+                            cursor: isAdmin ? "pointer" : "default" 
+                        }} 
+                        onClick={(e) => isAdmin && setTechMenuAnchor(e.currentTarget)}
+                    >
                         <Typography variant="subtitle2" fontWeight="700" color={technicianFilter !== "All" ? "primary.main" : "text.secondary"}>
                             TECHNICIAN {technicianFilter !== "All" && `(${technicianFilter})`}
                         </Typography>
-                        <FilterListIcon sx={{ ml: 0.5, fontSize: 16, color: technicianFilter !== "All" ? "primary.main" : "text.secondary" }} />
+                        {isAdmin && <FilterListIcon sx={{ ml: 0.5, fontSize: 16, color: technicianFilter !== "All" ? "primary.main" : "text.secondary" }} />}
                     </Box>
                     <Menu anchorEl={techMenuAnchor} open={Boolean(techMenuAnchor)} onClose={() => setTechMenuAnchor(null)}>
                         <MenuItem

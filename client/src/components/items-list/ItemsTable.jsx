@@ -60,7 +60,7 @@ const ItemsTable = ({
                     technicianFilter={technicianFilter} setTechnicianFilter={setTechnicianFilter}
                     setPage={setPage} techniciansList={techniciansList}
                     allSelected={allSelected} someSelected={someSelected} handleSelectAll={handleSelectAll}
-                    shouldVirtualize={shouldVirtualize}
+                    shouldVirtualize={shouldVirtualize} isAdmin={isAdmin}
                 />
 
                 <TableBody>
