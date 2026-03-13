@@ -30,6 +30,7 @@
   },
   "scripts": {
     "dev": "vite",
+    "prebuild": "npm install --prefix ../shared",
     "build": "vite build",
     "preview": "vite preview"
   }
