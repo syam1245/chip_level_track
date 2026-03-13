@@ -3,6 +3,7 @@ import ItemService from "./items.service.js";
 import ItemValidator from "./items.validator.js";
 import asyncHandler from "../../core/utils/asyncHandler.js";
 import AppError from "../../core/errors/AppError.js";
+import sendResponse from "../../core/response/responseHandler.js";
 import { UAParser } from "ua-parser-js";
 
 const MAX_BULK_SIZE = 100;
@@ -34,7 +35,7 @@ class ItemController {
             includeMetadata, sortBy, sortOrder, technicianName,
         });
 
-        res.json(result);
+        sendResponse(res, 200, result);
     });
 
     createItem = asyncHandler(async (req, res) => {
@@ -71,7 +72,7 @@ class ItemController {
         };
 
         const item = await ItemService.createItem(cleanData, req.user);
-        res.status(201).json(item);
+        sendResponse(res, 201, item, "Item created successfully");
     });
 
     updateItem = asyncHandler(async (req, res) => {
@@ -83,7 +84,7 @@ class ItemController {
         }
         ItemValidator.validateUpdate(req.body);
         const item = await ItemService.updateItem(req.params.id, req.body);
-        res.json(item);
+        sendResponse(res, 200, item, "Item updated successfully");
     });
 
     deleteItem = asyncHandler(async (req, res) => {
@@ -91,7 +92,7 @@ class ItemController {
             throw new AppError("Invalid item ID", 400);
         }
         await ItemService.deleteItem(req.params.id);
-        res.json({ msg: "Item removed" });
+        sendResponse(res, 200, null, "Item removed successfully");
     });
 
     bulkDeleteItems = asyncHandler(async (req, res) => {
@@ -103,7 +104,7 @@ class ItemController {
             return res.status(400).json({ error: `Maximum ${MAX_BULK_SIZE} items per bulk operation` });
         }
         const result = await ItemService.bulkDeleteItems(ids);
-        res.json({ success: true, deletedCount: result.modifiedCount });
+        sendResponse(res, 200, { deletedCount: result.modifiedCount }, "Bulk delete successful");
     });
 
     bulkUpdateStatus = asyncHandler(async (req, res) => {
@@ -115,7 +116,7 @@ class ItemController {
             return res.status(400).json({ error: `Maximum ${MAX_BULK_SIZE} items per bulk operation` });
         }
         const result = await ItemService.bulkUpdateStatus(ids, status);
-        res.json({ success: true, modifiedCount: result.modifiedCount });
+        sendResponse(res, 200, { modifiedCount: result.modifiedCount }, "Bulk status update successful");
     });
 
     getBackup = asyncHandler(async (req, res) => {
@@ -143,7 +144,7 @@ class ItemController {
             throw new AppError("No matching repair job found", 404);
         }
 
-        res.json(item);
+        sendResponse(res, 200, item);
     });
 }
 

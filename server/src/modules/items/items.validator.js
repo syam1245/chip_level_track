@@ -1,15 +1,7 @@
+import { z } from "zod";
 import AppError from "../../core/errors/AppError.js";
-
 import { ALLOWED_STATUSES } from "../../constants/status.js";
 
-const ALLOWED_UPDATE_FIELDS = new Set([
-    "customerName", "brand", "phoneNumber", "repairNotes", "issue",
-    "finalCost", "technicianName", "dueDate", "status",
-]);
-
-// Field length limits kept as named constants so they're easy to find and update.
-// Each limit is enforced identically in both validateCreate and validateUpdate
-// so the same field cannot bypass a limit via one path vs the other.
 const LIMITS = {
     jobNumber:     50,
     customerName:  100,
@@ -19,84 +11,77 @@ const LIMITS = {
     technicianName:100,
 };
 
+const createSchema = z.object({
+    jobNumber:     z.string().min(1, "Job number is required").max(LIMITS.jobNumber),
+    customerName:  z.string().min(1, "Customer name is required").max(LIMITS.customerName),
+    brand:         z.string().min(1, "Brand is required").max(LIMITS.brand),
+    phoneNumber:   z.string().regex(/^\d{10}$/, "Phone number must be exactly 10 digits"),
+    issue:         z.string().max(LIMITS.issue).optional().default(""),
+    repairNotes:   z.string().max(LIMITS.repairNotes).optional().default(""),
+    technicianName:z.string().max(LIMITS.technicianName).optional(),
+});
+
+const updateSchema = z.object({
+    customerName:  z.string().max(LIMITS.customerName).optional(),
+    brand:         z.string().max(LIMITS.brand).optional(),
+    phoneNumber:   z.string().regex(/^\d{10}$/, "Phone number must be exactly 10 digits").optional(),
+    repairNotes:   z.string().max(LIMITS.repairNotes).optional(),
+    issue:         z.string().max(LIMITS.issue).optional(),
+    finalCost:     z.union([z.number(), z.string(), z.null()]).optional()
+        .transform((val) => {
+            if (val === undefined) return undefined;
+            if (val === "" || val === null) return 0;
+            const parsed = Number(String(val).trim());
+            return isNaN(parsed) ? val : parsed;
+        })
+        .pipe(z.number({ invalid_type_error: "Final cost must be a valid number" }).min(0).max(10_000_000).optional()),
+    technicianName:z.string().max(LIMITS.technicianName).optional(),
+    dueDate:       z.union([z.string(), z.date(), z.null()]).optional()
+        .transform((val) => {
+            if (!val) return undefined;
+            const parsed = new Date(val);
+            return isNaN(parsed.getTime()) ? val : parsed;
+        })
+        .pipe(z.date({ invalid_type_error: "Due date must be a valid date" }).optional()),
+    status:        z.enum(ALLOWED_STATUSES).optional(),
+}); // Silently strips unknown fields during .parse()
+
 class ItemValidator {
     validateCreate(data) {
-        const { jobNumber, customerName, brand, phoneNumber, issue, repairNotes, technicianName } = data;
-
-        // Check each required field individually so the error message is specific.
-        if (!jobNumber)     throw new AppError("Job number is required", 400);
-        if (!customerName)  throw new AppError("Customer name is required", 400);
-        if (!brand)         throw new AppError("Brand is required", 400);
-        if (!phoneNumber)   throw new AppError("Phone number is required", 400);
-
-        if (!/^\d{10}$/.test(phoneNumber)) {
-            throw new AppError("Phone number must be exactly 10 digits", 400);
+        try {
+            createSchema.parse(data);
+            return true;
+        } catch (err) {
+            if (err instanceof z.ZodError || err.name === "ZodError") {
+                const message = err.issues[0].message;
+                throw new AppError(message, 400);
+            }
+            throw err;
         }
-
-        if (jobNumber.length     > LIMITS.jobNumber)      throw new AppError(`Job number cannot exceed ${LIMITS.jobNumber} characters`, 400);
-        if (customerName.length  > LIMITS.customerName)   throw new AppError(`Customer name cannot exceed ${LIMITS.customerName} characters`, 400);
-        if (brand.length         > LIMITS.brand)          throw new AppError(`Brand cannot exceed ${LIMITS.brand} characters`, 400);
-        if (issue        && issue.length        > LIMITS.issue)         throw new AppError(`Issue description cannot exceed ${LIMITS.issue} characters`, 400);
-        if (repairNotes  && repairNotes.length  > LIMITS.repairNotes)   throw new AppError(`Repair notes cannot exceed ${LIMITS.repairNotes} characters`, 400);
-        if (technicianName && technicianName.length > LIMITS.technicianName) throw new AppError(`Technician name cannot exceed ${LIMITS.technicianName} characters`, 400);
-
-        return true;
     }
 
     validateUpdate(data) {
         // NOTE: This method intentionally mutates `data` (which is req.body) in place.
-        // The controller uses the same object after validation, so the stripped keys
-        // and coerced finalCost are the actual values that reach the service layer.
-        // Do not change this to return a copy without also updating items.controller.js.
-
-        // Strip keys not in the allowed set
-        for (const key of Object.keys(data)) {
-            if (!ALLOWED_UPDATE_FIELDS.has(key)) {
-                delete data[key];
+        // We preserve this behavior by re-assigning the parsed/transformed result.
+        try {
+            const validated = updateSchema.parse(data);
+            
+            // Clear existing keys and re-assign validated ones to match legacy mutation behavior
+            Object.keys(data).forEach(k => delete data[k]);
+            Object.assign(data, validated);
+            
+            return true;
+        } catch (err) {
+            if (err instanceof z.ZodError || err.name === "ZodError") {
+                const issue = err.issues[0];
+                const msg = issue.message === "Required" 
+                    ? `${issue.path[0]} is required`
+                    : issue.message;
+                throw new AppError(msg, 400);
             }
+            throw err;
         }
-
-        const { phoneNumber, repairNotes, issue, customerName, brand, technicianName, status, finalCost, dueDate } = data;
-
-        if (phoneNumber && !/^\d{10}$/.test(phoneNumber)) {
-            throw new AppError("Phone number must be exactly 10 digits", 400);
-        }
-
-        if (customerName  && customerName.length  > LIMITS.customerName)   throw new AppError(`Customer name cannot exceed ${LIMITS.customerName} characters`, 400);
-        if (brand         && brand.length         > LIMITS.brand)          throw new AppError(`Brand cannot exceed ${LIMITS.brand} characters`, 400);
-        if (issue         && issue.length         > LIMITS.issue)          throw new AppError(`Issue description cannot exceed ${LIMITS.issue} characters`, 400);
-        if (repairNotes   && repairNotes.length   > LIMITS.repairNotes)    throw new AppError(`Repair notes cannot exceed ${LIMITS.repairNotes} characters`, 400);
-        if (technicianName && technicianName.length > LIMITS.technicianName) throw new AppError(`Technician name cannot exceed ${LIMITS.technicianName} characters`, 400);
-
-        if (status && !ALLOWED_STATUSES.includes(status)) {
-            throw new AppError(`Invalid status: "${status}"`, 400);
-        }
-
-        if (finalCost !== undefined && finalCost !== null && finalCost !== "") {
-            const parsedCost = Number(String(finalCost).trim());
-            if (isNaN(parsedCost) || parsedCost < 0 || parsedCost > 10_000_000) {
-                throw new AppError("Final cost must be a valid non-negative number", 400);
-            }
-            data.finalCost = parsedCost;
-        } else if (finalCost === "" || finalCost === null) {
-            // Treat explicit empty strings or nulls as 0 cost
-            data.finalCost = 0;
-        }
-
-        // dueDate was in ALLOWED_UPDATE_FIELDS but had no validation.
-        // Any string (including "banana") would reach Mongoose, which silently
-        // stores invalid dates as null in MongoDB with no error thrown.
-        if (dueDate !== undefined && dueDate !== null && dueDate !== "") {
-            const parsed = new Date(dueDate);
-            if (isNaN(parsed.getTime())) {
-                throw new AppError("Due date must be a valid date", 400);
-            }
-            // Normalize to a proper Date object so Mongoose doesn't have to coerce it.
-            data.dueDate = parsed;
-        }
-
-        return true;
     }
 }
 
-export default new ItemValidator();
+export default new ItemValidator();

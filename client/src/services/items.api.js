@@ -14,9 +14,10 @@ export async function trackItem(jobNumber, phoneNumber) {
     const res = await fetch(
         `${API_BASE_URL}/api/items/track?jobNumber=${encodeURIComponent(jobNumber)}&phoneNumber=${encodeURIComponent(phoneNumber)}`
     );
-    const data = await res.json();
-    if (!res.ok) return { ok: false, error: data.error || "Failed to find repair job." };
-    return { ok: true, data };
+    const result = await res.json();
+    if (!res.ok) return { ok: false, error: result.error || "Failed to find repair job." };
+    // Standardized shape: { success: true, message: "...", data: item }
+    return { ok: true, data: result.data };
 }
 
 /**
@@ -65,7 +66,8 @@ export async function fetchItems({
         throw new Error(errBody.error || `Request failed with status ${res.status}`);
     }
 
-    return res.json();
+    const { data } = await res.json();
+    return data;
 }
 
 /**
@@ -78,9 +80,9 @@ export async function createItem(itemData) {
         method: "POST",
         body: JSON.stringify(itemData),
     });
-    const data = await res.json();
-    if (!res.ok) throw new Error(data.error || "Failed to create item");
-    return data;
+    const result = await res.json();
+    if (!res.ok) throw new Error(result.error || "Failed to create item");
+    return result.data;
 }
 
 /**
@@ -94,8 +96,8 @@ export async function updateItem(id, updates) {
         method: "PUT",
         body: JSON.stringify(updates),
     });
-    const data = await res.json();
-    return { ok: res.ok, data, error: data.error };
+    const result = await res.json();
+    return { ok: res.ok, data: result.data, error: result.error };
 }
 
 /**
@@ -119,8 +121,8 @@ export async function bulkUpdateStatus(ids, status) {
         method: "PATCH",
         body: JSON.stringify({ ids, status }),
     });
-    const data = await res.json();
-    return { ok: res.ok, data, error: data.error };
+    const result = await res.json();
+    return { ok: res.ok, data: result.data, error: result.error };
 }
 
 /**
@@ -133,8 +135,8 @@ export async function bulkDeleteItems(ids) {
         method: "PATCH",
         body: JSON.stringify({ ids }),
     });
-    const data = await res.json();
-    return { ok: res.ok, data, error: data.error };
+    const result = await res.json();
+    return { ok: res.ok, data: result.data, error: result.error };
 }
 
 /**
@@ -152,5 +154,6 @@ export async function searchItems(query, limit = 15) {
         const errBody = await res.json().catch(() => ({}));
         throw new Error(errBody.error || "Search failed");
     }
-    return res.json();
+    const result = await res.json();
+    return result.data;
 }

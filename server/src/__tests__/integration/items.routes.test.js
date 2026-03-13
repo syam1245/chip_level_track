@@ -103,10 +103,10 @@ describe("GET /api/items", () => {
             .set(authHeaders(token, csrfToken));
 
         expect(res.status).toBe(200);
-        expect(res.body).toHaveProperty("items");
-        expect(res.body).toHaveProperty("totalPages");
-        expect(res.body).toHaveProperty("stats");
-        expect(Array.isArray(res.body.items)).toBe(true);
+        expect(res.body.data).toHaveProperty("items");
+        expect(res.body.data).toHaveProperty("totalPages");
+        expect(res.body.data).toHaveProperty("stats");
+        expect(Array.isArray(res.body.data.items)).toBe(true);
     });
 
     test("returns correct stats.total count", async () => {
@@ -120,7 +120,7 @@ describe("GET /api/items", () => {
 
         expect(res.status).toBe(200);
         // total = sum of all status groups
-        expect(res.body.stats.total).toBe(2);
+        expect(res.body.data.stats.total).toBe(2);
     });
 
     test("filters by statusGroup", async () => {
@@ -133,7 +133,7 @@ describe("GET /api/items", () => {
             .set(authHeaders(token, csrfToken));
 
         expect(res.status).toBe(200);
-        expect(res.body.items.every((i) => i.status === "Ready" || i.status === "Delivered")).toBe(true);
+        expect(res.body.data.items.every((i) => i.status === "Ready" || i.status === "Delivered")).toBe(true);
     });
 
     test("paginates correctly", async () => {
@@ -145,8 +145,8 @@ describe("GET /api/items", () => {
             .set(authHeaders(token, csrfToken));
 
         expect(res.status).toBe(200);
-        expect(res.body.items).toHaveLength(10);
-        expect(res.body.totalPages).toBeGreaterThan(1);
+        expect(res.body.data.items).toHaveLength(10);
+        expect(res.body.data.totalPages).toBeGreaterThan(1);
     });
 
     test("excludes soft-deleted items", async () => {
@@ -158,7 +158,7 @@ describe("GET /api/items", () => {
             .get("/api/items?statusGroup=inProgress")
             .set(authHeaders(token, csrfToken));
 
-        expect(res.body.items.every((i) => !i.isDeleted)).toBe(true);
+        expect(res.body.data.items.every((i) => !i.isDeleted)).toBe(true);
     });
 });
 
@@ -204,8 +204,8 @@ describe("POST /api/items", () => {
             .send(payload);
 
         expect(res.status).toBe(201);
-        expect(res.body.jobNumber).toBe(payload.jobNumber);
-        expect(res.body.status).toBe("Received");
+        expect(res.body.data.jobNumber).toBe(payload.jobNumber);
+        expect(res.body.data.status).toBe("Received");
     });
 
     test("returns 400 when jobNumber is missing", async () => {
@@ -288,7 +288,7 @@ describe("PUT /api/items/:id", () => {
             .send({ brand: "Sony" });
 
         expect(res.status).toBe(200);
-        expect(res.body.brand).toBe("Sony");
+        expect(res.body.data.brand).toBe("Sony");
     });
 
     test("transitions status and records statusHistory entry", async () => {
@@ -301,9 +301,9 @@ describe("PUT /api/items/:id", () => {
             .send({ status: "In Progress" });
 
         expect(res.status).toBe(200);
-        expect(res.body.status).toBe("In Progress");
+        expect(res.body.data.status).toBe("In Progress");
         // statusHistory now has 2 entries: the one from createItem + this update
-        const statuses = res.body.statusHistory.map((h) => h.status);
+        const statuses = res.body.data.statusHistory.map((h) => h.status);
         expect(statuses).toContain("In Progress");
     });
 
@@ -329,7 +329,7 @@ describe("PUT /api/items/:id", () => {
             .send({ status: "Delivered" });
 
         expect(res.status).toBe(200);
-        expect(res.body.deliveredAt).not.toBeNull();
+        expect(res.body.data.deliveredAt).not.toBeNull();
     });
 
     test("sets revenueRealizedAt when transitioning to Ready", async () => {
@@ -342,7 +342,7 @@ describe("PUT /api/items/:id", () => {
             .send({ status: "Ready" });
 
         expect(res.status).toBe(200);
-        expect(res.body.revenueRealizedAt).not.toBeNull();
+        expect(res.body.data.revenueRealizedAt).not.toBeNull();
     });
 
     test("strips disallowed fields (isDeleted cannot be set via update)", async () => {
@@ -448,7 +448,7 @@ describe("PATCH /api/items/bulk-status", () => {
             .send({ ids, status: "In Progress" });
 
         expect(res.status).toBe(200);
-        expect(res.body.modifiedCount).toBe(2);
+        expect(res.body.data.modifiedCount).toBe(2);
 
         const dbItems = await Item.find({ _id: { $in: ids } });
         expect(dbItems.every((i) => i.status === "In Progress")).toBe(true);
@@ -479,7 +479,7 @@ describe("GET /api/items/track (public)", () => {
             .get(`/api/items/track?jobNumber=${item.jobNumber}&phoneNumber=9111222333`);
 
         expect(res.status).toBe(200);
-        expect(res.body.jobNumber).toBe("TRACK001");
+        expect(res.body.data.jobNumber).toBe("TRACK001");
     });
 
     test("does NOT expose customerName or full phoneNumber (PII guard)", async () => {
@@ -489,8 +489,8 @@ describe("GET /api/items/track (public)", () => {
             .get("/api/items/track?jobNumber=TRACK002&phoneNumber=9222333444");
 
         expect(res.status).toBe(200);
-        expect(res.body).not.toHaveProperty("customerName");
-        expect(res.body).not.toHaveProperty("phoneNumber");
+        expect(res.body.data).not.toHaveProperty("customerName");
+        expect(res.body.data).not.toHaveProperty("phoneNumber");
     });
 
     test("does not require auth cookies — public access works without a session", async () => {

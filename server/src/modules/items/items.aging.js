@@ -111,6 +111,14 @@ export async function computeAgingSummary(technicianName = "All") {
         return summary;
 
     } catch (err) {
+        // Only swallow errors related to $dateDiff missing (MongoDB < 5.0)
+        // or unrecognized operator. Unexpected errors (network, auth, etc.)
+        // should be thrown so they reach the error middleware and don't
+        // silently return zeros.
+        if (!err.message.includes("dateDiff") && !err.message.includes("Unrecognized")) {
+            throw err;
+        }
+
         logger.warn("computeAgingSummary: $dateDiff aggregation failed, using fallback:", err.message);
 
         const sixDaysAgo     = new Date(now.getTime() -  6 * MS_PER_DAY);

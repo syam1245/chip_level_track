@@ -14,6 +14,14 @@ const trackLimiter = rateLimit({
     message: { error: "Too many tracking requests. Please try again shortly." },
 });
 
+const bulkLimiter = rateLimit({
+    windowMs: 60 * 1000,
+    limit: 10,
+    standardHeaders: "draft-7",
+    legacyHeaders: false,
+    message: { error: "Too many bulk mutation requests. Please try again shortly." },
+});
+
 const MAX_SSE_CLIENTS = 50;
 
 // ── Public route — no auth ────────────────────────────────────────────────────
@@ -44,7 +52,16 @@ router.get("/events", requireAuth, (req, res) => {
         }
     }, 20_000);
 
-    req.on("close", () => clearInterval(heartbeat));
+    // Force reconnect after 30 mins to avoid stale references on Render free tier
+    const MAX_SSE_AGE_MS = 30 * 60 * 1000;
+    const maxAgeTimer = setTimeout(() => {
+        res.end();
+    }, MAX_SSE_AGE_MS);
+
+    req.on("close", () => {
+        clearInterval(heartbeat);
+        clearTimeout(maxAgeTimer);
+    });
 
     registerClient(res);
 });
@@ -54,8 +71,8 @@ router.use(requireAuth, requireCsrf);
 
 // Static named routes — must come before /:id to avoid being matched as a param
 router.get("/backup",      requirePermission("items:backup"), ItemController.getBackup);
-router.patch("/bulk-status", requirePermission("items:update"), ItemController.bulkUpdateStatus);
-router.patch("/bulk-delete", requirePermission("items:delete"), ItemController.bulkDeleteItems);
+router.patch("/bulk-status", bulkLimiter, requirePermission("items:update"), ItemController.bulkUpdateStatus);
+router.patch("/bulk-delete", bulkLimiter, requirePermission("items:delete"), ItemController.bulkDeleteItems);
 router.post("/",           requirePermission("items:create"), ItemController.createItem);
 router.get("/",            requirePermission("items:read"),   ItemController.getAllItems);
 

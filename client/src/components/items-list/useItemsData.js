@@ -132,6 +132,17 @@ export default function useItemsData({ isAdmin, user }) {
             }
         };
 
+        es.onerror = (err) => {
+            console.error("SSE connection error:", err);
+            es.close();
+            // Simple 5s reconnect — for production a more robust exponential
+            // backoff would be better, but this handles Render free tier sleep
+            // cases adequately.
+            setTimeout(() => {
+                refetch();
+            }, 5000);
+        };
+
         es.addEventListener("job:created",      handleFullRefetch);
         es.addEventListener("job:updated",       handleUpdated);
         es.addEventListener("job:deleted",       handleFullRefetch);

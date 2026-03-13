@@ -11,10 +11,17 @@ import { ALLOWED_STATUSES } from "../../constants/status.js";
 
 // ── Helpers ───────────────────────────────────────────────────────────────────
 
-/** Convenience: assert that fn throws an AppError with the given HTTP status */
+/** Convenience: assert that fn throws an error with the given HTTP status */
 function expectAppError(fn, statusCode = 400) {
-    expect(fn).toThrow(AppError);
-    try { fn(); } catch (e) {
+    try {
+        fn();
+        throw new Error("Expected function to throw but it did not");
+    } catch (e) {
+        // If it's our own "did not throw" error, fail the test
+        if (e.message === "Expected function to throw but it did not") {
+            throw e;
+        }
+        // Check for statusCode property which is characteristic of our AppError
         expect(e.statusCode).toBe(statusCode);
     }
 }
