@@ -5,15 +5,16 @@
  */
 
 import { ALLOWED_STATUSES } from "../../constants/status.js";
+import { ACTIVE_STATUSES } from "./items.aging.js";
 
 // ── Status group mappings ──────────────────────────────────────────────────
 // These groupings are semantic business decisions — they cannot be derived
 // automatically from ALLOWED_STATUSES. However, every status in ALLOWED_STATUSES
 // must belong to exactly one group, enforced by the dev-time check below.
 const STATUS_GROUPS = {
-    inProgress: ["Received", "In Progress", "Waiting for Parts", "Sent to Service"],
+    inProgress: ["Received", "In Progress", "Waiting for Parts", "Sent to Service", "Pending"],
     ready:      ["Ready", "Delivered"],
-    returned:   ["Pending", "Return"],
+    returned:   ["Return"],
 };
 
 // ── Dev-time completeness check ───────────────────────────────────────────────
@@ -66,7 +67,12 @@ export function buildSearchQuery({ search, statusGroup, technicianName }) {
     }
 
     // ── Status group filter ────────────────────────────────────────────
-    if (statusGroup && STATUS_GROUPS[statusGroup]) {
+    if (statusGroup === "needsAttention") {
+        query.status = { $in: ACTIVE_STATUSES };
+        const sixDaysAgo = new Date();
+        sixDaysAgo.setDate(sixDaysAgo.getDate() - 6);
+        query.createdAt = { $lte: sixDaysAgo };
+    } else if (statusGroup && STATUS_GROUPS[statusGroup]) {
         query.status = { $in: STATUS_GROUPS[statusGroup] };
     }
 

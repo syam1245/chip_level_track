@@ -71,18 +71,21 @@ const ItemsListFilters = ({
                                 icon: <AllJobsIcon />,
                             },
                         ].map((stat) => (
-                            <StatCard
-                                key={stat.key}
-                                title={stat.title}
-                                value={stat.value}
-                                color={stat.color}
-                                icon={stat.icon}
-                                isActive={activeFilter === stat.key}
-                                onClick={() => handleFilterChange(stat.key)}
-                            />
+                            <Box key={stat.key} sx={{ flex: { xs: '0 0 160px', sm: '1' }, minWidth: 0 }}>
+                                <StatCard
+                                    title={stat.title}
+                                    value={stat.value}
+                                    color={stat.color}
+                                    icon={stat.icon}
+                                    isActive={activeFilter === stat.key}
+                                    onClick={() => handleFilterChange(stat.key)}
+                                />
+                            </Box>
                         ))}
                         <Box
                             sx={{
+                                flex: { xs: '0 0 160px', sm: '1' },
+                                minWidth: 0,
                                 position: 'relative',
                                 animation: agingCount > 0 ? 'agingCardGlow 3s ease-in-out infinite' : 'none',
                                 '@keyframes agingCardGlow': {
@@ -96,8 +99,8 @@ const ItemsListFilters = ({
                                 value={agingCount}
                                 color={agingCount > 0 ? "#f97316" : "#94a3b8"}
                                 icon={<WarningIcon />}
-                                isActive={false}
-                                onClick={() => { }}
+                                isActive={activeFilter === "needsAttention"}
+                                onClick={() => handleFilterChange("needsAttention")}
                             />
                         </Box>
                     </Box>
