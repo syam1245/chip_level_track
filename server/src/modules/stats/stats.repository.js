@@ -18,7 +18,11 @@ class StatsRepository {
             finalCost: { $gt: 0 },
             $or: [
                 { revenueRealizedAt: { $gte: start, $lte: endOfDay } },
-                { revenueRealizedAt: null, createdAt: { $gte: start, $lte: endOfDay } },
+                {
+                    revenueRealizedAt: null,
+                    status: { $in: ["Ready", "Delivered"] },
+                    createdAt: { $gte: start, $lte: endOfDay }
+                },
             ],
         };
 
@@ -28,6 +32,23 @@ class StatsRepository {
         const [aggregationResult, pendingJobs] = await Promise.all([
             Item.aggregate([
                 { $match: matchStage },
+                {
+                    $addFields: {
+                        // Normalize technician name by removing " (Admin)" suffix so
+                        // historical data matches current names in the UI.
+                        normalizedTech: {
+                            $trim: {
+                                input: {
+                                    $replaceAll: {
+                                        input: "$technicianName",
+                                        find: " (Admin)",
+                                        replacement: ""
+                                    }
+                                }
+                            }
+                        }
+                    }
+                },
                 {
                     $facet: {
                         total: [
@@ -39,7 +60,7 @@ class StatsRepository {
                         breakdown: [
                             {
                                 $group: {
-                                    _id: "$technicianName",
+                                    _id: "$normalizedTech",
                                     totalRevenue: { $sum: "$finalCost" },
                                     deviceCount:  { $sum: 1 },
                                 },

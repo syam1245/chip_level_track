@@ -37,10 +37,30 @@ export const applySecurity = (app) => {
         app.set("trust proxy", 1);
     }
 
+    // ── CORS ──────────────────────────────────────────────────────────────
+    // Supports multiple allowed origins via comma-separated CORS_ORIGIN env var.
+    const allowedOrigins = config.security.corsOrigin
+        .split(",")
+        .map((o) => o.trim().replace(/\/$/, ""));
+
+    app.use(cors({
+        origin: (origin, callback) => {
+            if (!origin || config.security.corsOrigin === "*") {
+                return callback(null, true);
+            }
+            const normalizedOrigin = origin.replace(/\/$/, "");
+            if (allowedOrigins.includes(normalizedOrigin)) {
+                return callback(null, true);
+            }
+            return callback(
+                new AppError(`CORS Policy Violation: Origin ${origin} not allowed.`, 403)
+            );
+        },
+        credentials: true,
+        optionsSuccessStatus: 200,
+    }));
+
     // ── Rate limiting ─────────────────────────────────────────────────────
-    // Limit inlined here — this is security middleware's own concern and
-    // should not depend on a config value that other modules don't need.
-    // 300 requests per 15 minutes per IP is conservative for a single-shop app.
     const limiter = rateLimit({
         windowMs: config.security.rateLimitWindowMs,
         limit: 300,
@@ -68,38 +88,12 @@ export const applySecurity = (app) => {
             },
             reportOnly: false,
         },
-        crossOriginEmbedderPolicy: false, // Required for react-webcam (vision feature)
-        crossOriginResourcePolicy: { policy: "same-origin" },
+        crossOriginEmbedderPolicy: false,
+        crossOriginResourcePolicy: { policy: "cross-origin" },
     }));
 
     // ── Compression ───────────────────────────────────────────────────────
     app.use(compression({ level: 6, threshold: 1024 }));
-
-    // ── CORS ──────────────────────────────────────────────────────────────
-    // Supports multiple allowed origins via comma-separated CORS_ORIGIN env var.
-    // Trailing slashes are normalised so "https://example.com/" and
-    // "https://example.com" are treated as the same origin.
-    const allowedOrigins = config.security.corsOrigin
-        .split(",")
-        .map((o) => o.trim().replace(/\/$/, ""));
-
-    app.use(cors({
-        origin: (origin, callback) => {
-            // Allow requests with no origin (server-to-server, curl, Postman)
-            // or when all origins are permitted (development wildcard).
-            if (!origin || config.security.corsOrigin === "*") {
-                return callback(null, true);
-            }
-            const normalizedOrigin = origin.replace(/\/$/, "");
-            if (allowedOrigins.includes(normalizedOrigin)) {
-                return callback(null, true);
-            }
-            return callback(
-                new AppError(`CORS Policy Violation: Origin ${origin} not allowed.`, 403)
-            );
-        },
-        credentials: true,
-    }));
 
     // ── Body parsing ──────────────────────────────────────────────────────
     // 10mb limit accommodates base64 image uploads for the vision OCR feature.

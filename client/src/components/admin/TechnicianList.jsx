@@ -377,7 +377,10 @@ const TechnicianList = ({ technicians, revenueData, onUpdate }) => {
                     }
 
                     return technicians.map((tech) => {
-                        const techStats = revenueMap[tech.displayName] || { totalRevenue: 0, deviceCount: 0 };
+                        // Normalize displayName by removing " (Admin)" to match the 
+                        // backend's aggregation breakdown which now does the same.
+                        const normalizedName = tech.displayName.replace(/\s*\(Admin\)\s*$/i, "");
+                        const techStats = revenueMap[normalizedName] || { totalRevenue: 0, deviceCount: 0 };
 
                         return (
                             <TechnicianCard

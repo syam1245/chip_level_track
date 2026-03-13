@@ -72,12 +72,15 @@ class ItemValidator {
             throw new AppError(`Invalid status: "${status}"`, 400);
         }
 
-        if (finalCost !== undefined) {
-            const parsedCost = Number(finalCost);
+        if (finalCost !== undefined && finalCost !== null && finalCost !== "") {
+            const parsedCost = Number(String(finalCost).trim());
             if (isNaN(parsedCost) || parsedCost < 0 || parsedCost > 10_000_000) {
                 throw new AppError("Final cost must be a valid non-negative number", 400);
             }
             data.finalCost = parsedCost;
+        } else if (finalCost === "" || finalCost === null) {
+            // Treat explicit empty strings or nulls as 0 cost
+            data.finalCost = 0;
         }
 
         // dueDate was in ALLOWED_UPDATE_FIELDS but had no validation.
