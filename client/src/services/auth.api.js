@@ -10,8 +10,8 @@ import API_BASE_URL, { authFetch } from "../api";
 export async function getSession() {
     const res = await authFetch("/api/auth/session", { method: "GET" });
     if (!res.ok) return { ok: false };
-    const user = await res.json();
-    return { ok: true, user };
+    const data = await res.json();
+    return { ok: true, data };
 }
 
 /**

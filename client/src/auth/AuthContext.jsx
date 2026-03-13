@@ -10,12 +10,15 @@ export const AuthProvider = ({ children }) => {
   useEffect(() => {
     const loadSession = async () => {
       try {
-        const { ok, user: response } = await authApi.getSession();
-        if (!ok || !response?.user) {
+        const { ok, data } = await authApi.getSession();
+        if (!ok || !data) {
           setUser(null);
           return;
         }
-        setUser(response.user);
+
+        // Robust extraction: handle { user: { ... } } or { ... }
+        const profile = data.user || (data.username ? data : null);
+        setUser(profile);
       } catch (_err) {
         setUser(null);
       } finally {
@@ -34,12 +37,11 @@ export const AuthProvider = ({ children }) => {
   }, []);
 
   // useCallback gives each function a stable identity across renders.
-  // Without this, the functions would be recreated on every render and
-  // the useMemo context value would change needlessly, triggering
-  // re-renders in every consumer of useAuth().
   const login = useCallback(async (username, password) => {
     const data = await authApi.login(username, password);
-    setUser(data.user);
+    // Robust extraction for login too
+    const profile = data.user || (data.username ? data : null);
+    setUser(profile);
     return data;
   }, []);
 

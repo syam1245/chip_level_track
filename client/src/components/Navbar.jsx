@@ -58,9 +58,11 @@ const Navbar = ({ toggleTheme, mode, onOpenPalette }) => {
     const drawer = (
         <Box sx={{ p: 2, height: '100%', bgcolor: 'background.default' }}>
             <Box sx={{ display: 'flex', alignItems: 'center', gap: 2, mb: 3, p: 1 }}>
-                <Avatar sx={{ bgcolor: 'var(--color-primary)', width: 40, height: 40 }}>{user.username[0]}</Avatar>
+                <Avatar sx={{ bgcolor: 'var(--color-primary)', width: 40, height: 40 }}>
+                    {user?.username?.[0] || '?'}
+                </Avatar>
                 <Box>
-                    <Typography variant="subtitle1" fontWeight={800}>{user.displayName}</Typography>
+                    <Typography variant="subtitle1" fontWeight={800}>{user?.displayName || user?.username}</Typography>
                 </Box>
             </Box>
             <Divider sx={{ mb: 2 }} />
@@ -203,7 +205,7 @@ const Navbar = ({ toggleTheme, mode, onOpenPalette }) => {
                                 <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5 }}>
                                     <Box textAlign="right">
                                         <Typography variant="body2" fontWeight={800} display="block" sx={{ lineHeight: 1, color: 'text.primary' }}>
-                                            {user.displayName}
+                                            {user?.displayName || user?.username}
                                         </Typography>
 
                                     </Box>
@@ -217,7 +219,7 @@ const Navbar = ({ toggleTheme, mode, onOpenPalette }) => {
                                             boxShadow: '0 4px 12px rgba(0,0,0,0.1)'
                                         }}
                                     >
-                                        {user.username[0]}
+                                        {user?.username?.[0] || '?'}
                                     </Avatar>
                                 </Box>
                                 <Tooltip title="Sign Out">
