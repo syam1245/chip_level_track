@@ -1,6 +1,5 @@
 import StatsService from "./stats.service.js";
 import asyncHandler from "../../core/utils/asyncHandler.js";
-import sendResponse from "../../core/response/responseHandler.js";
 import AppError from "../../core/errors/AppError.js";
 
 class StatsController {
@@ -19,7 +18,13 @@ class StatsController {
         }
 
         const data = await StatsService.getRevenueReport(startDate, endDate);
-        sendResponse(res, 200, data, "Revenue report fetched");
+
+        // NOTE: intentionally using res.json(data) directly — NOT sendResponse().
+        // The frontend's stats.api.js reads fields like data.total, data.breakdown
+        // directly from the response root. Wrapping in sendResponse({ data })
+        // would nest them under response.data and break the admin revenue charts.
+        // Do not change this to sendResponse without updating stats.api.js first.
+        res.json(data);
     });
 }
 
