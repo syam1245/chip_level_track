@@ -22,12 +22,12 @@ const itemSchema = new mongoose.Schema(
                 changedAt: { type: Date, default: Date.now },
             },
         ],
-        isDeleted:        { type: Boolean, default: false },
-        technicianName:   { type: String, default: "Unknown" },
-        dueDate:          { type: Date, default: null },
-        deliveredAt:      { type: Date, default: null },
-        revenueRealizedAt:{ type: Date, default: null },
-        formattedDate:    { type: String, default: "" },
+        isDeleted:         { type: Boolean, default: false },
+        technicianName:    { type: String, default: "Unknown" },
+        dueDate:           { type: Date, default: null },
+        deliveredAt:       { type: Date, default: null },
+        revenueRealizedAt: { type: Date, default: null },
+        formattedDate:     { type: String, default: "" },
         metadata: {
             type:   Object,
             select: false,
@@ -72,10 +72,17 @@ itemSchema.index({
 // and filters phoneNumber on the single result. A separate phoneNumber index
 // would never be chosen and would only add write overhead.
 
-itemSchema.index({ isDeleted: 1, createdAt: -1 });          // default list, newest first
-itemSchema.index({ isDeleted: 1, status: 1, createdAt: -1 });// status filter + sort
-itemSchema.index({ isDeleted: 1, technicianName: 1, createdAt: -1 }); // technician filter
-itemSchema.index({ isDeleted: 1, dueDate: 1, status: 1 });  // overdue queries
-itemSchema.index({ isDeleted: 1, revenueRealizedAt: 1 });   // revenue date range
+itemSchema.index({ isDeleted: 1, createdAt: -1 });                             // default list, newest first
+itemSchema.index({ isDeleted: 1, status: 1, createdAt: -1 });                  // status filter only + sort
+itemSchema.index({ isDeleted: 1, technicianName: 1, createdAt: -1 });          // technician filter only + sort
+itemSchema.index({ isDeleted: 1, status: 1, technicianName: 1, createdAt: -1 }); // status + technician combined filter
+// ↑ Without this index, queries that filter by BOTH status AND technicianName
+// (the most common filtered view for non-admin users) could only use one of
+// the two single-filter indexes above, leaving the other condition to be
+// evaluated in-memory across the partial result set. On large collections
+// this becomes a significant scan. The combined index covers the full filter
+// in one index traversal.
+itemSchema.index({ isDeleted: 1, dueDate: 1, status: 1 });                     // overdue queries
+itemSchema.index({ isDeleted: 1, revenueRealizedAt: 1 });                      // revenue date range
 
 export default mongoose.model("Item", itemSchema);

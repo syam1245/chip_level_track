@@ -8,7 +8,7 @@ const revenueCache = new NodeCache({ stdTTL: 300, checkperiod: 60 });
 class StatsService {
     async getRevenueReport(startDate, endDate) {
         const start = startDate ? new Date(startDate) : this._getStartOfMonth();
-        const end   = endDate   ? new Date(endDate)   : new Date();
+        const end = endDate ? new Date(endDate) : new Date();
 
         // Build a deterministic cache key from normalized UTC date strings.
         //
@@ -41,12 +41,50 @@ class StatsService {
         return new Date(Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), 1));
     }
 
-    invalidateRevenueCache() {
-        // flushAll clears all cached date ranges, not just the one affected by
-        // the current job change. Targeted invalidation would require knowing
-        // which ranges overlap the job's revenueRealizedAt — complex for marginal
-        // gain in a single-shop app. Full flush on Ready/Delivered is acceptable.
-        revenueCache.flushAll();
+    /**
+     * Invalidate cached revenue ranges that overlap a specific event date.
+     *
+     * @param {Date|null} date - The revenueRealizedAt date of the job that changed.
+     *   When provided, only cache keys whose date range contains this date are
+     *   evicted. Ranges that don't overlap are untouched — e.g. marking a job
+     *   "Ready" today will not evict a cached report for last month.
+     *   When null/undefined (shouldn't happen in normal flow but kept as a
+     *   safe fallback), all ranges are flushed.
+     *
+     * Cache key format: "revenue:YYYY-MM-DD:YYYY-MM-DD"
+     */
+    invalidateRevenueCache(date = null) {
+        if (!date) {
+            // Safe fallback — no date provided, clear everything.
+            revenueCache.flushAll();
+            return;
+        }
+
+        const targetStr = (date instanceof Date ? date : new Date(date))
+            .toISOString()
+            .slice(0, 10); // "YYYY-MM-DD"
+
+        const keys = revenueCache.keys();
+        for (const key of keys) {
+            // Parse the two date parts from the key.
+            // Split limit of 3 handles keys with extra colons in edge cases.
+            const parts = key.split(":");
+            if (parts.length !== 3) {
+                // Unexpected key format — evict it to be safe rather than
+                // leaving potentially stale data that can never be cleaned up.
+                revenueCache.del(key);
+                continue;
+            }
+
+            const [, rangeStart, rangeEnd] = parts;
+
+            // Evict only if the event date falls within [rangeStart, rangeEnd].
+            // String comparison works here because both sides are ISO "YYYY-MM-DD"
+            // which sorts lexicographically — no Date parsing needed.
+            if (targetStr >= rangeStart && targetStr <= rangeEnd) {
+                revenueCache.del(key);
+            }
+        }
     }
 }
 

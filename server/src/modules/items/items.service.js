@@ -17,13 +17,19 @@ class ItemService {
         const showMetadata = userRole === "admin" && includeMetadata === "true";
 
         // ── Stat counts (cached) ───────────────────────────────────────
+        // _getStatCounts() uses a single $facet aggregation — 1 DB round-trip
+        // instead of 3 parallel countDocuments calls.
         const { inProgress, ready, returned } = await this._getStatCounts();
 
-        // ── Fetch page of items + unfiltered total in parallel ─────────
-        const [items, total] = await Promise.all([
-            ItemRepository.findAll({ query, skip, limit, showMetadata, sort: sortObject }),
-            ItemRepository.countDocuments({ isDeleted: false }),
-        ]);
+        // ── Total is free — derived from stat counts ───────────────────
+        // Every non-deleted item belongs to exactly one STATUS_GROUP (enforced
+        // by the dev-time completeness check in items.query-builder.js), so the
+        // sum is always correct. Eliminates the previous countDocuments({ isDeleted: false })
+        // round-trip that ran in parallel with findAll on every request.
+        const total = inProgress + ready + returned;
+
+        // ── Fetch current page of items ────────────────────────────────
+        const items = await ItemRepository.findAll({ query, skip, limit, showMetadata, sort: sortObject });
 
         // ── Enrich items with aging info (in-place, O(pageSize)) ───────
         const now = Date.now();
@@ -31,8 +37,9 @@ class ItemService {
             enrichWithAging(item, now);
         }
 
-        // When filtered, run a separate count against the filtered query.
-        // When unfiltered, reuse the already-fetched total to save a DB round-trip.
+        // ── Filtered total for pagination ──────────────────────────────
+        // When unfiltered, the total from stat counts is exact — no extra query.
+        // When filtered, we need the count of documents matching the specific query.
         const isFiltered = search || statusGroup || (technicianName && technicianName !== "All");
         const filteredTotal = isFiltered
             ? await ItemRepository.countDocuments(query)
@@ -93,14 +100,14 @@ class ItemService {
             throw new AppError("Item not found", 404);
         }
 
-        if (data.customerName)              item.customerName   = String(data.customerName).trim();
-        if (data.brand)                     item.brand          = String(data.brand).trim();
-        if (data.phoneNumber)               item.phoneNumber    = String(data.phoneNumber).trim();
-        if (data.repairNotes !== undefined)  item.repairNotes   = String(data.repairNotes).trim();
-        if (data.issue !== undefined)        item.issue         = String(data.issue).trim();
-        if (data.finalCost !== undefined)    item.finalCost     = Number(data.finalCost) || 0;
+        if (data.customerName)               item.customerName    = String(data.customerName).trim();
+        if (data.brand)                      item.brand           = String(data.brand).trim();
+        if (data.phoneNumber)                item.phoneNumber     = String(data.phoneNumber).trim();
+        if (data.repairNotes !== undefined)   item.repairNotes    = String(data.repairNotes).trim();
+        if (data.issue !== undefined)         item.issue          = String(data.issue).trim();
+        if (data.finalCost !== undefined)     item.finalCost      = Number(data.finalCost) || 0;
         if (data.technicianName !== undefined) item.technicianName = String(data.technicianName).trim();
-        if (data.dueDate !== undefined)      item.dueDate       = data.dueDate ? new Date(data.dueDate) : null;
+        if (data.dueDate !== undefined)       item.dueDate        = data.dueDate ? new Date(data.dueDate) : null;
 
         if (data.status && data.status !== item.status) {
             // ALLOWED_STATUSES check is already done in items.validator.js before this
@@ -127,12 +134,14 @@ class ItemService {
                 if (!item.dueDate) item.dueDate = new Date();
                 if (!item.revenueRealizedAt) {
                     item.revenueRealizedAt = new Date();
-                    StatsService.invalidateRevenueCache();
+                    // Pass the date so stats cache only evicts ranges that
+                    // overlap this job's revenueRealizedAt — not the entire cache.
+                    StatsService.invalidateRevenueCache(item.revenueRealizedAt);
                 }
             } else if (data.status === "Delivered") {
                 if (!item.revenueRealizedAt) {
                     item.revenueRealizedAt = new Date();
-                    StatsService.invalidateRevenueCache();
+                    StatsService.invalidateRevenueCache(item.revenueRealizedAt);
                 }
                 item.deliveredAt = new Date();
             }
@@ -193,7 +202,9 @@ class ItemService {
                 ItemRepository.bulkSetRevenueRealized(ids),
                 ItemRepository.bulkSetDueDateIfNull(ids),
             ]);
-            StatsService.invalidateRevenueCache();
+            // Bulk Ready sets revenueRealizedAt to now — pass today's date for
+            // targeted cache invalidation instead of flushing everything.
+            StatsService.invalidateRevenueCache(new Date());
         }
 
         this._invalidateCache();
@@ -215,13 +226,27 @@ class ItemService {
         const cached = statsCache.get("itemStats");
         if (cached) return cached;
 
-        const [inProgress, ready, returned] = await Promise.all([
-            ItemRepository.countDocuments({ isDeleted: false, status: { $in: STATUS_GROUPS.inProgress } }),
-            ItemRepository.countDocuments({ isDeleted: false, status: { $in: STATUS_GROUPS.ready } }),
-            ItemRepository.countDocuments({ isDeleted: false, status: { $in: STATUS_GROUPS.returned } }),
+        // Single $facet aggregation — one DB round-trip replaces three parallel
+        // countDocuments calls. Each facet filters by the status group and counts.
+        // The result shape mirrors the old { inProgress, ready, returned } object
+        // so no callers need to change.
+        const [result] = await ItemRepository.aggregate([
+            { $match: { isDeleted: false } },
+            {
+                $facet: {
+                    inProgress: [{ $match: { status: { $in: STATUS_GROUPS.inProgress } } }, { $count: "n" }],
+                    ready:      [{ $match: { status: { $in: STATUS_GROUPS.ready      } } }, { $count: "n" }],
+                    returned:   [{ $match: { status: { $in: STATUS_GROUPS.returned   } } }, { $count: "n" }],
+                },
+            },
         ]);
 
-        const stats = { inProgress, ready, returned };
+        const stats = {
+            inProgress: result?.inProgress?.[0]?.n ?? 0,
+            ready:      result?.ready?.[0]?.n      ?? 0,
+            returned:   result?.returned?.[0]?.n   ?? 0,
+        };
+
         statsCache.set("itemStats", stats);
         return stats;
     }
