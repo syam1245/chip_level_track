@@ -33,6 +33,14 @@ let server;
     server = app.listen(PORT, () => {
         logger.info(`🚀 Server running on port ${PORT} in ${config.env} mode`);
     });
+
+    // ── HTTP Request Timeout Protection ───────────────────────────
+    // Enforce a strict 30-second timeout on all HTTP connections to prevent
+    // hanging sockets from exhausting connection pools during load spikes.
+    // By default, Node.js can hold connections open indefinitely or for 2 mins.
+    server.timeout = 30_000;
+    server.keepAliveTimeout = 30_000;
+    server.headersTimeout = 31_000; // Must be > keepAliveTimeout per Node.js docs
 })();
 
 // ── Graceful shutdown ─────────────────────────────────────────────────────────
