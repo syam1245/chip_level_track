@@ -24,6 +24,7 @@ import {
 import { useTheme, alpha } from "@mui/material/styles";
 import { History, Search, Devices, Language, AccountCircle, Visibility, Download as DownloadIcon } from "@mui/icons-material";
 import { searchItems } from "../../services/items.api";
+import { exportCSV } from "../../utils/exportCsv";
 
 /* ─── Mobile Card View for a single audit log ─── */
 const AuditCard = React.memo(({ log, onShowHistory }) => {
@@ -130,32 +131,18 @@ const AuditTrail = React.memo(({ initialLogs = [], onShowHistory }) => {
         if (!auditLogs || auditLogs.length === 0) return;
 
         const headers = ["Job Number", "Customer Name", "Phone", "Brand", "Issue", "Technician", "Status", "Date"];
-        const csvRows = [headers.join(",")];
+        const rows = auditLogs.map((log) => [
+            log.jobNumber || '',
+            log.customerName || '',
+            log.phoneNumber || '',
+            log.brand || '',
+            log.issue || '',
+            log.technicianName || '',
+            log.status || '',
+            log.formattedDate || new Date(log.createdAt).toLocaleDateString(),
+        ]);
 
-        for (const log of auditLogs) {
-            const row = [
-                `"${log.jobNumber || ''}"`,
-                `"${log.customerName || ''}"`,
-                `"${log.phoneNumber || ''}"`,
-                `"${log.brand || ''}"`,
-                `"${log.issue || ''}"`,
-                `"${log.technicianName || ''}"`,
-                `"${log.status || ''}"`,
-                `"${log.formattedDate || new Date(log.createdAt).toLocaleDateString()}"`
-            ];
-            csvRows.push(row.join(","));
-        }
-
-        const csvContent = "\uFEFF" + csvRows.join("\n");
-        const blob = new Blob([csvContent], { type: "text/csv;charset=utf-8;" });
-        const url = URL.createObjectURL(blob);
-        const link = document.createElement("a");
-        link.setAttribute("href", url);
-        link.setAttribute("download", `job_audit_${new Date().toISOString().split('T')[0]}.csv`);
-        document.body.appendChild(link);
-        link.click();
-        document.body.removeChild(link);
-        URL.revokeObjectURL(url);
+        exportCSV(`job_audit_${new Date().toISOString().split('T')[0]}.csv`, headers, rows);
     };
 
     return (

@@ -5,6 +5,7 @@ import {
 import { alpha, useTheme } from "@mui/material/styles";
 import { TrendingUp, AccountBalanceWallet, People, Build, PendingActions, Star, Download as DownloadIcon } from "@mui/icons-material";
 import RevenueChart from "./RevenueChart";
+import { exportCSV } from "../../utils/exportCsv";
 
 const RevenueReport = ({ data, loading }) => {
     const theme = useTheme();
@@ -53,30 +54,16 @@ const RevenueReport = ({ data, loading }) => {
         if (!breakdown || breakdown.length === 0) return;
 
         const headers = ["Technician", "Jobs Completed", "Revenue Generated"];
-        const csvRows = [headers.join(",")];
-
-        for (const tech of breakdown) {
-            const row = [
-                `"${tech._id || 'Unknown'}"`,
-                `"${tech.deviceCount || 0}"`,
-                `"${tech.totalRevenue || 0}"`
-            ];
-            csvRows.push(row.join(","));
-        }
+        const rows = breakdown.map((tech) => [
+            tech._id || 'Unknown',
+            String(tech.deviceCount || 0),
+            String(tech.totalRevenue || 0),
+        ]);
 
         // Add a totals row at the bottom
-        csvRows.push(`"TOTAL","${totalJobs}","${totalRevenue}"`);
+        rows.push(["TOTAL", String(totalJobs), String(totalRevenue)]);
 
-        const csvContent = "\uFEFF" + csvRows.join("\n");
-        const blob = new Blob([csvContent], { type: "text/csv;charset=utf-8;" });
-        const url = URL.createObjectURL(blob);
-        const link = document.createElement("a");
-        link.setAttribute("href", url);
-        link.setAttribute("download", `revenue_report_${new Date().toISOString().split('T')[0]}.csv`);
-        document.body.appendChild(link);
-        link.click();
-        document.body.removeChild(link);
-        URL.revokeObjectURL(url);
+        exportCSV(`revenue_report_${new Date().toISOString().split('T')[0]}.csv`, headers, rows);
     };
 
 
