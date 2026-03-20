@@ -5,6 +5,7 @@ import asyncHandler from "../../core/utils/asyncHandler.js";
 import AppError from "../../core/errors/AppError.js";
 import sendResponse from "../../core/response/responseHandler.js";
 import { UAParser } from "ua-parser-js";
+import logger from "../../core/utils/logger.js";
 
 const MAX_BULK_SIZE = 100;
 
@@ -120,7 +121,7 @@ class ItemController {
     });
 
     getBackup = asyncHandler(async (req, res) => {
-        const items = await ItemService.getBackup();
+        const cursor = await ItemService.getBackup();
         const timestamp = new Date().toISOString().replace(/[:.]/g, "-");
         const filename = `backup-${timestamp}.json`;
 
@@ -128,7 +129,23 @@ class ItemController {
         // spaces or special characters. Quoting unconditionally is best practice.
         res.setHeader("Content-Disposition", `attachment; filename="${filename}"`);
         res.setHeader("Content-Type", "application/json");
-        res.send(JSON.stringify(items, null, 2));
+
+        // Audit log the backup download
+        logger.info(`Backup downloaded by ${req.user.username}`);
+
+        // Stream the database directly to the HTTP response to prevent V8 
+        // Out-Of-Memory crashes if the collection grows massive. 
+        res.write("[\n");
+        let isFirst = true;
+
+        for await (const doc of cursor) {
+            if (!isFirst) res.write(",\n");
+            isFirst = false;
+            res.write(JSON.stringify(doc));
+        }
+
+        res.write("\n]");
+        res.end();
     });
 
     trackItem = asyncHandler(async (req, res) => {

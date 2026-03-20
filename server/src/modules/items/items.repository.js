@@ -53,8 +53,8 @@ class ItemRepository {
         );
     }
 
-    async findAllForBackup() {
-        return await Item.find({ isDeleted: false }).sort({ createdAt: -1 }).lean();
+    async getBackupCursor() {
+        return Item.find({ isDeleted: false }).sort({ createdAt: -1 }).lean().cursor();
     }
 
     async bulkUpdateStatus(ids, newStatus) {

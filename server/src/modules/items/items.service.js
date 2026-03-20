@@ -189,7 +189,7 @@ class ItemService {
     }
 
     async getBackup() {
-        return await ItemRepository.findAllForBackup();
+        return await ItemRepository.getBackupCursor();
     }
 
     // ── Private helpers ────────────────────────────────────────────────

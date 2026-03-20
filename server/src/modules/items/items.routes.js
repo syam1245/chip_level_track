@@ -22,6 +22,14 @@ const bulkLimiter = rateLimit({
     message: { error: "Too many bulk mutation requests. Please try again shortly." },
 });
 
+const backupLimiter = rateLimit({
+    windowMs: 15 * 60 * 1000, // 15 minutes
+    limit: 5,
+    standardHeaders: "draft-7",
+    legacyHeaders: false,
+    message: { error: "Too many backup requests. Please try again later." },
+});
+
 const MAX_SSE_CLIENTS = 50;
 
 // ── Public route — no auth ────────────────────────────────────────────────────
@@ -70,7 +78,7 @@ router.get("/events", requireAuth, (req, res) => {
 router.use(requireAuth, requireCsrf);
 
 // Static named routes — must come before /:id to avoid being matched as a param
-router.get("/backup",      requirePermission("items:backup"), ItemController.getBackup);
+router.get("/backup",      backupLimiter, requirePermission("items:backup"), ItemController.getBackup);
 router.patch("/bulk-status", bulkLimiter, requirePermission("items:update"), ItemController.bulkUpdateStatus);
 router.patch("/bulk-delete", bulkLimiter, requirePermission("items:delete"), ItemController.bulkDeleteItems);
 router.post("/",           requirePermission("items:create"), ItemController.createItem);
