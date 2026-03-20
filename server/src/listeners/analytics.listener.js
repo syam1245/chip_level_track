@@ -8,7 +8,12 @@ import logger from "../core/utils/logger.js";
 export function registerAnalyticsListeners() {
     // When a job brings in revenue (e.g. status changed to Ready/Delivered)
     eventBus.on(EVENTS.JOB_REVENUE_REALIZED, (payload) => {
-        logger.debug(`[EventListener] JOB_REVENUE_REALIZED at ${payload.date}`);
+        logger.info("[DOMAIN EVENT] JOB_REVENUE_REALIZED", {
+            audit: true,
+            action: "JOB_REVENUE_REALIZED_EVENT",
+            resourceId: null,
+            timestamp: new Date().toISOString(),
+        });
         StatsService.invalidateRevenueCache(payload.date);
     });
 
