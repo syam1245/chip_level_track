@@ -1,3 +1,4 @@
+import mongoose from "mongoose";
 import ItemRepository from "./items.repository.js";
 import AppError from "../../core/errors/AppError.js";
 import NodeCache from "node-cache";
@@ -149,11 +150,19 @@ class ItemService {
             throw new AppError("ids must be a non-empty array", 400);
         }
 
-        const result = await ItemRepository.bulkSoftDelete(ids);
-        this._invalidateCache();
-        
-        eventBus.emit(EVENTS.JOB_BULK_UPDATED, { count: ids.length, isDelete: true });
-        return result;
+        const session = await mongoose.startSession();
+        try {
+            let result;
+            await session.withTransaction(async () => {
+                result = await ItemRepository.bulkSoftDelete(ids, session);
+            });
+            
+            this._invalidateCache();
+            eventBus.emit(EVENTS.JOB_BULK_UPDATED, { count: ids.length, isDelete: true });
+            return result;
+        } finally {
+            session.endSession();
+        }
     }
 
     async bulkUpdateStatus(ids, newStatus) {
@@ -169,19 +178,30 @@ class ItemService {
             throw new AppError('Cannot bulk update to "Delivered". Please update items individually to provide the final amount.', 400);
         }
 
-        const result = await ItemRepository.bulkUpdateStatus(ids, newStatus);
+        const session = await mongoose.startSession();
+        try {
+            let result;
+            await session.withTransaction(async () => {
+                result = await ItemRepository.bulkUpdateStatus(ids, newStatus, session);
 
-        if (newStatus === "Ready") {
-            await Promise.all([
-                ItemRepository.bulkSetRevenueRealized(ids),
-                ItemRepository.bulkSetDueDateIfNull(ids),
-            ]);
-            eventBus.emit(EVENTS.JOB_REVENUE_REALIZED, { date: new Date() });
+                if (newStatus === "Ready") {
+                    await Promise.all([
+                        ItemRepository.bulkSetRevenueRealized(ids, session),
+                        ItemRepository.bulkSetDueDateIfNull(ids, session),
+                    ]);
+                }
+            });
+
+            if (newStatus === "Ready") {
+                eventBus.emit(EVENTS.JOB_REVENUE_REALIZED, { date: new Date() });
+            }
+
+            this._invalidateCache();
+            eventBus.emit(EVENTS.JOB_BULK_UPDATED, { count: ids.length, status: newStatus });
+            return result;
+        } finally {
+            session.endSession();
         }
-
-        this._invalidateCache();
-        eventBus.emit(EVENTS.JOB_BULK_UPDATED, { count: ids.length, status: newStatus });
-        return result;
     }
 
     async trackItem(jobNumber, phoneNumber) {

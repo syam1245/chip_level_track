@@ -46,10 +46,11 @@ class ItemRepository {
         return await Item.findByIdAndUpdate(id, { isDeleted: true }, { new: true });
     }
 
-    async bulkSoftDelete(ids) {
+    async bulkSoftDelete(ids, session = null) {
         return await Item.updateMany(
             { _id: { $in: ids } },
-            { $set: { isDeleted: true } }
+            { $set: { isDeleted: true } },
+            { session }
         );
     }
 
@@ -57,28 +58,31 @@ class ItemRepository {
         return Item.find({ isDeleted: false }).sort({ createdAt: -1 }).lean().cursor();
     }
 
-    async bulkUpdateStatus(ids, newStatus) {
+    async bulkUpdateStatus(ids, newStatus, session = null) {
         const historyEntry = { status: newStatus, note: "Bulk status update", changedAt: new Date() };
         return await Item.updateMany(
             { _id: { $in: ids }, isDeleted: false },
             {
                 $set:  { status: newStatus },
                 $push: { statusHistory: historyEntry },
-            }
+            },
+            { session }
         );
     }
 
-    async bulkSetRevenueRealized(ids) {
+    async bulkSetRevenueRealized(ids, session = null) {
         return await Item.updateMany(
             { _id: { $in: ids }, isDeleted: false, revenueRealizedAt: null },
-            { $set: { revenueRealizedAt: new Date() } }
+            { $set: { revenueRealizedAt: new Date() } },
+            { session }
         );
     }
 
-    async bulkSetDueDateIfNull(ids) {
+    async bulkSetDueDateIfNull(ids, session = null) {
         return await Item.updateMany(
             { _id: { $in: ids }, isDeleted: false, dueDate: null },
-            { $set: { dueDate: new Date() } }
+            { $set: { dueDate: new Date() } },
+            { session }
         );
     }
 
