@@ -30,7 +30,7 @@ class AuthRepository {
     }
 
     async toggleActive(username, isActive) {
-        const pattern = new RegExp(`^${username.replace(/[.*+?^${}()|[\\]\\\\]/g, '\\$&')}$`, 'i');
+        const pattern = new RegExp(`^${username.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}$`, 'i');
         return await User.findOneAndUpdate(
             { username: { $regex: pattern } },
             { isActive },
@@ -39,12 +39,12 @@ class AuthRepository {
     }
 
     async deleteUser(username) {
-        const pattern = new RegExp(`^${username.replace(/[.*+?^${}()|[\\]\\\\]/g, '\\$&')}$`, 'i');
+        const pattern = new RegExp(`^${username.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}$`, 'i');
         return await User.deleteOne({ username: { $regex: pattern } });
     }
 
     async updateUser(oldUsername, updates) {
-        const pattern = new RegExp(`^${oldUsername.replace(/[.*+?^${}()|[\\]\\\\]/g, '\\$&')}$`, 'i');
+        const pattern = new RegExp(`^${oldUsername.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}$`, 'i');
         return await User.findOneAndUpdate(
             { username: { $regex: pattern } },
             { $set: updates },

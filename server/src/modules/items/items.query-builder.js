@@ -32,8 +32,7 @@ export function buildSearchQuery({ search, statusGroup, technicianName }) {
     // ── Status group filter ────────────────────────────────────────────
     if (statusGroup === "needsAttention") {
         query.status = { $in: ACTIVE_STATUSES };
-        const sixDaysAgo = new Date();
-        sixDaysAgo.setDate(sixDaysAgo.getDate() - 6);
+        const sixDaysAgo = new Date(Date.now() - 6 * 86_400_000);
         query.createdAt = { $lte: sixDaysAgo };
     } else if (statusGroup && STATUS_GROUPS[statusGroup]) {
         query.status = { $in: STATUS_GROUPS[statusGroup] };

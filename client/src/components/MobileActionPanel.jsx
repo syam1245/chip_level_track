@@ -93,7 +93,7 @@ const MobileActionPanel = ({ onWhatsApp, onAIGenerateWhatsApp, onEdit, onDelete,
             {canDelete && (
                 <Tooltip title="Delete" placement="top">
                     <IconButton
-                        onClick={handleAction(onDelete)}
+                        onClick={() => { closeActions(); onDelete(item._id); }}
                         sx={{ color: "#fff", bgcolor: "#ef4444", width: 44, height: 44, "&:hover": { bgcolor: "#dc2626" }, "&:active": { transform: "scale(0.9)" } }}
                     >
                         <DeleteIcon sx={{ fontSize: "1.25rem" }} />
