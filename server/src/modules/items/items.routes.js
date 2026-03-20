@@ -2,6 +2,7 @@ import express from "express";
 import rateLimit from "express-rate-limit";
 import ItemController from "./items.controller.js";
 import { requirePermission, requireAuth, requireCsrf } from "../auth/auth.middleware.js";
+import { auditLog } from "../../core/middlewares/audit.middleware.js";
 import { registerClient, getClientCount } from "./items.events.js";
 
 const router = express.Router();
@@ -78,14 +79,14 @@ router.get("/events", requireAuth, (req, res) => {
 router.use(requireAuth, requireCsrf);
 
 // Static named routes — must come before /:id to avoid being matched as a param
-router.get("/backup",      backupLimiter, requirePermission("items:backup"), ItemController.getBackup);
-router.patch("/bulk-status", bulkLimiter, requirePermission("items:update"), ItemController.bulkUpdateStatus);
-router.patch("/bulk-delete", bulkLimiter, requirePermission("items:delete"), ItemController.bulkDeleteItems);
-router.post("/",           requirePermission("items:create"), ItemController.createItem);
+router.get("/backup",      backupLimiter, requirePermission("items:backup"), auditLog("DOWNLOAD_BACKUP"), ItemController.getBackup);
+router.patch("/bulk-status", bulkLimiter, requirePermission("items:update"), auditLog("BULK_UPDATE_STATUS", req => req.body?.ids?.join(",")), ItemController.bulkUpdateStatus);
+router.patch("/bulk-delete", bulkLimiter, requirePermission("items:delete"), auditLog("BULK_DELETE_ITEMS", req => req.body?.ids?.join(",")), ItemController.bulkDeleteItems);
+router.post("/",           requirePermission("items:create"), auditLog("CREATE_ITEM", () => "new"), ItemController.createItem);
 router.get("/",            requirePermission("items:read"),   ItemController.getAllItems);
 
 // Parameterised routes — after all static routes
-router.put("/:id",    requirePermission("items:update"), ItemController.updateItem);
-router.delete("/:id", requirePermission("items:delete"), ItemController.deleteItem);
+router.put("/:id",    requirePermission("items:update"), auditLog("UPDATE_ITEM"), ItemController.updateItem);
+router.delete("/:id", requirePermission("items:delete"), auditLog("DELETE_ITEM"), ItemController.deleteItem);
 
 export default router;
