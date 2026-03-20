@@ -267,7 +267,7 @@ const TechnicianList = ({ technicians, revenueData, onUpdate }) => {
         if (!isAdmin) return;
 
         try {
-            const newStatus = tech.isActive !== false ? false : true;
+            const newStatus = tech.isActive === false;
             const result = await toggleUserActive(tech.username, newStatus);
             if (result.ok) {
                 setMessage({ text: result.data.message || `User ${newStatus ? 'reactivated' : 'deactivated'}`, type: "success" });

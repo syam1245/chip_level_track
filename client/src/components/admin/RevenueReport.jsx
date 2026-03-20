@@ -67,14 +67,16 @@ const RevenueReport = ({ data, loading }) => {
         // Add a totals row at the bottom
         csvRows.push(`"TOTAL","${totalJobs}","${totalRevenue}"`);
 
-        const csvContent = "data:text/csv;charset=utf-8," + csvRows.join("\n");
-        const encodedUri = encodeURI(csvContent);
+        const csvContent = "\uFEFF" + csvRows.join("\n");
+        const blob = new Blob([csvContent], { type: "text/csv;charset=utf-8;" });
+        const url = URL.createObjectURL(blob);
         const link = document.createElement("a");
-        link.setAttribute("href", encodedUri);
+        link.setAttribute("href", url);
         link.setAttribute("download", `revenue_report_${new Date().toISOString().split('T')[0]}.csv`);
         document.body.appendChild(link);
         link.click();
         document.body.removeChild(link);
+        URL.revokeObjectURL(url);
     };
 
 

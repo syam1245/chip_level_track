@@ -111,44 +111,55 @@ export default function useItemsData({ isAdmin, user }) {
     useEffect(() => {
         if (!user) return;
 
-        const es = new EventSource(`${API_BASE_URL}/api/items/events`, { withCredentials: true });
+        let es;
+        let reconnectTimeout;
 
-        // job:created / job:deleted / job:bulk-updated always require a full
-        // refetch because they change pagination totals and stat counts.
-        const handleFullRefetch = () => refetch();
+        const connect = () => {
+            es = new EventSource(`${API_BASE_URL}/api/items/events`, { withCredentials: true });
 
-        // job:updated only changes fields within an existing item.
-        // If the updated item is not on the current page there is nothing to
-        // show the user — skip the refetch entirely to avoid a redundant API
-        // round-trip. If it IS on the current page, refetch to get fresh data.
-        const handleUpdated = (e) => {
-            try {
-                const { id } = JSON.parse(e.data);
-                const isVisible = itemsRef.current.some((item) => item._id === id);
-                if (isVisible) refetch();
-            } catch {
-                // Malformed SSE payload — fall back to a safe full refetch.
-                refetch();
-            }
+            // job:created / job:deleted / job:bulk-updated always require a full
+            // refetch because they change pagination totals and stat counts.
+            const handleFullRefetch = () => refetch();
+
+            // job:updated only changes fields within an existing item.
+            // If the updated item is not on the current page there is nothing to
+            // show the user — skip the refetch entirely to avoid a redundant API
+            // round-trip. If it IS on the current page, refetch to get fresh data.
+            const handleUpdated = (e) => {
+                try {
+                    const { id } = JSON.parse(e.data);
+                    const isVisible = itemsRef.current.some((item) => item._id === id);
+                    if (isVisible) refetch();
+                } catch {
+                    // Malformed SSE payload — fall back to a safe full refetch.
+                    refetch();
+                }
+            };
+
+            es.onerror = (err) => {
+                console.error("SSE connection error:", err);
+                es.close();
+                // Simple 5s reconnect — for production a more robust exponential
+                // backoff would be better, but this handles Render free tier sleep
+                // cases adequately.
+                reconnectTimeout = setTimeout(() => {
+                    refetch();
+                    connect();
+                }, 5000);
+            };
+
+            es.addEventListener("job:created",      handleFullRefetch);
+            es.addEventListener("job:updated",       handleUpdated);
+            es.addEventListener("job:deleted",       handleFullRefetch);
+            es.addEventListener("job:bulk-updated",  handleFullRefetch);
         };
 
-        es.onerror = (err) => {
-            console.error("SSE connection error:", err);
-            es.close();
-            // Simple 5s reconnect — for production a more robust exponential
-            // backoff would be better, but this handles Render free tier sleep
-            // cases adequately.
-            setTimeout(() => {
-                refetch();
-            }, 5000);
+        connect();
+
+        return () => {
+            if (es) es.close();
+            if (reconnectTimeout) clearTimeout(reconnectTimeout);
         };
-
-        es.addEventListener("job:created",      handleFullRefetch);
-        es.addEventListener("job:updated",       handleUpdated);
-        es.addEventListener("job:deleted",       handleFullRefetch);
-        es.addEventListener("job:bulk-updated",  handleFullRefetch);
-
-        return () => es.close();
     // refetch is stable (useCallback with no deps) so this effect only runs
     // once per user session, keeping the EventSource connection alive.
     }, [user, refetch]);

@@ -202,7 +202,7 @@ export default function useItemsActions({ items, setItems, setSnackbar, refetch,
         try {
             const { ok, data, error } = await bulkDeleteItems([...selectedIds]);
             if (ok) {
-                setSnackbar({ open: true, message: `Successfully deleted ${data.deletedCount} job(s)`, severity: "success" });
+                setSnackbar({ open: true, message: `Successfully deleted ${data.modifiedCount} job(s)`, severity: "success" });
                 clearSelection();
                 refetch();
             } else {

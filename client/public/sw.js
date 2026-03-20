@@ -9,6 +9,7 @@ const PRE_CACHE_ASSETS = [
     "/",
     "/items",
     "/manifest.json",
+    "/offline.html",
 ];
 
 // ── Install ──────────────────────────────────────────────────────────────────

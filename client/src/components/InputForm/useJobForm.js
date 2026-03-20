@@ -67,7 +67,7 @@ export default function useJobForm() {
 
     const handleVisionExtractError = (errorMsg) => setSnackbar({ open: true, message: errorMsg, severity: "error" });
 
-    const handleCloseSnackbar = () => setSnackbar({ ...snackbar, open: false });
+    const handleCloseSnackbar = () => setSnackbar(prev => ({ ...prev, open: false }));
 
     return {
         form, setForm, loading, snackbar, setSnackbar, visionOpen, setVisionOpen,

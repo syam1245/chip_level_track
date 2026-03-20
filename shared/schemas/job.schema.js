@@ -1,5 +1,5 @@
 import { z } from "zod";
-import { ALLOWED_STATUSES } from "../../server/src/constants/status.js";
+import { ALLOWED_STATUSES } from "../status.js";
 
 // Note: Ensure STATUS constants are migrated to shared if not already. 
 // For now, we will import ALLOWED_STATUSES via relative path, but ideally

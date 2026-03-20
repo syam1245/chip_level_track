@@ -51,7 +51,8 @@ const VisionScannerDialog = ({ open, onClose, onExtractSuccess, onExtractError }
     const fileInputRef = useRef(null);
 
     const capture = useCallback(() => {
-        const imageSrc = webcamRef.current.getScreenshot();
+        const imageSrc = webcamRef.current?.getScreenshot();
+        if (!imageSrc) return;
         optimizeImage(imageSrc).then(optimizedSrc => {
             setCapturedImage(optimizedSrc);
         });

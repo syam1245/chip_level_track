@@ -17,16 +17,8 @@ class ItemValidator {
     }
 
     validateUpdate(data) {
-        // NOTE: This method intentionally mutates `data` (which is req.body) in place.
-        // We preserve this behavior by re-assigning the parsed/transformed result.
         try {
-            const validated = jobUpdateSchema.parse(data);
-            
-            // Clear existing keys and re-assign validated ones to match legacy mutation behavior
-            Object.keys(data).forEach(k => delete data[k]);
-            Object.assign(data, validated);
-            
-            return true;
+            return jobUpdateSchema.parse(data);
         } catch (err) {
             if (err instanceof z.ZodError || err.name === "ZodError") {
                 const issue = err.issues[0];

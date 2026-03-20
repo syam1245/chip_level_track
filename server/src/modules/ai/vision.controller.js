@@ -4,15 +4,16 @@ import asyncHandler from "../../core/utils/asyncHandler.js";
 import AppError from "../../core/errors/AppError.js";
 
 class VisionController {
-    extract = asyncHandler(async (req, res) => {
-        const ALLOWED_MIME_TYPES = new Set([
-            "image/jpeg",
-            "image/png",
-            "image/webp",
-            "image/gif"
-        ]);
+    static ALLOWED_MIME_TYPES = new Set([
+        "image/jpeg",
+        "image/png",
+        "image/webp",
+        "image/gif"
+    ]);
 
-        const MAX_IMAGE_SIZE = 5 * 1024 * 1024; // 5MB
+    static MAX_IMAGE_SIZE = 5 * 1024 * 1024; // 5MB
+
+    extract = asyncHandler(async (req, res) => {
 
         let imageBuffer;
         let mimeType = "image/jpeg";
@@ -21,7 +22,7 @@ class VisionController {
         if (req.file) {
             mimeType = req.file.mimetype;
 
-            if (!ALLOWED_MIME_TYPES.has(mimeType)) {
+            if (!VisionController.ALLOWED_MIME_TYPES.has(mimeType)) {
                 throw new AppError(
                     "Unsupported image format. Allowed: JPEG, PNG, WebP, GIF.",
                     415
@@ -32,7 +33,7 @@ class VisionController {
                 throw new AppError("Uploaded image is empty.", 400);
             }
 
-            if (req.file.buffer.length > MAX_IMAGE_SIZE) {
+            if (req.file.buffer.length > VisionController.MAX_IMAGE_SIZE) {
                 throw new AppError("Image exceeds maximum allowed size.", 413);
             }
 
@@ -51,7 +52,7 @@ class VisionController {
                 base64String = base64String.split(",")[1];
             }
 
-            if (!ALLOWED_MIME_TYPES.has(mimeType)) {
+            if (!VisionController.ALLOWED_MIME_TYPES.has(mimeType)) {
                 throw new AppError(
                     "Unsupported image format. Allowed: JPEG, PNG, WebP, GIF.",
                     415
@@ -68,7 +69,7 @@ class VisionController {
                 throw new AppError("Decoded image is empty.", 400);
             }
 
-            if (imageBuffer.length > MAX_IMAGE_SIZE) {
+            if (imageBuffer.length > VisionController.MAX_IMAGE_SIZE) {
                 throw new AppError("Image exceeds maximum allowed size.", 413);
             }
         }

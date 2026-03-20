@@ -37,6 +37,9 @@ async function withRetry(fn, attempts = RETRY_ATTEMPTS) {
 
       // Retry only if not the final attempt
       if (i === attempts) break;
+      
+      // Delay before retrying
+      await new Promise((resolve) => setTimeout(resolve, 1500));
     }
   }
 

@@ -3,6 +3,7 @@ import { Box, Typography, Button, Skeleton, Alert, Stack, Collapse } from "@mui/
 import AutoAwesomeIcon from "@mui/icons-material/AutoAwesome";
 import InfoIcon from "@mui/icons-material/Info";
 import { aiApi } from "../../services/ai.api";
+import DOMPurify from "dompurify";
 
 const SummaryWidget = ({ jobData }) => {
     const [summary, setSummary] = useState(null);
@@ -70,13 +71,14 @@ const SummaryWidget = ({ jobData }) => {
                                 '& b, & strong': { color: 'var(--text-main)', fontWeight: 700 }
                             }}
                         >
-                            {/* Simple replacement of markdown bold for browser rendering if not using a library */}
-                            {summary.split('\n').map((line, i) => (
-                                <React.Fragment key={i}>
-                                    {line.startsWith('**') ? <b>{line.replace(/\*\*/g, '')}</b> : line}
-                                    {i < summary.split('\n').length - 1 && <br />}
-                                </React.Fragment>
-                            ))}
+                            {/* Replace inline markdown bold for browser rendering */}
+                            <span 
+                                dangerouslySetInnerHTML={{
+                                    __html: DOMPurify.sanitize(
+                                        summary.replace(/\*\*(.*?)\*\*/g, '<b>$1</b>').replace(/\n/g, '<br />')
+                                    )
+                                }} 
+                            />
                         </Typography>
 
                         <Box sx={{ mt: 2, display: 'flex', justifyContent: 'flex-end' }}>

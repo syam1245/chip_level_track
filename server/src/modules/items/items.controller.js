@@ -82,8 +82,8 @@ class ItemController {
         if (!mongoose.isValidObjectId(req.params.id)) {
             throw new AppError("Invalid item ID", 400);
         }
-        ItemValidator.validateUpdate(req.body);
-        const item = await ItemService.updateItem(req.params.id, req.body);
+        const cleanBody = ItemValidator.validateUpdate(req.body);
+        const item = await ItemService.updateItem(req.params.id, cleanBody);
         sendResponse(res, 200, item, "Item updated successfully");
     });
 
@@ -104,7 +104,7 @@ class ItemController {
             return res.status(400).json({ error: `Maximum ${MAX_BULK_SIZE} items per bulk operation` });
         }
         const result = await ItemService.bulkDeleteItems(ids);
-        sendResponse(res, 200, { deletedCount: result.modifiedCount }, "Bulk delete successful");
+        sendResponse(res, 200, { modifiedCount: result.modifiedCount }, "Bulk delete successful");
     });
 
     bulkUpdateStatus = asyncHandler(async (req, res) => {

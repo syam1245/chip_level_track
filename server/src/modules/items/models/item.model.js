@@ -40,8 +40,8 @@ const itemSchema = new mongoose.Schema(
 // Guard with this.isNew so every subsequent item.save() call in updateItem
 // doesn't recompute a value that can never change (createdAt is immutable).
 itemSchema.pre("save", function (next) {
-    if (this.isNew && this.createdAt) {
-        const d     = new Date(this.createdAt);
+    if (this.isNew) {
+        const d     = this.createdAt ? new Date(this.createdAt) : new Date();
         const day   = String(d.getDate()).padStart(2, "0");
         const month = String(d.getMonth() + 1).padStart(2, "0");
         const year  = String(d.getFullYear()).slice(-2);
