@@ -95,6 +95,12 @@ const AuditTrail = React.memo(({ initialLogs = [], onShowHistory }) => {
         setAuditLogs(initialLogs);
     }, [initialLogs]);
 
+    // Abort any in-flight search request when the component unmounts
+    // to prevent setState on an unmounted component during route changes.
+    useEffect(() => {
+        return () => abortRef.current?.abort();
+    }, []);
+
     useEffect(() => {
         const timer = setTimeout(() => {
             if (searchQuery.trim()) {
