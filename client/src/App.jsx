@@ -1,4 +1,4 @@
-import React, { Suspense, lazy, useState, useMemo, useEffect } from "react";
+import React, { Suspense, lazy, useState, useMemo, useEffect, useRef } from "react";
 import "./App.css";
 import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
 import {
@@ -95,15 +95,26 @@ function getInitialMode(prefersDark) {
 
 function App() {
   const prefersDarkMode = useMediaQuery("(prefers-color-scheme: dark)");
-  const [mode, setMode] = useState(() => getInitialMode(prefersDarkMode));
-
-  // If no saved preference exists, follow the OS setting
-  useEffect(() => {
+  // Track whether the user explicitly chose a theme (manual toggle).
+  // A ref is used instead of state because it never needs to trigger a render.
+  // This survives even when localStorage is unavailable (private browsing).
+  const userChoseTheme = useRef(false);
+  const [mode, setMode] = useState(() => {
+    const initial = getInitialMode(prefersDarkMode);
     try {
-      if (!localStorage.getItem(THEME_KEY)) {
-        setMode(prefersDarkMode ? "dark" : "light");
-      }
+      const saved = localStorage.getItem(THEME_KEY);
+      if (saved === "dark" || saved === "light") userChoseTheme.current = true;
     } catch (_) { }
+    return initial;
+  });
+
+  // If no explicit user preference exists, follow the OS setting.
+  // Gated by userChoseTheme to prevent overriding a manual toggle
+  // when localStorage is unavailable.
+  useEffect(() => {
+    if (!userChoseTheme.current) {
+      setMode(prefersDarkMode ? "dark" : "light");
+    }
   }, [prefersDarkMode]);
 
   // Keep body data-theme attribute in sync (used by CSS custom properties)
@@ -116,6 +127,7 @@ function App() {
       toggleColorMode: () => {
         setMode((prev) => {
           const next = prev === "light" ? "dark" : "light";
+          userChoseTheme.current = true;
           try { localStorage.setItem(THEME_KEY, next); } catch (_) { }
           return next;
         });

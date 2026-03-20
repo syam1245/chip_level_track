@@ -1,5 +1,6 @@
 import React from "react";
 import { Box, Typography, Button, Paper } from "@mui/material";
+import { logger } from "../utils/logger";
 import { ErrorOutline as ErrorIcon } from "@mui/icons-material";
 
 class ErrorBoundary extends React.Component {
@@ -15,7 +16,7 @@ class ErrorBoundary extends React.Component {
 
     componentDidCatch(error, errorInfo) {
         // You can also log the error to an error reporting service here
-        console.error("ErrorBoundary caught an error:", error, errorInfo);
+        logger.error("ErrorBoundary caught an error", { error, errorInfo });
     }
 
     handleReload = () => {

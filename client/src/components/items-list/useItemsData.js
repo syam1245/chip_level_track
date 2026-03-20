@@ -6,6 +6,7 @@ import { useEffect, useState, useCallback, useRef, startTransition } from "react
 import { fetchItems as fetchItemsApi } from "../../services/items.api";
 import { fetchUsers } from "../../services/auth.api";
 import API_BASE_URL from "../../api";
+import { logger } from "../../utils/logger";
 
 const PAGE_SIZE_OPTIONS = [10, 25, 50, 100];
 
@@ -94,7 +95,7 @@ export default function useItemsData({ isAdmin, user }) {
     useEffect(() => {
         fetchUsers()
             .then((data) => { if (Array.isArray(data)) setTechniciansList(data); })
-            .catch(console.error);
+            .catch((err) => logger.error("Failed to load technicians", err));
     }, []);
 
     useEffect(() => {
@@ -137,7 +138,7 @@ export default function useItemsData({ isAdmin, user }) {
             };
 
             es.onerror = (err) => {
-                console.error("SSE connection error:", err);
+                logger.warn("SSE connection error — reconnecting in 5s", err);
                 es.close();
                 // Simple 5s reconnect — for production a more robust exponential
                 // backoff would be better, but this handles Render free tier sleep
@@ -190,7 +191,7 @@ export default function useItemsData({ isAdmin, user }) {
             })
             .catch((err) => {
                 if (err.name === "AbortError") return;
-                console.error(err);
+                logger.error("Failed to fetch items", err);
                 setSnackbar({ open: true, message: "Failed to load data", severity: "error" });
                 setLoading(false);
             });

@@ -1,4 +1,5 @@
 import React, { useEffect, useState } from "react";
+import { logger } from "../utils/logger";
 import {
     Box,
     Typography,
@@ -62,7 +63,7 @@ const AdminDashboard = () => {
                 setMessage({ text: result.error || "Failed to fetch stats", type: "error" });
             }
         } catch (err) {
-            console.error(err);
+            logger.error("Failed to load admin dashboard data", err);
         } finally {
             setStatsLoading(false);
         }
