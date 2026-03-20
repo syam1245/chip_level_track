@@ -22,7 +22,8 @@ class AuthController {
     });
 
     getSession = asyncHandler(async (req, res) => {
-        res.json({ user: req.user });
+        const { username, role, displayName } = req.user;
+        res.json({ user: { username, role, displayName } });
     });
 
     getUsers = asyncHandler(async (req, res) => {
@@ -110,7 +111,7 @@ class AuthController {
             return res.status(400).json({ error: "You cannot deactivate your own account." });
         }
 
-        const user = await AuthService.toggleActive(username, isActive);
+        await AuthService.toggleActive(username, isActive);
         res.json({ message: `User ${username} is now ${isActive ? 'active' : 'inactive'}.` });
     });
 

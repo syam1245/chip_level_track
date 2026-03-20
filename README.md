@@ -19,10 +19,9 @@
 
 ### 2) Data / Schema Changes
 - No database schema changes were required.
-- Users are predefined in server config (exactly two accounts):
-  - `admin` (Admin role)
-  - `user` (Normal User role)
-- Passwords are never stored in plaintext in code or database; they are derived from environment secrets and hashed in memory.
+- Users are initialized automatically via database seed scripts.
+  - Pre-defined roles exist supporting multiple isolated technician accounts and root administrators.
+- Passwords are securely hashed via PBKDF2 before being safely loaded and validated directly from secure DB entries.
 
 ### 3) Authentication Flow
 1. User submits credentials to `POST /api/auth/login`.
@@ -78,11 +77,12 @@ JWT_SECRET=a_very_long_random_string_here
 MONGODB_URI=mongodb://127.0.0.1:27017/myDB
 PORT=5000
 CORS_ORIGIN=http://localhost:3000
-TECH_PASSWORD_NAME1=user_passwd
-TECH_PASSWORD_NAME2=ruser_passwd
-TECH_PASSWORD_NAME3=auser_passwd
-TECH_PASSWORD_NAME4=user_passwd
+TECH_PASSWORD_SHYAM=user_passwd
+TECH_PASSWORD_RAKESH=ruser_passwd
+TECH_PASSWORD_AKHIL=auser_passwd
+TECH_PASSWORD_NABEEL=user_passwd
 GEMINI_API_KEY=api_key
+```
 
 ## Local Run
 

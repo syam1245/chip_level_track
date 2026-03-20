@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useRef } from "react";
 import {
     Box,
     Typography,
@@ -89,6 +89,7 @@ const AuditTrail = React.memo(({ initialLogs = [], onShowHistory }) => {
     const [auditLogs, setAuditLogs] = useState(initialLogs);
     const [searchQuery, setSearchQuery] = useState("");
     const [searching, setSearching] = useState(false);
+    const abortRef = useRef(null);
 
     useEffect(() => {
         setAuditLogs(initialLogs);
@@ -106,12 +107,14 @@ const AuditTrail = React.memo(({ initialLogs = [], onShowHistory }) => {
     }, [searchQuery, initialLogs]);
 
     const performSearch = async (query) => {
+        abortRef.current?.abort();
+        abortRef.current = new AbortController();
         setSearching(true);
         try {
-            const data = await searchItems(query, 15);
+            const data = await searchItems(query, 15, abortRef.current.signal);
             setAuditLogs(data.items);
         } catch (err) {
-            console.error("Search failed", err);
+            if (err.name !== 'AbortError') console.error("Search failed", err);
         } finally {
             setSearching(false);
         }

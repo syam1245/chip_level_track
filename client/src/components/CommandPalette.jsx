@@ -162,7 +162,7 @@ const CommandPalette = ({ open, onClose, toggleTheme, mode, items = [], onDownlo
         );
     };
 
-    let globalIdx = 0;
+
 
     return (
         <Dialog
@@ -220,7 +220,7 @@ const CommandPalette = ({ open, onClose, toggleTheme, mode, items = [], onDownlo
                                         Recent Jobs
                                     </Typography>
                                     <List dense disablePadding>
-                                        {results.items.map((entry) => renderItem(entry, globalIdx, globalIdx++))}
+                                        {results.items.map((entry, i) => renderItem(entry, i, i))}
                                     </List>
                                     {results.actions.length > 0 && <Divider sx={{ my: 1, mx: 2 }} />}
                                 </>
@@ -232,7 +232,7 @@ const CommandPalette = ({ open, onClose, toggleTheme, mode, items = [], onDownlo
                                         Actions
                                     </Typography>
                                     <List dense disablePadding>
-                                        {results.actions.map((entry) => renderItem(entry, globalIdx, globalIdx++))}
+                                        {results.actions.map((entry, i) => renderItem(entry, i, results.items.length + i))}
                                     </List>
                                 </>
                             )}

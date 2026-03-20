@@ -33,6 +33,7 @@ export function generateFingerprint(data = {}) {
         data.issue,
         data.repairNotes,
         data.technicianName,
+        String(data.finalCost ?? ""),
     ];
 
     return fields.map((v) => (v ? String(v).trim() : "")).join("|");

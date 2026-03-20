@@ -206,8 +206,13 @@ export default function useItemsData({ isAdmin, user }) {
 
     // Stale-while-revalidate: show the last-good dataset at reduced opacity
     // while the next page loads, preventing a blank-table flash.
+    const prevQueryRef = useRef(null);
+    const currentQuery = `${activeFilter}:${debouncedSearch}:${technicianFilter}`;
+    const queryChanged = prevQueryRef.current !== null && prevQueryRef.current !== currentQuery;
+    prevQueryRef.current = currentQuery;
+
     const stale = staleItemsRef.current;
-    const displayItems = loading && stale.length > 0 ? stale : items;
+    const displayItems = loading && stale.length > 0 && !queryChanged ? stale : items;
 
     return {
         // Data (prefer stale while reloading to avoid blank flash)

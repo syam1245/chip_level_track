@@ -14,8 +14,7 @@ export function registerAiListeners() {
         try {
             logger.debug(`[EventListener] Triggering background AI update for job ${payload.id}`);
             
-            // Wait briefly to ensure the database write has fully committed
-            await new Promise(resolve => setTimeout(resolve, 500));
+            // The event is only emitted after item.save() resolves — data is committed
             
             const jobData = await ItemRepository.findById(payload.id);
             if (!jobData) return;

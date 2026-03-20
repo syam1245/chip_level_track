@@ -22,7 +22,7 @@ class StatsService {
         const endNormalized = new Date(end);
         endNormalized.setUTCHours(23, 59, 59, 999);
 
-        const cacheKey = `revenue:${start.toISOString().slice(0, 10)}:${endNormalized.toISOString().slice(0, 10)}`;
+        const cacheKey = `revenue|${start.toISOString().slice(0, 10)}|${endNormalized.toISOString().slice(0, 10)}`;
 
         const cached = revenueCache.get(cacheKey);
         if (cached) return cached;
@@ -51,7 +51,7 @@ class StatsService {
      *   When null/undefined (shouldn't happen in normal flow but kept as a
      *   safe fallback), all ranges are flushed.
      *
-     * Cache key format: "revenue:YYYY-MM-DD:YYYY-MM-DD"
+     * Cache key format: "revenue|YYYY-MM-DD|YYYY-MM-DD"
      */
     invalidateRevenueCache(date = null) {
         if (!date) {
@@ -68,7 +68,7 @@ class StatsService {
         for (const key of keys) {
             // Parse the two date parts from the key.
             // Split limit of 3 handles keys with extra colons in edge cases.
-            const parts = key.split(":");
+            const parts = key.split("|");
             if (parts.length !== 3) {
                 // Unexpected key format — evict it to be safe rather than
                 // leaving potentially stale data that can never be cleaned up.

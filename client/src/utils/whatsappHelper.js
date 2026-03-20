@@ -16,7 +16,9 @@ export function openWhatsAppChat(rawPhoneNumber, messageText) {
     // Strip everything but digits
     let cleanNumber = String(rawPhoneNumber).replace(/\D/g, "");
 
-    // If the number is 10 digits and looks like a standard Indian mobile, prepend 91
+    // If the number is 10 digits and looks like a standard Indian mobile, prepend 91.
+    // Note: The shop is based in Kerala, so Indian semantics are hardcoded here.
+    // If international support is ever added, this is the logic that must adapt.
     if (cleanNumber.length === 10 && !cleanNumber.startsWith("91")) {
         cleanNumber = `91${cleanNumber}`;
     }

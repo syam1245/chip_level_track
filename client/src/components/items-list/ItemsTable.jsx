@@ -39,6 +39,8 @@ const ItemsTable = ({
 
     // Only virtualize when we have enough rows to benefit from it
     const shouldVirtualize = items.length > 20;
+    const vItems = shouldVirtualize ? virtualizer.getVirtualItems() : [];
+    const listItems = shouldVirtualize ? vItems : items.map((_, i) => ({ index: i }));
 
     return (
         <TableContainer
@@ -64,11 +66,11 @@ const ItemsTable = ({
                 />
 
                 <TableBody>
-                    {shouldVirtualize && virtualizer.getVirtualItems().length > 0 && (
-                        <tr style={{ height: virtualizer.getVirtualItems()[0]?.start || 0 }} />
+                    {shouldVirtualize && vItems.length > 0 && (
+                        <tr style={{ height: vItems[0]?.start || 0 }} />
                     )}
 
-                    {(shouldVirtualize ? virtualizer.getVirtualItems() : items.map((_, i) => ({ index: i }))).map((rowOrVirtual) => {
+                    {listItems.map((rowOrVirtual) => {
                         const rowIdx = rowOrVirtual.index;
                         const item = items[rowIdx];
                         if (!item) return null;
@@ -84,10 +86,10 @@ const ItemsTable = ({
                         );
                     })}
 
-                    {shouldVirtualize && virtualizer.getVirtualItems().length > 0 && (
+                    {shouldVirtualize && vItems.length > 0 && (
                         <tr style={{
                             height: virtualizer.getTotalSize() -
-                                (virtualizer.getVirtualItems()[virtualizer.getVirtualItems().length - 1]?.end || 0)
+                                (vItems[vItems.length - 1]?.end || 0)
                         }} />
                     )}
                 </TableBody>

@@ -105,6 +105,8 @@ export const SearchBarSkeleton = () => (
 );
 
 // ── Table Skeleton ─────────────────────────────────────────────────────────
+const CUSTOMER_WIDTHS = [118, 132, 107, 140, 124, 115, 135, 109];
+
 export const TableSkeleton = ({ rows = 8 }) => (
     <TableContainer
         component={Paper}
@@ -149,7 +151,7 @@ export const TableSkeleton = ({ rows = 8 }) => (
                         </TableCell>
                         {/* Customer */}
                         <TableCell>
-                            <Skeleton variant="text" width={100 + Math.random() * 40} height={18} animation="wave" sx={{ borderRadius: 1 }} />
+                            <Skeleton variant="text" width={CUSTOMER_WIDTHS[i % CUSTOMER_WIDTHS.length]} height={18} animation="wave" sx={{ borderRadius: 1 }} />
                         </TableCell>
                         {/* Device */}
                         <TableCell>

@@ -66,7 +66,7 @@ const Navbar = ({ toggleTheme, mode, onOpenPalette }) => {
                 </Box>
             </Box>
             <Divider sx={{ mb: 2 }} />
-            <List spacing={1}>
+            <List sx={{ display: 'flex', flexDirection: 'column', gap: 0.5 }}>
                 {navItems.filter(item => item.show).map((item) => (
                     <ListItem key={item.label} disablePadding sx={{ mb: 0.5 }}>
                         <ListItemButton

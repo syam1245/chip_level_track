@@ -55,7 +55,7 @@ class ErrorBoundary extends React.Component {
                             Please try reloading the page or go back to the dashboard.
                         </Typography>
                         {/* Only show error details in development or if useful */}
-                        {this.state.error && (
+                        {import.meta.env.MODE !== "production" && this.state.error && (
                             <Box
                                 sx={{
                                     mb: 4,

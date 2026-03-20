@@ -207,7 +207,26 @@ const AuthAppContent = ({ mode, toggleTheme }) => {
           onClose={() => setPaletteOpen(false)}
           toggleTheme={toggleTheme}
           mode={mode}
-          onDownloadBackup={() => window.open(`${API_BASE_URL}/api/items/backup`, "_blank")}
+          onDownloadBackup={async () => {
+            try {
+              const res = await fetch(`${API_BASE_URL}/api/items/backup`, { credentials: "include" });
+              if (res.ok) {
+                const blob = await res.blob();
+                const url = URL.createObjectURL(blob);
+                const a = document.createElement("a");
+                a.href = url;
+                a.download = `backup_${new Date().toISOString().slice(0, 10)}.json`;
+                document.body.appendChild(a);
+                a.click();
+                a.remove();
+                URL.revokeObjectURL(url);
+              } else {
+                alert("Backup download failed");
+              }
+            } catch (err) {
+                console.error("Network error during backup", err);
+            }
+          }}
         />
       </Suspense>
     </ErrorBoundary>
