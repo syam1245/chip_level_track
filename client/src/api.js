@@ -39,13 +39,26 @@ export const authFetch = async (path, options = {}) => {
         ? AbortSignal.any([timeoutSignal, options.signal])
         : timeoutSignal;
 
-    const response = await fetch(`${API_BASE_URL}${path}`, {
-        ...options,
-        method,
-        headers,
-        credentials: "include",
-        signal,
-    });
+    let response;
+    try {
+        response = await fetch(`${API_BASE_URL}${path}`, {
+            ...options,
+            method,
+            headers,
+            credentials: "include",
+            signal,
+        });
+    } catch (err) {
+        // Distinguish timeout from network failure for better UX in callers
+        if (err.name === "TimeoutError" || (err.name === "AbortError" && timeoutSignal.aborted)) {
+            throw new Error("Request timed out — the server may be starting up. Please try again.");
+        }
+        // Re-throw AbortErrors from the caller's own signal (component unmount)
+        // so they propagate naturally and are caught as AbortError upstream.
+        if (err.name === "AbortError") throw err;
+        // General network failure (offline, DNS, etc.)
+        throw new Error("Network error — please check your connection and try again.");
+    }
 
     if (
         response.status === 401 &&
